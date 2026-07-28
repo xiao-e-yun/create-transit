@@ -1,3 +1,6 @@
 {
-  "block.create_nest_network.stock_proxyer": "庫存代理器"
+  "block.create_nest_network.stock_proxyer": "庫存代理器",
+  "create_nest_network.stock_proxyer.goggles.connected": "子網路元件（已載入）：%s",
+  "create_nest_network.stock_proxyer.goggles.disconnected": "子網路未連接（未綁定或未載入）",
+  "create_nest_network.stock_proxyer.goggles.cycle": "警告：偵測到代理循環，此路徑貢獻空庫存"
 }
