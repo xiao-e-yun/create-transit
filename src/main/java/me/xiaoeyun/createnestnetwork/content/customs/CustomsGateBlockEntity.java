@@ -44,19 +44,23 @@ import net.minecraftforge.items.IItemHandler;
  * Unlabelled packages are always refused, which keeps a gate from burning its
  * cycle on domestic traffic that has no customs business with it.
  *
- * Extends the Repackager rather than the Packager, which buys two things. The
- * first is that vanilla excludes a RepackagerBlockEntity from
- * {@code PackagerLinkBlockEntity.getPackager()} by name, so a gate can never be
- * mistaken for a stock source and the guards that used to fake that exclusion
- * are gone. The second is the buffer: a gate holds its packages in the
- * container it faces, so the tray animation depicts a box that really is moving
- * in and out of storage rather than miming over an empty block.
+ * A gate delivers into the container it faces, the same shape as feeding
+ * packages to a Packager backed by a barrel: they go in one side and end up in
+ * storage, cleared. Nothing is ever pushed back out, so the tray only ever plays
+ * its inward animation, and it plays it over a box that really is travelling
+ * into that container.
  *
- * Two pieces of the Repackager are deliberately not inherited. It waits for a
- * redstone pulse before pushing anything out, whereas a customs gate is always
- * open, so the send is driven from the tick instead. And it stamps its sign's
- * text onto outgoing packages as an address — here the sign carries a label,
- * which is a different thing entirely and must not end up in the address.
+ * Extends the Repackager rather than the Packager because vanilla excludes a
+ * RepackagerBlockEntity from {@code PackagerLinkBlockEntity.getPackager()} by
+ * name. A gate therefore cannot be mistaken for a stock source without us
+ * faking that exclusion, which previously cost an empty summary, a filtered
+ * target inventory and a stubbed link recheck — and it was the filtered
+ * inventory that left the gate with nowhere to put anything in the first place.
+ *
+ * What is not inherited is the sending half. A repackager pulls packages back
+ * out of its inventory to defragment split orders and stamps its sign onto them
+ * as an address; a gate has no business changing the identity of traffic
+ * passing through, and its sign holds a label, not an address.
  */
 public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHaveGoggleInformation {
 
@@ -74,21 +78,6 @@ public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHa
 
     public CustomsGateBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
-    }
-
-    /**
-     * A gate is always open. Vanilla only pushes a repackager's contents out on
-     * a redstone pulse, which for a border checkpoint would mean packages piling
-     * up in the buffer until someone flicked a lever. The send guards itself on
-     * held box, animation and queue state, so calling it every tick costs
-     * nothing and throttles itself.
-     */
-    @Override
-    public void tick() {
-        super.tick();
-        if (level == null || level.isClientSide())
-            return;
-        attemptToSend(null);
     }
 
     public String getEffectiveLabel() {
@@ -220,8 +209,8 @@ public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHa
         if (!effectiveLabel.isEmpty() && !effectiveLabel.equals(headLabel))
             return false;
 
-        IItemHandler buffer = getBuffer();
-        if (buffer == null)
+        IItemHandler storage = getStorage();
+        if (storage == null)
             return false;
 
         ItemStack stripped = box.copyWithCount(1);
@@ -232,8 +221,8 @@ public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHa
             PackageItem.addAddress(stripped, remaining);
 
         boolean anySpace = false;
-        for (int slot = 0; slot < buffer.getSlots(); slot++) {
-            if (!buffer.insertItem(slot, stripped, simulate)
+        for (int slot = 0; slot < storage.getSlots(); slot++) {
+            if (!storage.insertItem(slot, stripped, simulate)
                 .isEmpty())
                 continue;
             anySpace = true;
@@ -253,49 +242,26 @@ public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHa
     }
 
     /**
-     * Releases one cleared package from the buffer. Deliberately not the
-     * Repackager's version: that one defragments split orders and stamps its
-     * sign onto the outgoing address, and this sign holds a label, not an
-     * address.
+     * A gate never sends. Clearing customs already delivered the package to the
+     * storage behind it, and the Repackager's version would undo exactly that --
+     * pulling cleared packages back out to defragment split orders and stamp its
+     * sign onto them as an address, when the sign on a gate holds a label.
      */
     @Override
     public void attemptToSend(List<PackagingRequest> queuedRequests) {
-        // A gate is never a stock source, so a link's request list is not ours
-        // to fill. Vanilla already refuses to see us as one; this is what would
-        // happen if some other path ever handed us requests anyway.
-        if (queuedRequests != null) {
+        // A gate is not a stock source either. Vanilla already refuses to see a
+        // repackager as one; this covers any other path that hands us requests.
+        if (queuedRequests != null)
             queuedRequests.clear();
-            return;
-        }
-        if (!heldBox.isEmpty() || animationTicks != 0 || buttonCooldown > 0)
-            return;
-        if (!queuedExitingPackages.isEmpty())
-            return;
-
-        IItemHandler buffer = getBuffer();
-        if (buffer == null)
-            return;
-
-        for (int slot = 0; slot < buffer.getSlots(); slot++) {
-            ItemStack extracted = buffer.extractItem(slot, 1, true);
-            if (extracted.isEmpty() || !PackageItem.isPackage(extracted))
-                continue;
-            buffer.extractItem(slot, 1, false);
-            heldBox = extracted.copy();
-            animationInward = false;
-            animationTicks = CYCLE;
-            notifyUpdate();
-            return;
-        }
     }
 
     /** The container the gate faces, or null when it is facing nothing usable. */
     @Nullable
-    private IItemHandler getBuffer() {
-        IItemHandler buffer = targetInventory.getInventory();
-        // A packager's own handler is not storage; chaining gates mouth to
-        // mouth would otherwise look like a valid buffer and deadlock.
-        return buffer instanceof PackagerItemHandler ? null : buffer;
+    private IItemHandler getStorage() {
+        IItemHandler storage = targetInventory.getInventory();
+        // A packager's own handler is not storage; gates mouth to mouth would
+        // otherwise look like a valid destination and deadlock.
+        return storage instanceof PackagerItemHandler ? null : storage;
     }
 
     // Serialization
