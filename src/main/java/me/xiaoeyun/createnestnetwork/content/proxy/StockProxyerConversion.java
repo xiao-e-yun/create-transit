@@ -10,10 +10,12 @@ import com.simibubi.create.content.logistics.packagerLink.PackagerLinkBlock;
 import com.simibubi.create.content.logistics.stockTicker.StockTickerBlockEntity;
 
 import me.xiaoeyun.createnestnetwork.registry.CnnBlocks;
+import net.createmod.catnip.data.Iterate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.FaceAttachedHorizontalDirectionalBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -64,6 +66,27 @@ public final class StockProxyerConversion {
     }
 
     /**
+     * Whether any logistics link is currently mounted against this block.
+     *
+     * Deliberately answered from block states alone. The caller reverts a
+     * proxyer when this comes back false, so a transient false -- which a block
+     * entity lookup could return while neighbouring chunks are still waking up
+     * -- would silently undo someone's build.
+     */
+    public static boolean hasAttachedLink(BlockGetter level, BlockPos pos) {
+        for (Direction d : Iterate.directions) {
+            BlockState neighbour = level.getBlockState(pos.relative(d));
+            if (!(neighbour.getBlock() instanceof PackagerLinkBlock))
+                continue;
+            // A link points away from what it is mounted on, so one sitting to
+            // our d side is ours exactly when it points back along d.
+            if (connectedDirection(neighbour) == d)
+                return true;
+        }
+        return false;
+    }
+
+    /**
      * FaceAttachedHorizontalDirectionalBlock keeps its own accessor protected,
      * so resolve the attachment exactly the way it does.
      */
@@ -105,8 +128,7 @@ public final class StockProxyerConversion {
         if (level.getBlockEntity(pos) instanceof StockProxyerBlockEntity proxyer)
             proxyer.setChildFrequency(frequency);
 
-        if (player != null)
-            player.displayClientMessage(Component.translatable("create_nest_network.stock_proxyer.converted"), true);
+        player.displayClientMessage(Component.translatable("create_nest_network.stock_proxyer.converted"), true);
         return true;
     }
 

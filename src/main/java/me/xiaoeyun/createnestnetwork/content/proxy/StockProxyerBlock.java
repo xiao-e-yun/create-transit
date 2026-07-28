@@ -8,6 +8,8 @@ import com.simibubi.create.foundation.block.IBE;
 
 import me.xiaoeyun.createnestnetwork.registry.CnnBlockEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -53,6 +55,38 @@ public class StockProxyerBlock extends HorizontalDirectionalBlock implements IBE
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         return defaultBlockState().setValue(FACING, context.getHorizontalDirection()
             .getOpposite());
+    }
+
+    /**
+     * Losing the last attached link reverts the proxyer, mirroring the
+     * placement that created it: without one it is a block that impersonates a
+     * Stock Ticker while having none of a ticker's behaviour, which is a state
+     * no player asked to be left in.
+     *
+     * This hangs off neighbour updates rather than the inherited link recheck
+     * on purpose. The recheck also runs on initialize and on a timer, where a
+     * neighbouring link that has not finished loading reads as absent, and
+     * reverting on that would rewrite builds every time a chunk loads.
+     * Neighbour updates only fire for changes that actually happened.
+     */
+    @Override
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos,
+        boolean isMoving) {
+        super.neighborChanged(state, level, pos, block, fromPos, isMoving);
+        if (level.isClientSide || isMoving)
+            return;
+        // Replacing ourselves here would mean mutating the world from inside
+        // the update cascade that is still running -- an explosion clearing the
+        // link would have us rewriting blocks midway through its own removal
+        // loop. A scheduled tick lands after that has settled.
+        level.scheduleTick(pos, this, 1);
+    }
+
+    @Override
+    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        super.tick(state, level, pos, random);
+        if (!StockProxyerConversion.hasAttachedLink(level, pos))
+            StockProxyerConversion.toTicker(level, pos, null);
     }
 
     /** Sneak-wrenching reverts to the Stock Ticker instead of breaking. */
