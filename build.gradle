@@ -171,6 +171,10 @@ tasks.named('processResources', ProcessResources).configure {
     ]
     inputs.properties replaceProperties
 
+    // Tooling state written under the resource tree is invisible to git status
+    // (it is ignored globally) but is not invisible to the jar.
+    exclude '**/.omc/**'
+
     filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
         expand replaceProperties + [project: project]
     }
