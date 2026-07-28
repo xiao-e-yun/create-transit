@@ -2,6 +2,7 @@ package me.xiaoeyun.createnestnetwork.mixin.client;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 import com.simibubi.create.content.logistics.packagePort.postbox.PostboxBlockEntity;
@@ -9,7 +10,9 @@ import com.simibubi.create.content.logistics.packagePort.postbox.PostboxRenderer
 
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 import me.xiaoeyun.createnestnetwork.content.transit.AddressLabels;
+import me.xiaoeyun.createnestnetwork.content.transit.TransitNameplate;
 import me.xiaoeyun.createnestnetwork.registry.CnnPartialModels;
+import net.minecraft.network.chat.Component;
 import net.createmod.catnip.render.CachedBuffers;
 import net.createmod.catnip.render.SuperByteBuffer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -38,6 +41,19 @@ import com.mojang.blaze3d.vertex.PoseStack;
  */
 @Mixin(value = PostboxRenderer.class, remap = false)
 public class PostboxRendererMixin {
+
+    @ModifyArg(
+        method = "renderSafe(Lcom/simibubi/create/content/logistics/packagePort/postbox/PostboxBlockEntity;F"
+            + "Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;II)V",
+        at = @At(value = "INVOKE",
+            target = "Lcom/simibubi/create/content/logistics/packagePort/postbox/PostboxRenderer;"
+                + "renderNameplateOnHover(Lcom/simibubi/create/foundation/blockEntity/SmartBlockEntity;"
+                + "Lnet/minecraft/network/chat/Component;FLcom/mojang/blaze3d/vertex/PoseStack;"
+                + "Lnet/minecraft/client/renderer/MultiBufferSource;I)V"),
+        index = 1)
+    private Component createNestNetwork$plainNameplate(Component address) {
+        return TransitNameplate.plain(address);
+    }
 
     @Redirect(
         method = "renderSafe(Lcom/simibubi/create/content/logistics/packagePort/postbox/PostboxBlockEntity;F"

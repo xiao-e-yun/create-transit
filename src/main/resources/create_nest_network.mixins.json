@@ -8,6 +8,7 @@
     "PackageItemMixin"
   ],
   "client": [
+    "client.FrogportRendererMixin",
     "client.PackagePortScreenMixin",
     "client.PostboxRendererMixin"
   ],
