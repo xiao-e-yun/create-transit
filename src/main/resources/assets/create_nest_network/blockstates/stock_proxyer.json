@@ -1,5 +1,10 @@
 {
   "variants": {
-    "": { "model": "create_nest_network:block/stock_proxyer" }
+    "facing=north": { "model": "create:block/stock_ticker" },
+    "facing=east":  { "model": "create:block/stock_ticker", "y": 90 },
+    "facing=south": { "model": "create:block/stock_ticker", "y": 180 },
+    "facing=west":  { "model": "create:block/stock_ticker", "y": 270 },
+    "facing=up":    { "model": "create:block/stock_ticker" },
+    "facing=down":  { "model": "create:block/stock_ticker" }
   }
 }

@@ -2,5 +2,8 @@
   "block.create_nest_network.stock_proxyer": "Stock Proxyer",
   "create_nest_network.stock_proxyer.goggles.connected": "Child network components (loaded): %s",
   "create_nest_network.stock_proxyer.goggles.disconnected": "Child network not reachable (unbound or unloaded)",
-  "create_nest_network.stock_proxyer.goggles.cycle": "Warning: proxy cycle detected, contributing empty stock"
+  "create_nest_network.stock_proxyer.goggles.cycle": "Warning: proxy cycle detected, contributing empty stock",
+  "create_nest_network.stock_proxyer.converted": "Stock Ticker converted, child network bound",
+  "create_nest_network.stock_proxyer.reverted": "Reverted to Stock Ticker, network kept",
+  "create_nest_network.stock_proxyer.conversion_denied": "You may not administrate this network"
 }

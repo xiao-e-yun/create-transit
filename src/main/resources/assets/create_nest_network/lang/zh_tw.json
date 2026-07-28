@@ -2,5 +2,8 @@
   "block.create_nest_network.stock_proxyer": "庫存代理器",
   "create_nest_network.stock_proxyer.goggles.connected": "子網路元件（已載入）：%s",
   "create_nest_network.stock_proxyer.goggles.disconnected": "子網路未連接（未綁定或未載入）",
-  "create_nest_network.stock_proxyer.goggles.cycle": "警告：偵測到代理循環，此路徑貢獻空庫存"
+  "create_nest_network.stock_proxyer.goggles.cycle": "警告：偵測到代理循環，此路徑貢獻空庫存",
+  "create_nest_network.stock_proxyer.converted": "已轉換庫存收銀機，子網路綁定完成",
+  "create_nest_network.stock_proxyer.reverted": "已還原為庫存收銀機，頻率保留",
+  "create_nest_network.stock_proxyer.conversion_denied": "你沒有管理此網路的權限"
 }
