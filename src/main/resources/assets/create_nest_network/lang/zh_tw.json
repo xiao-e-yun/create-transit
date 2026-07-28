@@ -6,13 +6,12 @@
   "create_nest_network.stock_proxyer.converted": "已轉換庫存收銀機，子網路綁定完成",
   "create_nest_network.stock_proxyer.reverted": "已還原為庫存收銀機，頻率保留",
   "create_nest_network.stock_proxyer.conversion_denied": "你沒有管理此網路的權限",
-
+  "create_nest_network.stock_proxyer.conversion_has_payments": "請先取出庫存收銀機的款項再進行轉換",
   "block.create_nest_network.customs_link": "海關鏈路",
   "create_nest_network.customs_link.goggles.label": "為請求壓上 %s",
   "create_nest_network.customs_link.goggles.forwarding": "未設標籤：地址原樣轉發",
   "create_nest_network.customs_link.label_empty": "（無標籤）",
   "create_nest_network.customs_link.label_hint": "留空即為純轉發",
-
   "block.create_nest_network.customs_gate": "海關關口",
   "create_nest_network.customs_gate.goggles.strips": "剝除通過包裹的 %s",
   "create_nest_network.customs_gate.goggles.wildcard": "無告示牌：剝除任意頭部標籤",

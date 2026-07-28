@@ -5,12 +5,10 @@ import com.simibubi.create.content.logistics.packagerLink.LogisticallyLinkedBloc
 import com.simibubi.create.content.logistics.packagerLink.PackagerLinkBlock;
 import com.simibubi.create.content.logistics.packagerLink.PackagerLinkBlockEntity;
 
-import me.xiaoeyun.createnestnetwork.content.proxy.StockProxyerConversion;
 import me.xiaoeyun.createnestnetwork.registry.CnnBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -24,6 +22,11 @@ import net.minecraftforge.fml.DistExecutor;
  * The block half of the customs link. Everything structural — placement, face
  * attachment, redstone, waterlogging, wrenching — comes from the vanilla Stock
  * Link; the only addition is right-clicking to edit the transit label.
+ *
+ * Converting an attached Stock Ticker into a proxyer is deliberately not done
+ * here: the vanilla Stock Link has to do it too, so it lives on a place event
+ * in {@link me.xiaoeyun.createnestnetwork.content.proxy.StockProxyerConversion}
+ * that covers the whole link family at once.
  *
  * Note this cannot re-declare {@code IBE<CustomsLinkBlockEntity>}: the vanilla
  * superclass already binds the interface to PackagerLinkBlockEntity, so the
@@ -56,20 +59,6 @@ public class CustomsLinkBlock extends PackagerLinkBlock {
         if (level.isClientSide)
             DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> CustomsLinkScreen.open(link));
         return InteractionResult.sidedSuccess(level.isClientSide);
-    }
-
-    /**
-     * Attaching a customs link to a tuned Stock Ticker is the only way to
-     * obtain a Stock Proxyer: the ticker is replaced in place and its frequency
-     * becomes the proxyer's child-network binding.
-     */
-    @Override
-    public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
-        super.setPlacedBy(level, pos, state, placer, stack);
-        if (level.isClientSide)
-            return;
-        BlockPos attachedTo = pos.relative(getConnectedDirection(state).getOpposite());
-        StockProxyerConversion.toProxyer(level, attachedTo, placer instanceof Player player ? player : null);
     }
 
     @Override
