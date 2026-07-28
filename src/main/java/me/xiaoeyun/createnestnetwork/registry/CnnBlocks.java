@@ -5,6 +5,8 @@ import static me.xiaoeyun.createnestnetwork.CreateNestNetwork.registrate;
 import com.simibubi.create.foundation.data.SharedProperties;
 import com.tterrag.registrate.util.entry.BlockEntry;
 
+import me.xiaoeyun.createnestnetwork.content.customs.CustomsLinkBlock;
+import me.xiaoeyun.createnestnetwork.content.customs.CustomsLinkBlockItem;
 import me.xiaoeyun.createnestnetwork.content.proxy.StockProxyerBlock;
 import net.minecraft.world.level.material.MapColor;
 
@@ -16,6 +18,15 @@ public class CnnBlocks {
         .block("stock_proxyer", StockProxyerBlock::new)
         .initialProperties(SharedProperties::stone)
         .properties(p -> p.mapColor(MapColor.TERRACOTTA_BROWN))
+        .register();
+
+    public static final BlockEntry<CustomsLinkBlock> CUSTOMS_LINK = registrate()
+        .block("customs_link", CustomsLinkBlock::new)
+        .initialProperties(SharedProperties::stone)
+        .properties(p -> p.mapColor(MapColor.TERRACOTTA_BROWN)
+            .noOcclusion())
+        .item(CustomsLinkBlockItem::new)
+        .build()
         .register();
 
     public static void register() {}

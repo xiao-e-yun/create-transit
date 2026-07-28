@@ -1,13 +1,16 @@
 package me.xiaoeyun.createnestnetwork;
 
 import com.mojang.logging.LogUtils;
+import com.simibubi.create.AllCreativeModeTabs;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 
+import me.xiaoeyun.createnestnetwork.network.CnnPackets;
 import me.xiaoeyun.createnestnetwork.registry.CnnBlockEntities;
 import me.xiaoeyun.createnestnetwork.registry.CnnBlocks;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
@@ -18,7 +21,8 @@ public class CreateNestNetwork {
     public static final String NAME = "Create: Nest Network";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final CreateRegistrate REGISTRATE = CreateRegistrate.create(MOD_ID);
+    private static final CreateRegistrate REGISTRATE = CreateRegistrate.create(MOD_ID)
+        .setCreativeTab(AllCreativeModeTabs.BASE_CREATIVE_TAB);
 
     public CreateNestNetwork(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
@@ -26,6 +30,12 @@ public class CreateNestNetwork {
 
         CnnBlocks.register();
         CnnBlockEntities.register();
+
+        modEventBus.addListener(CreateNestNetwork::commonSetup);
+    }
+
+    private static void commonSetup(FMLCommonSetupEvent event) {
+        event.enqueueWork(CnnPackets::register);
     }
 
     public static CreateRegistrate registrate() {
