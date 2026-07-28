@@ -3,6 +3,7 @@ package me.xiaoeyun.createnestnetwork.content.proxy;
 import java.util.List;
 
 import com.simibubi.create.AllBlocks;
+import com.simibubi.create.AllShapes;
 import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.simibubi.create.foundation.block.IBE;
 
@@ -23,8 +24,11 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * The proxyer has no item form. It is reached only by converting a tuned Stock
@@ -55,6 +59,23 @@ public class StockProxyerBlock extends HorizontalDirectionalBlock implements IBE
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         return defaultBlockState().setValue(FACING, context.getHorizontalDirection()
             .getOpposite());
+    }
+
+    /**
+     * Borrowing the ticker's model means borrowing its shape too. Neighbouring
+     * faces are culled against this, not against the model, so leaving it as
+     * the default full cube tells the floor to stop drawing its top face while
+     * the ticker's inset base leaves that corner uncovered -- a hole around the
+     * seam.
+     */
+    @Override
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return AllShapes.STOCK_TICKER;
+    }
+
+    @Override
+    public boolean isPathfindable(BlockState state, BlockGetter level, BlockPos pos, PathComputationType type) {
+        return false;
     }
 
     /**
