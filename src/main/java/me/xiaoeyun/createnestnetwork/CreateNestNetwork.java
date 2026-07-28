@@ -8,8 +8,11 @@ import me.xiaoeyun.createnestnetwork.content.proxy.StockProxyerConversion;
 import me.xiaoeyun.createnestnetwork.network.CnnPackets;
 import me.xiaoeyun.createnestnetwork.registry.CnnBlockEntities;
 import me.xiaoeyun.createnestnetwork.registry.CnnBlocks;
+import me.xiaoeyun.createnestnetwork.registry.CnnPartialModels;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -33,6 +36,9 @@ public class CreateNestNetwork {
 
         CnnBlocks.register();
         CnnBlockEntities.register();
+        // Partial models must exist before the first model bake collects them,
+        // which the constructor comfortably precedes and a setup event may not.
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> CnnPartialModels::init);
 
         modEventBus.addListener(CreateNestNetwork::commonSetup);
         // Any logistics link placed against a tuned Stock Ticker converts it,

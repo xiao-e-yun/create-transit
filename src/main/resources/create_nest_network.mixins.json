@@ -8,7 +8,8 @@
     "PackageItemMixin"
   ],
   "client": [
-    "client.PackagePortScreenMixin"
+    "client.PackagePortScreenMixin",
+    "client.PostboxRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1
