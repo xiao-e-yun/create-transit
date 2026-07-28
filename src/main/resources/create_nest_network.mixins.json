@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "me.xiaoeyun.createnestnetwork.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "create_nest_network.refmap.json",
+  "mixins": [
+    "PackageItemMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
