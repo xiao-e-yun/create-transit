@@ -66,7 +66,28 @@ public final class AddressLabels {
         String sanitized = sanitizeName(name);
         if (sanitized.isEmpty())
             return address;
-        return OPEN + sanitized + CLOSE + " " + address;
+        String label = OPEN + sanitized + CLOSE;
+        String path = trimLeading(address);
+        // A label with nothing behind it is an address in its own right; the
+        // separator only exists to keep the path from touching the delimiter.
+        return path.isEmpty() ? label : label + " " + path;
+    }
+
+    /**
+     * Rebuilds a wire address from the parts {@link #labelNames} and
+     * {@link #path} take it apart into, outermost label first.
+     *
+     * Composition is separator-normalising rather than byte-exact: the space
+     * after a label is canonical, so {@code <[a]>b} comes back as
+     * {@code <[a]> b}. Nothing downstream can see the difference — a labelled
+     * address is matched on its head label alone — and an address with no
+     * labels is returned untouched, so vanilla strings never move.
+     */
+    public static String compose(List<String> labels, String path) {
+        String address = path;
+        for (int i = labels.size() - 1; i >= 0; i--)
+            address = push(labels.get(i), address);
+        return address;
     }
 
     /** Every head label name, outermost first. */
