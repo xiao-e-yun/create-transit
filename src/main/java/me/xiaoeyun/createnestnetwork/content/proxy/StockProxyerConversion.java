@@ -20,7 +20,6 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.items.IItemHandler;
 
 /**
  * The Stock Proxyer has no item of its own: it is only ever reached by
@@ -64,14 +63,6 @@ public final class StockProxyerConversion {
         toProxyer(level, attachedTo, event.getEntity() instanceof Player player ? player : null);
     }
 
-    private static boolean isEmpty(IItemHandler handler) {
-        for (int slot = 0; slot < handler.getSlots(); slot++)
-            if (!handler.getStackInSlot(slot)
-                .isEmpty())
-                return false;
-        return true;
-    }
-
     /**
      * FaceAttachedHorizontalDirectionalBlock keeps its own accessor protected,
      * so resolve the attachment exactly the way it does.
@@ -100,17 +91,6 @@ public final class StockProxyerConversion {
         if (!ticker.behaviour.mayAdministrate(player)) {
             player.displayClientMessage(
                 Component.translatable("create_nest_network.stock_proxyer.conversion_denied"), true);
-            return false;
-        }
-
-        // The replacement drops whatever the ticker was holding. Refusing while
-        // takings are still inside means no combination of protection plugins,
-        // event ordering or future callers can turn conversion into a way of
-        // shaking money out of someone else's shop -- the worst case becomes
-        // nothing happening.
-        if (!isEmpty(ticker.getReceivedPaymentsHandler())) {
-            player.displayClientMessage(
-                Component.translatable("create_nest_network.stock_proxyer.conversion_has_payments"), true);
             return false;
         }
 

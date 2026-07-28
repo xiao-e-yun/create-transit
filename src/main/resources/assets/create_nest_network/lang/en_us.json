@@ -6,7 +6,6 @@
   "create_nest_network.stock_proxyer.converted": "Stock Ticker converted, child network bound",
   "create_nest_network.stock_proxyer.reverted": "Reverted to Stock Ticker, network kept",
   "create_nest_network.stock_proxyer.conversion_denied": "You may not administrate this network",
-  "create_nest_network.stock_proxyer.conversion_has_payments": "Collect the Stock Ticker's payments before converting it",
   "block.create_nest_network.customs_link": "Customs Link",
   "create_nest_network.customs_link.goggles.label": "Stamps %s onto requests",
   "create_nest_network.customs_link.goggles.forwarding": "No label: forwards addresses unchanged",
