@@ -3,8 +3,8 @@ package me.xiaoeyun.createnestnetwork.content.proxy;
 import java.util.List;
 
 import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.simibubi.create.foundation.block.IBE;
-import com.simibubi.create.foundation.block.WrenchableDirectionalBlock;
 
 import me.xiaoeyun.createnestnetwork.registry.CnnBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -16,8 +16,11 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.HitResult;
 
@@ -27,19 +30,28 @@ import net.minecraft.world.phys.HitResult;
  * player-visible item context — picked, dropped or queried, it hands back a
  * vanilla Stock Ticker — so the conversion reads as a reversible state of that
  * block rather than as a separate thing to craft and carry.
+ *
+ * Horizontal facing only, matching the Stock Ticker it converts from, reverts
+ * to and hands back as an item. The facing is purely cosmetic here — the
+ * inherited target inventory is filtered off, so it never selects a container —
+ * and allowing a vertical one would only create an orientation the ticker
+ * cannot represent, which reverting would then have to silently discard.
  */
-public class StockProxyerBlock extends WrenchableDirectionalBlock implements IBE<StockProxyerBlockEntity> {
+public class StockProxyerBlock extends HorizontalDirectionalBlock implements IBE<StockProxyerBlockEntity>, IWrenchable {
 
     public StockProxyerBlock(Properties properties) {
         super(properties);
     }
 
     @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(FACING);
+        super.createBlockStateDefinition(builder);
+    }
+
+    @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        BlockState state = super.getStateForPlacement(context);
-        if (state == null)
-            return null;
-        return state.setValue(FACING, context.getNearestLookingDirection()
+        return defaultBlockState().setValue(FACING, context.getHorizontalDirection()
             .getOpposite());
     }
 
@@ -49,7 +61,7 @@ public class StockProxyerBlock extends WrenchableDirectionalBlock implements IBE
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
         if (!(level.getBlockEntity(pos) instanceof StockProxyerBlockEntity))
-            return super.onSneakWrenched(state, context);
+            return IWrenchable.super.onSneakWrenched(state, context);
         if (level.isClientSide)
             return InteractionResult.SUCCESS;
         StockProxyerConversion.toTicker(level, pos, context.getPlayer());

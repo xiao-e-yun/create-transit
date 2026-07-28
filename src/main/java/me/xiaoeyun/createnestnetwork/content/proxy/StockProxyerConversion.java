@@ -14,7 +14,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -55,7 +54,7 @@ public final class StockProxyerConversion {
             .orElse(Direction.NORTH);
 
         level.setBlockAndUpdate(pos, CnnBlocks.STOCK_PROXYER.getDefaultState()
-            .setValue(DirectionalBlock.FACING, facing));
+            .setValue(HorizontalDirectionalBlock.FACING, facing));
 
         if (level.getBlockEntity(pos) instanceof StockProxyerBlockEntity proxyer)
             proxyer.setChildFrequency(frequency);
@@ -79,11 +78,8 @@ public final class StockProxyerConversion {
         }
 
         UUID frequency = proxyer.getChildFrequency();
-        // A proxyer may face up or down; the ticker only has horizontal facings.
         Direction facing = level.getBlockState(pos)
-            .getOptionalValue(DirectionalBlock.FACING)
-            .filter(d -> d.getAxis()
-                .isHorizontal())
+            .getOptionalValue(HorizontalDirectionalBlock.FACING)
             .orElse(Direction.NORTH);
 
         level.setBlockAndUpdate(pos, AllBlocks.STOCK_TICKER.getDefaultState()
