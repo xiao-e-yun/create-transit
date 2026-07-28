@@ -14,5 +14,11 @@
   "block.create_nest_network.transit_gate": "Transit Gate",
   "create_nest_network.transit_gate.goggles.strips": "Strips %s from passing packages",
   "create_nest_network.transit_gate.goggles.wildcard": "No sign: strips any leading label",
-  "create_nest_network.transit_gate.goggles.adopted": "Label adopted from the sign at %s, %s, %s"
+  "create_nest_network.transit_gate.goggles.adopted": "Label adopted from the sign at %s, %s, %s",
+  "create_nest_network.package_port.transit_label": "Transit Label",
+  "create_nest_network.package_port.add_label": "New label",
+  "create_nest_network.package_port.remove_label": "Remove label",
+  "create_nest_network.package_port.no_label": "(no label)",
+  "create_nest_network.package_port.one_label_only": "One label per port",
+  "create_nest_network.package_port.nested_labels": "Deeper labels (read-only)"
 }

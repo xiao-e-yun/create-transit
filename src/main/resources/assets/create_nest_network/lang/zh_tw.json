@@ -14,5 +14,11 @@
   "block.create_nest_network.transit_gate": "跨境關口",
   "create_nest_network.transit_gate.goggles.strips": "剝除通過包裹的 %s",
   "create_nest_network.transit_gate.goggles.wildcard": "無告示牌：剝除任意頭部標籤",
-  "create_nest_network.transit_gate.goggles.adopted": "標籤取自 %s, %s, %s 的告示牌"
+  "create_nest_network.transit_gate.goggles.adopted": "標籤取自 %s, %s, %s 的告示牌",
+  "create_nest_network.package_port.transit_label": "過境標籤",
+  "create_nest_network.package_port.add_label": "新標籤",
+  "create_nest_network.package_port.remove_label": "移除標籤",
+  "create_nest_network.package_port.no_label": "（無標籤）",
+  "create_nest_network.package_port.one_label_only": "一個港口限一個標籤",
+  "create_nest_network.package_port.nested_labels": "更深層的標籤（唯讀）"
 }
