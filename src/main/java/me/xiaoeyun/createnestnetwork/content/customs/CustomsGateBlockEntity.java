@@ -7,12 +7,10 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
-import com.simibubi.create.content.logistics.BigItemStack;
 import com.simibubi.create.content.logistics.box.PackageItem;
-import com.simibubi.create.content.logistics.packager.InventorySummary;
-import com.simibubi.create.content.logistics.packager.PackagerBlockEntity;
+import com.simibubi.create.content.logistics.packager.PackagerItemHandler;
 import com.simibubi.create.content.logistics.packager.PackagingRequest;
-import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
+import com.simibubi.create.content.logistics.packager.repackager.RepackagerBlockEntity;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -25,6 +23,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraftforge.items.IItemHandler;
 
 /**
  * Customs on a domain boundary: packages passing through lose exactly one head
@@ -45,12 +44,21 @@ import net.minecraft.world.level.chunk.LevelChunk;
  * Unlabelled packages are always refused, which keeps a gate from burning its
  * cycle on domestic traffic that has no customs business with it.
  *
- * Structurally this is the same mould as Create's Repackager — a packager that
- * takes packages in and puts modified packages out — so the entire item
- * pipeline, exit queue, animation, sign reading and drop-on-break behaviour are
- * inherited rather than reimplemented.
+ * Extends the Repackager rather than the Packager, which buys two things. The
+ * first is that vanilla excludes a RepackagerBlockEntity from
+ * {@code PackagerLinkBlockEntity.getPackager()} by name, so a gate can never be
+ * mistaken for a stock source and the guards that used to fake that exclusion
+ * are gone. The second is the buffer: a gate holds its packages in the
+ * container it faces, so the tray animation depicts a box that really is moving
+ * in and out of storage rather than miming over an empty block.
+ *
+ * Two pieces of the Repackager are deliberately not inherited. It waits for a
+ * redstone pulse before pushing anything out, whereas a customs gate is always
+ * open, so the send is driven from the tick instead. And it stamps its sign's
+ * text onto outgoing packages as an address — here the sign carries a label,
+ * which is a different thing entirely and must not end up in the address.
  */
-public class CustomsGateBlockEntity extends PackagerBlockEntity implements IHaveGoggleInformation {
+public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHaveGoggleInformation {
 
     /** Radius in blocks over which an unsigned gate may adopt a signed gate's label. */
     public static final int LABEL_SHARING_RANGE = 16;
@@ -68,13 +76,19 @@ public class CustomsGateBlockEntity extends PackagerBlockEntity implements IHave
         super(type, pos, state);
     }
 
+    /**
+     * A gate is always open. Vanilla only pushes a repackager's contents out on
+     * a redstone pulse, which for a border checkpoint would mean packages piling
+     * up in the buffer until someone flicked a lever. The send guards itself on
+     * held box, animation and queue state, so calling it every tick costs
+     * nothing and throttles itself.
+     */
     @Override
-    public void addBehaviours(List<BlockEntityBehaviour> behaviours) {
-        super.addBehaviours(behaviours);
-        // A gate is not a storage endpoint: it must never present an inventory
-        // to a Stock Link, which would otherwise treat it as a stock source
-        // (vanilla only hardcodes the Repackager out of that path).
-        targetInventory.withFilter($ -> false);
+    public void tick() {
+        super.tick();
+        if (level == null || level.isClientSide())
+            return;
+        attemptToSend(null);
     }
 
     public String getEffectiveLabel() {
@@ -187,9 +201,14 @@ public class CustomsGateBlockEntity extends PackagerBlockEntity implements IHave
 
     // Label stripping
 
+    /**
+     * Clearing customs: the label comes off on the way in, and the stripped
+     * package lands in the buffer the gate faces. Refusing before anything moves
+     * keeps traffic this gate has no business with on its original route.
+     */
     @Override
     public boolean unwrapBox(ItemStack box, boolean simulate) {
-        if (animationTicks > 0 || !heldBox.isEmpty())
+        if (animationTicks > 0)
             return false;
         if (!PackageItem.isPackage(box))
             return false;
@@ -200,8 +219,10 @@ public class CustomsGateBlockEntity extends PackagerBlockEntity implements IHave
             return false;
         if (!effectiveLabel.isEmpty() && !effectiveLabel.equals(headLabel))
             return false;
-        if (simulate)
-            return true;
+
+        IItemHandler buffer = getBuffer();
+        if (buffer == null)
+            return false;
 
         ItemStack stripped = box.copyWithCount(1);
         String remaining = AddressLabels.stripHeadLabel(address);
@@ -210,30 +231,71 @@ public class CustomsGateBlockEntity extends PackagerBlockEntity implements IHave
         else
             PackageItem.addAddress(stripped, remaining);
 
-        queuedExitingPackages.add(new BigItemStack(stripped, 1));
+        boolean anySpace = false;
+        for (int slot = 0; slot < buffer.getSlots(); slot++) {
+            if (!buffer.insertItem(slot, stripped, simulate)
+                .isEmpty())
+                continue;
+            anySpace = true;
+            break;
+        }
+        if (!anySpace)
+            return false;
+        if (simulate)
+            return true;
+
+        // The box drawn travelling inward is the one that arrived, labelled.
+        previouslyUnwrapped = box;
+        animationInward = true;
+        animationTicks = CYCLE;
         notifyUpdate();
         return true;
     }
 
-    // Not a logistics endpoint
-
-    @Override
-    public InventorySummary getAvailableItems(boolean scanInputSlots) {
-        return InventorySummary.EMPTY;
-    }
-
+    /**
+     * Releases one cleared package from the buffer. Deliberately not the
+     * Repackager's version: that one defragments split orders and stamps its
+     * sign onto the outgoing address, and this sign holds a label, not an
+     * address.
+     */
     @Override
     public void attemptToSend(List<PackagingRequest> queuedRequests) {
-        if (queuedRequests != null)
+        // A gate is never a stock source, so a link's request list is not ours
+        // to fill. Vanilla already refuses to see us as one; this is what would
+        // happen if some other path ever handed us requests anyway.
+        if (queuedRequests != null) {
             queuedRequests.clear();
+            return;
+        }
+        if (!heldBox.isEmpty() || animationTicks != 0 || buttonCooldown > 0)
+            return;
+        if (!queuedExitingPackages.isEmpty())
+            return;
+
+        IItemHandler buffer = getBuffer();
+        if (buffer == null)
+            return;
+
+        for (int slot = 0; slot < buffer.getSlots(); slot++) {
+            ItemStack extracted = buffer.extractItem(slot, 1, true);
+            if (extracted.isEmpty() || !PackageItem.isPackage(extracted))
+                continue;
+            buffer.extractItem(slot, 1, false);
+            heldBox = extracted.copy();
+            animationInward = false;
+            animationTicks = CYCLE;
+            notifyUpdate();
+            return;
+        }
     }
 
-    @Override
-    public void recheckIfLinksPresent() {}
-
-    @Override
-    public boolean redstoneModeActive() {
-        return true;
+    /** The container the gate faces, or null when it is facing nothing usable. */
+    @Nullable
+    private IItemHandler getBuffer() {
+        IItemHandler buffer = targetInventory.getInventory();
+        // A packager's own handler is not storage; chaining gates mouth to
+        // mouth would otherwise look like a valid buffer and deadlock.
+        return buffer instanceof PackagerItemHandler ? null : buffer;
     }
 
     // Serialization
