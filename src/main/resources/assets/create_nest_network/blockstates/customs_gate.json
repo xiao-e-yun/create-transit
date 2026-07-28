@@ -1,24 +1,24 @@
 {
   "variants": {
     "facing=down": {
-      "model": "create:block/packager/block_vertical"
+      "model": "create_nest_network:block/customs_gate/block_vertical"
     },
     "facing=up": {
-      "model": "create:block/packager/block_vertical"
+      "model": "create_nest_network:block/customs_gate/block_vertical"
     },
     "facing=north": {
-      "model": "create:block/packager/block",
+      "model": "create_nest_network:block/customs_gate/block",
       "y": 180
     },
     "facing=south": {
-      "model": "create:block/packager/block"
+      "model": "create_nest_network:block/customs_gate/block"
     },
     "facing=west": {
-      "model": "create:block/packager/block",
+      "model": "create_nest_network:block/customs_gate/block",
       "y": 90
     },
     "facing=east": {
-      "model": "create:block/packager/block",
+      "model": "create_nest_network:block/customs_gate/block",
       "y": 270
     }
   }
