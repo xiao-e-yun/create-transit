@@ -1,4 +1,4 @@
-package me.xiaoeyun.createnestnetwork.content.customs;
+package me.xiaoeyun.createnestnetwork.content.transit;
 
 import com.simibubi.create.AllItems;
 import com.simibubi.create.content.logistics.packagerLink.LogisticallyLinkedBlockItem;
@@ -19,7 +19,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 
 /**
- * The block half of the customs link. Everything structural — placement, face
+ * The block half of the transit link. Everything structural — placement, face
  * attachment, redstone, waterlogging, wrenching — comes from the vanilla Stock
  * Link; the only addition is right-clicking to edit the transit label.
  *
@@ -28,13 +28,13 @@ import net.minecraftforge.fml.DistExecutor;
  * in {@link me.xiaoeyun.createnestnetwork.content.proxy.StockProxyerConversion}
  * that covers the whole link family at once.
  *
- * Note this cannot re-declare {@code IBE<CustomsLinkBlockEntity>}: the vanilla
+ * Note this cannot re-declare {@code IBE<TransitLinkBlockEntity>}: the vanilla
  * superclass already binds the interface to PackagerLinkBlockEntity, so the
  * block entity type is narrowed through the overrides below instead.
  */
-public class CustomsLinkBlock extends PackagerLinkBlock {
+public class TransitLinkBlock extends PackagerLinkBlock {
 
-    public CustomsLinkBlock(Properties properties) {
+    public TransitLinkBlock(Properties properties) {
         super(properties);
     }
 
@@ -51,13 +51,13 @@ public class CustomsLinkBlock extends PackagerLinkBlock {
         if (itemInHand.getItem() instanceof LogisticallyLinkedBlockItem)
             return InteractionResult.PASS;
 
-        if (!(level.getBlockEntity(pos) instanceof CustomsLinkBlockEntity link))
+        if (!(level.getBlockEntity(pos) instanceof TransitLinkBlockEntity link))
             return InteractionResult.PASS;
         if (!link.behaviour.mayInteractMessage(player))
             return InteractionResult.SUCCESS;
 
         if (level.isClientSide)
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> CustomsLinkScreen.open(link));
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> TransitLinkScreen.open(link));
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
@@ -68,7 +68,7 @@ public class CustomsLinkBlock extends PackagerLinkBlock {
 
     @Override
     public BlockEntityType<? extends PackagerLinkBlockEntity> getBlockEntityType() {
-        return CnnBlockEntities.CUSTOMS_LINK.get();
+        return CnnBlockEntities.TRANSIT_LINK.get();
     }
 
 }

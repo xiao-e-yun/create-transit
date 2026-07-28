@@ -1,4 +1,4 @@
-package me.xiaoeyun.createnestnetwork.content.customs;
+package me.xiaoeyun.createnestnetwork.content.transit;
 
 import java.util.List;
 
@@ -38,11 +38,11 @@ import net.minecraft.world.level.block.state.BlockState;
  * inherited, so lowering this link's priority with redstone means "spend local
  * stock first, only reach across the border when short".
  */
-public class CustomsLinkBlockEntity extends PackagerLinkBlockEntity implements IHaveGoggleInformation {
+public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements IHaveGoggleInformation {
 
     private String label;
 
-    public CustomsLinkBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+    public TransitLinkBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
         label = "";
     }
@@ -79,16 +79,16 @@ public class CustomsLinkBlockEntity extends PackagerLinkBlockEntity implements I
     @Override
     public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
         tooltip.add(Component.literal("    ")
-            .append(Component.translatable("block.create_nest_network.customs_link")
+            .append(Component.translatable("block.create_nest_network.transit_link")
                 .withStyle(ChatFormatting.WHITE)));
 
         if (label.isBlank())
             tooltip.add(Component.literal("    ")
-                .append(Component.translatable("create_nest_network.customs_link.goggles.forwarding")
+                .append(Component.translatable("create_nest_network.transit_link.goggles.forwarding")
                     .withStyle(ChatFormatting.GRAY)));
         else
             tooltip.add(Component.literal("    ")
-                .append(Component.translatable("create_nest_network.customs_link.goggles.label",
+                .append(Component.translatable("create_nest_network.transit_link.goggles.label",
                     Component.literal(AddressLabels.OPEN + label + AddressLabels.CLOSE)
                         .withStyle(ChatFormatting.WHITE))
                     .withStyle(ChatFormatting.GOLD)));

@@ -5,9 +5,9 @@ import static me.xiaoeyun.createnestnetwork.CreateNestNetwork.registrate;
 import com.simibubi.create.foundation.data.SharedProperties;
 import com.tterrag.registrate.util.entry.BlockEntry;
 
-import me.xiaoeyun.createnestnetwork.content.customs.CustomsGateBlock;
-import me.xiaoeyun.createnestnetwork.content.customs.CustomsLinkBlock;
-import me.xiaoeyun.createnestnetwork.content.customs.CustomsLinkBlockItem;
+import me.xiaoeyun.createnestnetwork.content.transit.TransitGateBlock;
+import me.xiaoeyun.createnestnetwork.content.transit.TransitLinkBlock;
+import me.xiaoeyun.createnestnetwork.content.transit.TransitLinkBlockItem;
 import me.xiaoeyun.createnestnetwork.content.proxy.StockProxyerBlock;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.level.block.SoundType;
@@ -38,8 +38,8 @@ public class CnnBlocks {
     // Repackager both use. noOcclusion matters as much as the render layer:
     // the model is not a full cube, and claiming otherwise darkens whatever
     // sits against it.
-    public static final BlockEntry<CustomsGateBlock> CUSTOMS_GATE = registrate()
-        .block("customs_gate", CustomsGateBlock::new)
+    public static final BlockEntry<TransitGateBlock> TRANSIT_GATE = registrate()
+        .block("transit_gate", TransitGateBlock::new)
         .initialProperties(SharedProperties::softMetal)
         .properties(p -> p.noOcclusion()
             .isRedstoneConductor(($1, $2, $3) -> false))
@@ -54,13 +54,13 @@ public class CnnBlocks {
     // and ours are copies that kept them. noOcclusion is the one addition --
     // the link is nowhere near a full cube, and Create leaving it out is not a
     // reason for us to.
-    public static final BlockEntry<CustomsLinkBlock> CUSTOMS_LINK = registrate()
-        .block("customs_link", CustomsLinkBlock::new)
+    public static final BlockEntry<TransitLinkBlock> TRANSIT_LINK = registrate()
+        .block("transit_link", TransitLinkBlock::new)
         .initialProperties(SharedProperties::softMetal)
         .properties(p -> p.mapColor(MapColor.TERRACOTTA_BLUE)
             .sound(SoundType.NETHERITE_BLOCK)
             .noOcclusion())
-        .item(CustomsLinkBlockItem::new)
+        .item(TransitLinkBlockItem::new)
         .build()
         .register();
 

@@ -1,4 +1,4 @@
-package me.xiaoeyun.createnestnetwork.content.customs;
+package me.xiaoeyun.createnestnetwork.content.transit;
 
 import java.util.List;
 import java.util.Map;
@@ -26,7 +26,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.items.IItemHandler;
 
 /**
- * Customs on a domain boundary: packages passing through lose exactly one head
+ * Transit on a domain boundary: packages passing through lose exactly one head
  * label, LIFO, and nothing else about the address is touched.
  *
  * The gate does no routing whatsoever — routing stays 100% vanilla hardware.
@@ -42,7 +42,7 @@ import net.minecraftforge.items.IItemHandler;
  * </ul>
  *
  * Unlabelled packages are always refused, which keeps a gate from burning its
- * cycle on domestic traffic that has no customs business with it.
+ * cycle on domestic traffic that has no business crossing here.
  *
  * A gate delivers into the container it faces, the same shape as feeding
  * packages to a Packager backed by a barrel: they go in one side and end up in
@@ -62,7 +62,7 @@ import net.minecraftforge.items.IItemHandler;
  * as an address; a gate has no business changing the identity of traffic
  * passing through, and its sign holds a label, not an address.
  */
-public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHaveGoggleInformation {
+public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHaveGoggleInformation {
 
     /** Radius in blocks over which an unsigned gate may adopt a signed gate's label. */
     public static final int LABEL_SHARING_RANGE = 16;
@@ -76,7 +76,7 @@ public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHa
     @Nullable
     private BlockPos adoptedFrom;
 
-    public CustomsGateBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+    public TransitGateBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
     }
 
@@ -117,7 +117,7 @@ public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHa
             effectiveLabel = ownLabel;
             adoptedFrom = null;
         } else {
-            CustomsGateBlockEntity donor = findNearestSignedGate();
+            TransitGateBlockEntity donor = findNearestSignedGate();
             effectiveLabel = donor == null ? "" : donor.ownLabel;
             adoptedFrom = donor == null ? null : donor.getBlockPos();
         }
@@ -148,11 +148,11 @@ public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHa
      * chunk to load.
      */
     @Nullable
-    private CustomsGateBlockEntity findNearestSignedGate() {
+    private TransitGateBlockEntity findNearestSignedGate() {
         ChunkPos min = new ChunkPos(worldPosition.offset(-LABEL_SHARING_RANGE, 0, -LABEL_SHARING_RANGE));
         ChunkPos max = new ChunkPos(worldPosition.offset(LABEL_SHARING_RANGE, 0, LABEL_SHARING_RANGE));
 
-        CustomsGateBlockEntity best = null;
+        TransitGateBlockEntity best = null;
         double bestDistance = Double.MAX_VALUE;
         int range = LABEL_SHARING_RANGE * LABEL_SHARING_RANGE;
 
@@ -165,7 +165,7 @@ public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHa
 
                 for (Map.Entry<BlockPos, BlockEntity> entry : chunk.getBlockEntities()
                     .entrySet()) {
-                    if (!(entry.getValue() instanceof CustomsGateBlockEntity gate) || gate == this)
+                    if (!(entry.getValue() instanceof TransitGateBlockEntity gate) || gate == this)
                         continue;
                     if (gate.ownLabel.isEmpty())
                         continue;
@@ -191,7 +191,7 @@ public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHa
     // Label stripping
 
     /**
-     * Clearing customs: the label comes off on the way in, and the stripped
+     * Admitting a package: the label comes off on the way in, and the stripped
      * package lands in the buffer the gate faces. Refusing before anything moves
      * keeps traffic this gate has no business with on its original route.
      */
@@ -242,7 +242,7 @@ public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHa
     }
 
     /**
-     * A gate never sends. Clearing customs already delivered the package to the
+     * A gate never sends. Admitting the package already delivered it to the
      * storage behind it, and the Repackager's version would undo exactly that --
      * pulling cleared packages back out to defragment split orders and stamp its
      * sign onto them as an address, when the sign on a gate holds a label.
@@ -288,18 +288,18 @@ public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHa
     @Override
     public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
         tooltip.add(Component.literal("    ")
-            .append(Component.translatable("block.create_nest_network.customs_gate")
+            .append(Component.translatable("block.create_nest_network.transit_gate")
                 .withStyle(ChatFormatting.WHITE)));
 
         if (effectiveLabel.isEmpty()) {
             tooltip.add(Component.literal("    ")
-                .append(Component.translatable("create_nest_network.customs_gate.goggles.wildcard")
+                .append(Component.translatable("create_nest_network.transit_gate.goggles.wildcard")
                     .withStyle(ChatFormatting.GRAY)));
             return true;
         }
 
         tooltip.add(Component.literal("    ")
-            .append(Component.translatable("create_nest_network.customs_gate.goggles.strips",
+            .append(Component.translatable("create_nest_network.transit_gate.goggles.strips",
                 Component.literal(AddressLabels.OPEN + effectiveLabel + AddressLabels.CLOSE)
                     .withStyle(ChatFormatting.WHITE))
                 .withStyle(ChatFormatting.GOLD)));
@@ -307,7 +307,7 @@ public class CustomsGateBlockEntity extends RepackagerBlockEntity implements IHa
         // Adoption acts at a distance, so always name the sign responsible
         if (adoptedFrom != null)
             tooltip.add(Component.literal("    ")
-                .append(Component.translatable("create_nest_network.customs_gate.goggles.adopted",
+                .append(Component.translatable("create_nest_network.transit_gate.goggles.adopted",
                     adoptedFrom.getX(), adoptedFrom.getY(), adoptedFrom.getZ())
                     .withStyle(ChatFormatting.DARK_GRAY)));
         return true;

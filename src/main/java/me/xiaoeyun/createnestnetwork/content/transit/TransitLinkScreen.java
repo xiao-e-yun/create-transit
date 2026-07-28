@@ -1,11 +1,11 @@
-package me.xiaoeyun.createnestnetwork.content.customs;
+package me.xiaoeyun.createnestnetwork.content.transit;
 
 import com.simibubi.create.content.logistics.AddressEditBox;
 import com.simibubi.create.foundation.gui.AllIcons;
 import com.simibubi.create.foundation.gui.widget.IconButton;
 
 import me.xiaoeyun.createnestnetwork.network.CnnPackets;
-import me.xiaoeyun.createnestnetwork.network.CustomsLinkLabelPacket;
+import me.xiaoeyun.createnestnetwork.network.TransitLinkLabelPacket;
 import net.createmod.catnip.gui.AbstractSimiScreen;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -16,12 +16,12 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
- * Single-field editor for a customs link's transit label. Leaving it blank
+ * Single-field editor for a transit link's transit label. Leaving it blank
  * makes the link a plain forwarder, which is why the placeholder spells that
  * out rather than showing an empty box.
  */
 @OnlyIn(Dist.CLIENT)
-public class CustomsLinkScreen extends AbstractSimiScreen {
+public class TransitLinkScreen extends AbstractSimiScreen {
 
     private static final int WIDTH = 184;
     private static final int HEIGHT = 68;
@@ -31,15 +31,15 @@ public class CustomsLinkScreen extends AbstractSimiScreen {
 
     private AddressEditBox labelBox;
 
-    public CustomsLinkScreen(CustomsLinkBlockEntity link) {
-        super(Component.translatable("block.create_nest_network.customs_link"));
+    public TransitLinkScreen(TransitLinkBlockEntity link) {
+        super(Component.translatable("block.create_nest_network.transit_link"));
         pos = link.getBlockPos();
         initialLabel = link.getLabel();
     }
 
-    public static void open(CustomsLinkBlockEntity link) {
+    public static void open(TransitLinkBlockEntity link) {
         Minecraft.getInstance()
-            .setScreen(new CustomsLinkScreen(link));
+            .setScreen(new TransitLinkScreen(link));
     }
 
     @Override
@@ -74,16 +74,16 @@ public class CustomsLinkScreen extends AbstractSimiScreen {
 
         if (labelBox.getValue()
             .isBlank() && !labelBox.isFocused())
-            graphics.drawString(font, Component.translatable("create_nest_network.customs_link.label_empty")
+            graphics.drawString(font, Component.translatable("create_nest_network.transit_link.label_empty")
                 .withStyle(ChatFormatting.DARK_GRAY), guiLeft + 16, guiTop + 31, 0x5A5766, false);
 
-        graphics.drawString(font, Component.translatable("create_nest_network.customs_link.label_hint")
+        graphics.drawString(font, Component.translatable("create_nest_network.transit_link.label_hint")
             .withStyle(ChatFormatting.DARK_GRAY), guiLeft + 12, guiTop + 50, 0x5A5766, false);
     }
 
     @Override
     public void removed() {
-        CnnPackets.CHANNEL.sendToServer(new CustomsLinkLabelPacket(pos, labelBox.getValue()));
+        CnnPackets.CHANNEL.sendToServer(new TransitLinkLabelPacket(pos, labelBox.getValue()));
         super.removed();
     }
 

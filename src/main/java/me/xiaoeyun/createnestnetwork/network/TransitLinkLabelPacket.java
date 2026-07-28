@@ -2,7 +2,7 @@ package me.xiaoeyun.createnestnetwork.network;
 
 import java.util.function.Supplier;
 
-import me.xiaoeyun.createnestnetwork.content.customs.CustomsLinkBlockEntity;
+import me.xiaoeyun.createnestnetwork.content.transit.TransitLinkBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
@@ -10,8 +10,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkEvent;
 
-/** Sent when the customs link's label screen is closed. */
-public class CustomsLinkLabelPacket {
+/** Sent when the transit link's label screen is closed. */
+public class TransitLinkLabelPacket {
 
     /** Matches the client-side edit box limit; the wire must not trust it. */
     private static final int MAX_LABEL_LENGTH = 25;
@@ -19,12 +19,12 @@ public class CustomsLinkLabelPacket {
     private final BlockPos pos;
     private final String label;
 
-    public CustomsLinkLabelPacket(BlockPos pos, String label) {
+    public TransitLinkLabelPacket(BlockPos pos, String label) {
         this.pos = pos;
         this.label = label;
     }
 
-    public CustomsLinkLabelPacket(FriendlyByteBuf buffer) {
+    public TransitLinkLabelPacket(FriendlyByteBuf buffer) {
         pos = buffer.readBlockPos();
         label = buffer.readUtf(MAX_LABEL_LENGTH);
     }
@@ -47,7 +47,7 @@ public class CustomsLinkLabelPacket {
                 // permissions so links cannot be relabelled by outsiders.
                 if (!level.isLoaded(pos) || sender.distanceToSqr(Vec3.atCenterOf(pos)) > 64 * 64)
                     return;
-                if (!(level.getBlockEntity(pos) instanceof CustomsLinkBlockEntity link))
+                if (!(level.getBlockEntity(pos) instanceof TransitLinkBlockEntity link))
                     return;
                 if (!link.behaviour.mayInteract(sender))
                     return;

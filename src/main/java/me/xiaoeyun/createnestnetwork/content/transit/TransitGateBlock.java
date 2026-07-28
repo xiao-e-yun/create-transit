@@ -1,4 +1,4 @@
-package me.xiaoeyun.createnestnetwork.content.customs;
+package me.xiaoeyun.createnestnetwork.content.transit;
 
 import com.simibubi.create.foundation.block.IBE;
 import com.simibubi.create.foundation.block.WrenchableDirectionalBlock;
@@ -12,9 +12,9 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 
-public class CustomsGateBlock extends WrenchableDirectionalBlock implements IBE<CustomsGateBlockEntity> {
+public class TransitGateBlock extends WrenchableDirectionalBlock implements IBE<TransitGateBlockEntity> {
 
-    public CustomsGateBlock(Properties properties) {
+    public TransitGateBlock(Properties properties) {
         super(properties);
     }
 
@@ -39,13 +39,13 @@ public class CustomsGateBlock extends WrenchableDirectionalBlock implements IBE<
     }
 
     @Override
-    public Class<CustomsGateBlockEntity> getBlockEntityClass() {
-        return CustomsGateBlockEntity.class;
+    public Class<TransitGateBlockEntity> getBlockEntityClass() {
+        return TransitGateBlockEntity.class;
     }
 
     @Override
-    public BlockEntityType<? extends CustomsGateBlockEntity> getBlockEntityType() {
-        return CnnBlockEntities.CUSTOMS_GATE.get();
+    public BlockEntityType<? extends TransitGateBlockEntity> getBlockEntityType() {
+        return CnnBlockEntities.TRANSIT_GATE.get();
     }
 
 }

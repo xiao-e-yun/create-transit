@@ -1,4 +1,4 @@
-package me.xiaoeyun.createnestnetwork.content.customs;
+package me.xiaoeyun.createnestnetwork.content.transit;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +19,8 @@ import javax.annotation.Nullable;
  * path, which may contain spaces.
  *
  * A label is a transit door number inside one transport domain, not a requester
- * identity: each layer is stamped by the customs link that declared the source
- * foreign, routed by that domain's vanilla hardware, and consumed by a customs
+ * identity: each layer is stamped by the transit link that declared the source
+ * foreign, routed by that domain's vanilla hardware, and consumed by a transit
  * gate on its boundary. Addresses without labels behave exactly as in vanilla.
  */
 public final class AddressLabels {

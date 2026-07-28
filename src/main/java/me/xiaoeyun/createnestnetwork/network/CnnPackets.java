@@ -14,10 +14,10 @@ public class CnnPackets {
 
     public static void register() {
         int id = 0;
-        CHANNEL.messageBuilder(CustomsLinkLabelPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(CustomsLinkLabelPacket::encode)
-            .decoder(CustomsLinkLabelPacket::new)
-            .consumerMainThread(CustomsLinkLabelPacket::handle)
+        CHANNEL.messageBuilder(TransitLinkLabelPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+            .encoder(TransitLinkLabelPacket::encode)
+            .decoder(TransitLinkLabelPacket::new)
+            .consumerMainThread(TransitLinkLabelPacket::handle)
             .add();
     }
 

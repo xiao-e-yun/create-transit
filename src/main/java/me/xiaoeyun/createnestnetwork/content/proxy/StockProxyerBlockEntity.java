@@ -187,7 +187,7 @@ public class StockProxyerBlockEntity extends PackagerBlockEntity implements IHav
                 continue;
             BlockState adjacentState = level.getBlockState(pos);
             // Any link in the PackagerLink family counts, not just the vanilla
-            // Stock Link: a Customs Link attached here is just as much a parent,
+            // Stock Link: a Transit Link attached here is just as much a parent,
             // and missing it would silently disable the re-entrancy guard and
             // the duplicate-count subtraction below.
             if (!(adjacentState.getBlock() instanceof PackagerLinkBlock))

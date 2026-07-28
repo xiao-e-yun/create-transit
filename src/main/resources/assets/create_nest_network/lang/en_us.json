@@ -6,13 +6,13 @@
   "create_nest_network.stock_proxyer.converted": "Stock Ticker converted, child network bound",
   "create_nest_network.stock_proxyer.reverted": "Reverted to Stock Ticker, network kept",
   "create_nest_network.stock_proxyer.conversion_denied": "You may not administrate this network",
-  "block.create_nest_network.customs_link": "Customs Link",
-  "create_nest_network.customs_link.goggles.label": "Stamps %s onto requests",
-  "create_nest_network.customs_link.goggles.forwarding": "No label: forwards addresses unchanged",
-  "create_nest_network.customs_link.label_empty": "(no label)",
-  "create_nest_network.customs_link.label_hint": "Leave blank to forward unchanged",
-  "block.create_nest_network.customs_gate": "Customs Gate",
-  "create_nest_network.customs_gate.goggles.strips": "Strips %s from passing packages",
-  "create_nest_network.customs_gate.goggles.wildcard": "No sign: strips any leading label",
-  "create_nest_network.customs_gate.goggles.adopted": "Label adopted from the sign at %s, %s, %s"
+  "block.create_nest_network.transit_link": "Transit Link",
+  "create_nest_network.transit_link.goggles.label": "Stamps %s onto requests",
+  "create_nest_network.transit_link.goggles.forwarding": "No label: forwards addresses unchanged",
+  "create_nest_network.transit_link.label_empty": "(no label)",
+  "create_nest_network.transit_link.label_hint": "Leave blank to forward unchanged",
+  "block.create_nest_network.transit_gate": "Transit Gate",
+  "create_nest_network.transit_gate.goggles.strips": "Strips %s from passing packages",
+  "create_nest_network.transit_gate.goggles.wildcard": "No sign: strips any leading label",
+  "create_nest_network.transit_gate.goggles.adopted": "Label adopted from the sign at %s, %s, %s"
 }

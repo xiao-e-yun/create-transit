@@ -1,4 +1,4 @@
-package me.xiaoeyun.createnestnetwork.content.customs;
+package me.xiaoeyun.createnestnetwork.content.transit;
 
 import com.simibubi.create.content.logistics.packagerLink.LogisticallyLinkedBlockItem;
 
@@ -10,9 +10,9 @@ import net.minecraft.world.level.block.Block;
  * place. Extending the vanilla item class also enrolls the held item in
  * {@code LogisticallyLinkedClientHandler}'s network highlight.
  */
-public class CustomsLinkBlockItem extends LogisticallyLinkedBlockItem {
+public class TransitLinkBlockItem extends LogisticallyLinkedBlockItem {
 
-    public CustomsLinkBlockItem(Block block, Properties properties) {
+    public TransitLinkBlockItem(Block block, Properties properties) {
         super(block, properties);
     }
 

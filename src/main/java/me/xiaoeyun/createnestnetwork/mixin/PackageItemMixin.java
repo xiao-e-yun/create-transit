@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.simibubi.create.content.logistics.box.PackageItem;
 
-import me.xiaoeyun.createnestnetwork.content.customs.AddressLabels;
+import me.xiaoeyun.createnestnetwork.content.transit.AddressLabels;
 
 /**
  * All of Create's address matching converges on this one method — frogports,
