@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "create_nest_network:block/stock_proxyer" }
+  }
+}

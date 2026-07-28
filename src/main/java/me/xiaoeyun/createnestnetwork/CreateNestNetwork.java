@@ -1,0 +1,38 @@
+package me.xiaoeyun.createnestnetwork;
+
+import com.mojang.logging.LogUtils;
+import com.simibubi.create.foundation.data.CreateRegistrate;
+
+import me.xiaoeyun.createnestnetwork.registry.CnnBlockEntities;
+import me.xiaoeyun.createnestnetwork.registry.CnnBlocks;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import org.slf4j.Logger;
+
+@Mod(CreateNestNetwork.MOD_ID)
+public class CreateNestNetwork {
+
+    public static final String MOD_ID = "create_nest_network";
+    public static final String NAME = "Create: Nest Network";
+    public static final Logger LOGGER = LogUtils.getLogger();
+
+    private static final CreateRegistrate REGISTRATE = CreateRegistrate.create(MOD_ID);
+
+    public CreateNestNetwork(FMLJavaModLoadingContext context) {
+        IEventBus modEventBus = context.getModEventBus();
+        REGISTRATE.registerEventListeners(modEventBus);
+
+        CnnBlocks.register();
+        CnnBlockEntities.register();
+    }
+
+    public static CreateRegistrate registrate() {
+        return REGISTRATE;
+    }
+
+    public static ResourceLocation asResource(String path) {
+        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
+    }
+}
