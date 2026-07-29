@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 import com.simibubi.create.content.logistics.packagePort.frogport.FrogportRenderer;
 
-import me.xiaoeyun.createnestnetwork.content.transit.TransitNameplate;
+import me.xiaoeyun.createnestnetwork.content.transit.TransitAddress;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -26,7 +26,7 @@ public class FrogportRendererMixin {
                 + "Lnet/minecraft/client/renderer/MultiBufferSource;I)V"),
         index = 1)
     private Component createNestNetwork$plainNameplate(Component address) {
-        return TransitNameplate.plain(address);
+        return TransitAddress.spell(address);
     }
 
 }

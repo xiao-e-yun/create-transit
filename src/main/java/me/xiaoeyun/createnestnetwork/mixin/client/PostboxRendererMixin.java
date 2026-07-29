@@ -11,7 +11,7 @@ import com.simibubi.create.content.logistics.packagePort.postbox.PostboxRenderer
 
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 import me.xiaoeyun.createnestnetwork.content.transit.AddressLabels;
-import me.xiaoeyun.createnestnetwork.content.transit.TransitNameplate;
+import me.xiaoeyun.createnestnetwork.content.transit.TransitAddress;
 import me.xiaoeyun.createnestnetwork.registry.CnnPartialModels;
 import net.createmod.catnip.render.CachedBuffers;
 import net.createmod.catnip.render.SuperByteBuffer;
@@ -43,7 +43,7 @@ public class PostboxRendererMixin {
                 + "Lnet/minecraft/client/renderer/MultiBufferSource;I)V"),
         index = 1)
     private Component createNestNetwork$plainNameplate(Component address) {
-        return TransitNameplate.plain(address);
+        return TransitAddress.spell(address);
     }
 
     @Redirect(
