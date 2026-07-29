@@ -1,0 +1,6 @@
+{
+  "parent": "create_transit:block/transit_gate/block",
+  "textures": {
+    "2": "create_transit:block/packager_horizontal_powered"
+  }
+}
