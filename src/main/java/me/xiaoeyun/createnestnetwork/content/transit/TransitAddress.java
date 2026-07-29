@@ -16,7 +16,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * here, and the delimiters become the hops they stand for:
  *
  * <pre>
- * &lt;[depot]&gt; &lt;[north]&gt; drawer 4   reads as   depot -&gt; north -&gt; drawer 4
+ * &lt;[depot]&gt; &lt;[north]&gt; drawer 4   reads as   depot → north → drawer 4
  * </pre>
  *
  * Nothing is dropped in the translation. Every label is named in the order it
@@ -27,8 +27,12 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 public final class TransitAddress {
 
-    /** Reads as "and then", which is what one layer of label means. */
-    private static final String HOP = " -> ";
+    /**
+     * Reads as "and then", which is what one layer of label means. The same
+     * arrow Create puts in front of a package's address, so a spelled address
+     * reads as one chain rather than as a prefix and a different notation.
+     */
+    private static final String HOP = " → ";
 
     private TransitAddress() {}
 
