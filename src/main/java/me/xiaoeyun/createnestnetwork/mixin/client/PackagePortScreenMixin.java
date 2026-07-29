@@ -52,11 +52,17 @@ public abstract class PackagePortScreenMixin extends AbstractSimiContainerScreen
      * the switch reads {@code addressFilter} instead and sets the box itself —
      * the box may have clamped what it was handed, and an endpoint shows only
      * the bare name anyway.
+     *
+     * The switch sits to the left of the confirm button, four pixels clear of
+     * it, rather than beside the two acceptance buttons on the left: those two
+     * are one either-or choice, and joining that row would have read as a third
+     * option in it.
      */
     @Inject(method = "init", at = @At("TAIL"))
     private void createNestNetwork$addEndpointToggle(CallbackInfo ci) {
         createNestNetwork$endpoint = new PortEndpointToggle(menu.contentHolder.addressFilter, addressBox,
-            getGuiLeft() + 77, getGuiTop() + background.getHeight() - 24, this::addRenderableWidget);
+            getGuiLeft() + background.getWidth() - 55, getGuiTop() + background.getHeight() - 24,
+            this::addRenderableWidget);
     }
 
     @ModifyArg(method = "removed",
