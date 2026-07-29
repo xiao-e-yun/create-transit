@@ -1,23 +1,44 @@
 {
   "variants": {
-    "facing=down": {
+    "facing=down,powered=false": {
       "model": "create_transit:block/transit_gate/block_vertical"
     },
-    "facing=up": {
+    "facing=down,powered=true": {
       "model": "create_transit:block/transit_gate/block_vertical"
     },
-    "facing=north": {
+    "facing=up,powered=false": {
+      "model": "create_transit:block/transit_gate/block_vertical"
+    },
+    "facing=up,powered=true": {
+      "model": "create_transit:block/transit_gate/block_vertical"
+    },
+    "facing=north,powered=false": {
       "model": "create_transit:block/transit_gate/block",
       "y": 180
     },
-    "facing=south": {
+    "facing=north,powered=true": {
+      "model": "create_transit:block/transit_gate/block",
+      "y": 180
+    },
+    "facing=south,powered=false": {
       "model": "create_transit:block/transit_gate/block"
     },
-    "facing=west": {
+    "facing=south,powered=true": {
+      "model": "create_transit:block/transit_gate/block"
+    },
+    "facing=west,powered=false": {
       "model": "create_transit:block/transit_gate/block",
       "y": 90
     },
-    "facing=east": {
+    "facing=west,powered=true": {
+      "model": "create_transit:block/transit_gate/block",
+      "y": 90
+    },
+    "facing=east,powered=false": {
+      "model": "create_transit:block/transit_gate/block",
+      "y": 270
+    },
+    "facing=east,powered=true": {
       "model": "create_transit:block/transit_gate/block",
       "y": 270
     }

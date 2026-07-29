@@ -44,11 +44,16 @@ import net.minecraftforge.items.IItemHandler;
  * Unlabelled packages are always refused, which keeps a gate from burning its
  * cycle on domestic traffic that has no business crossing here.
  *
- * A gate delivers into the container it faces, the same shape as feeding
- * packages to a Packager backed by a barrel: they go in one side and end up in
- * storage, cleared. Nothing is ever pushed back out, so the tray only ever plays
- * its inward animation, and it plays it over a box that really is travelling
- * into that container.
+ * A gate runs in both directions, on the Packager's own terms. Fed a package it
+ * delivers into the container it faces, cleared of one label; pulsed with
+ * redstone it takes a package back out of that container and pushes its label
+ * on. One border post, arrivals and departures, and the tray animates the way
+ * the traffic is actually going.
+ *
+ * The two directions share a container, which is what makes a gate wired to
+ * both a loop: the package it just stripped is the package it will stamp. Two
+ * gates facing two containers is the arrangement that means anything, and the
+ * only guard here is against stamping a label that is already on the head.
  *
  * Extends the Repackager rather than the Packager because vanilla excludes a
  * RepackagerBlockEntity from {@code PackagerLinkBlockEntity.getPackager()} by
@@ -57,10 +62,10 @@ import net.minecraftforge.items.IItemHandler;
  * target inventory and a stubbed link recheck — and it was the filtered
  * inventory that left the gate with nowhere to put anything in the first place.
  *
- * What is not inherited is the sending half. A repackager pulls packages back
- * out of its inventory to defragment split orders and stamps its sign onto them
- * as an address; a gate has no business changing the identity of traffic
- * passing through, and its sign holds a label, not an address.
+ * The sending half is replaced rather than inherited. A repackager pulls
+ * packages out to defragment split orders and stamps its sign onto them as an
+ * address; a gate has no business changing the identity of traffic passing
+ * through, and its sign holds a label, not an address.
  */
 public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHaveGoggleInformation {
 
@@ -242,17 +247,73 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     }
 
     /**
-     * A gate never sends. Admitting the package already delivered it to the
-     * storage behind it, and the Repackager's version would undo exactly that --
-     * pulling cleared packages back out to defragment split orders and stamp its
-     * sign onto them as an address, when the sign on a gate holds a label.
+     * Departure: a redstone pulse takes one package out of the storage the gate
+     * faces and pushes the gate's label onto its address.
+     *
+     * The shape is the Packager's — a pulse turns the contents of the attached
+     * container into something addressed and sends it out the front — with the
+     * one difference that a sign here holds a label rather than an address. So
+     * the address is pushed onto rather than replaced: a package leaves knowing
+     * both where it was already going and which border it clears on the way.
+     *
+     * The label goes at the head because the head is the next hop. A gate can
+     * only see its own boundary, so it has no standing to claim a place at the
+     * end of an itinerary it cannot read; all it can say is "me next", and
+     * {@link AddressLabels#stripHeadLabel} at the far end pops exactly what was
+     * pushed. That makes departure and arrival a matched pair.
      */
     @Override
     public void attemptToSend(List<PackagingRequest> queuedRequests) {
-        // A gate is not a stock source either. Vanilla already refuses to see a
-        // repackager as one; this covers any other path that hands us requests.
-        if (queuedRequests != null)
+        // A gate is not a stock source. Vanilla already refuses to see a
+        // repackager as one; this covers any other path that hands us requests,
+        // and it is what keeps the network from ordering out of a border post.
+        if (queuedRequests != null) {
             queuedRequests.clear();
+            return;
+        }
+
+        if (level == null || level.isClientSide())
+            return;
+        if (animationTicks > 0 || !heldBox.isEmpty())
+            return;
+
+        // A Packager rereads its sign on every pulse so a sign written a moment
+        // ago is the one that takes effect. Resolution here is a step longer
+        // than reading the sign -- an unsigned gate looks for a donor too --
+        // and the pulse is the moment the answer has to be right.
+        refreshLabels();
+        // A gate with no label of its own and no donor in range has nothing to
+        // stamp, so it is an entrance only. Wildcard means "any label" on the
+        // way in, which does not name one on the way out.
+        if (effectiveLabel.isEmpty())
+            return;
+
+        IItemHandler storage = getStorage();
+        if (storage == null)
+            return;
+
+        for (int slot = 0; slot < storage.getSlots(); slot++) {
+            ItemStack stack = storage.getStackInSlot(slot);
+            if (!PackageItem.isPackage(stack))
+                continue;
+            String address = PackageItem.getAddress(stack);
+            // Stamping our own label onto a package that already carries it
+            // would address it right back here, and this gate would strip it
+            // and put it back in the same container it came out of.
+            if (effectiveLabel.equals(AddressLabels.headLabelName(address)))
+                continue;
+
+            ItemStack sent = storage.extractItem(slot, 1, false);
+            if (sent.isEmpty())
+                continue;
+
+            PackageItem.addAddress(sent, AddressLabels.push(effectiveLabel, address));
+            heldBox = sent;
+            animationInward = false;
+            animationTicks = CYCLE;
+            notifyUpdate();
+            return;
+        }
     }
 
     /** The container the gate faces, or null when it is facing nothing usable. */
