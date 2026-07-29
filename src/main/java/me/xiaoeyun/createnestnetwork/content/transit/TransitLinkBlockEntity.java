@@ -89,7 +89,7 @@ public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements I
         else
             tooltip.add(Component.literal("    ")
                 .append(Component.translatable("create_nest_network.transit_link.goggles.label",
-                    Component.literal(AddressLabels.OPEN + label + AddressLabels.CLOSE)
+                    Component.literal(label)
                         .withStyle(ChatFormatting.WHITE))
                     .withStyle(ChatFormatting.GOLD)));
         return true;

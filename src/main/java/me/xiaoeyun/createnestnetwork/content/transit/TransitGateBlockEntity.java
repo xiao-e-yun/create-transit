@@ -300,7 +300,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
 
         tooltip.add(Component.literal("    ")
             .append(Component.translatable("create_nest_network.transit_gate.goggles.strips",
-                Component.literal(AddressLabels.OPEN + effectiveLabel + AddressLabels.CLOSE)
+                Component.literal(effectiveLabel)
                     .withStyle(ChatFormatting.WHITE))
                 .withStyle(ChatFormatting.GOLD)));
 
