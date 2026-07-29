@@ -1,6 +1,0 @@
-{
-  "parent": "create:block/stock_ticker",
-  "textures": {
-    "0": "create_nest_network:block/stock_ticker"
-  }
-}

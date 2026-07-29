@@ -1,0 +1,6 @@
+{
+  "parent": "create:block/package_frogport/block",
+  "textures": {
+    "0": "create_transit:block/transit_frogport_base"
+  }
+}

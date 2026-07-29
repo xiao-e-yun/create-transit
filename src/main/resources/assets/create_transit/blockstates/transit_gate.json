@@ -1,0 +1,25 @@
+{
+  "variants": {
+    "facing=down": {
+      "model": "create_transit:block/transit_gate/block_vertical"
+    },
+    "facing=up": {
+      "model": "create_transit:block/transit_gate/block_vertical"
+    },
+    "facing=north": {
+      "model": "create_transit:block/transit_gate/block",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "create_transit:block/transit_gate/block"
+    },
+    "facing=west": {
+      "model": "create_transit:block/transit_gate/block",
+      "y": 90
+    },
+    "facing=east": {
+      "model": "create_transit:block/transit_gate/block",
+      "y": 270
+    }
+  }
+}

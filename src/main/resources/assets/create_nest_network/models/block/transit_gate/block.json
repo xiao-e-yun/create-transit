@@ -1,7 +1,0 @@
-{
-  "parent": "create:block/packager/block",
-  "textures": {
-    "1": "create_nest_network:block/packager_details",
-    "2": "create_nest_network:block/packager_horizontal_unpowered"
-  }
-}

@@ -1,17 +1,17 @@
-# Create: Nest Network
+# Create: Transit
 
-Create 6 附加模組：新增 **Stock Proxyer（庫存代理器）**，讓子物流網路的庫存以「虛擬 Stock Link」形式掛載到父網路，構成單向的階層式供應鏈（類似 AE2 的 ME 介面之於子網路）。
+Create 6 附加模組：新增 **Transit Ticker（跨境發報機）**，讓子物流網路的庫存以「虛擬 Stock Link」形式掛載到父網路，構成單向的階層式供應鏈（類似 AE2 的 ME 介面之於子網路）。
 
 - **Minecraft**: 1.20.1（Forge）
 - **依賴**: Create 6.x（CreateRegistrate 註冊框架）
-- **mod id**: `create_nest_network`
+- **mod id**: `create_transit`
 - **License**: All Rights Reserved
 
 ## 設計決策（定案）
 
-父網路 Stock Link →（附著於）→ **Stock Proxyer** →（委派查詢）→ 子網路
+父網路 Stock Link →（附著於）→ **Transit Ticker** →（委派查詢）→ 子網路
 
-1. **接法比照打包機**：父網路的原版 Stock Link 直接貼在 Stock Proxyer 上（如同貼在 Packager 上）。父側 100% 原版 Link，免費繼承註冊表、keepAlive、紅石優先級。實作：`StockProxyerBlockEntity` 繼承 `PackagerBlockEntity`（Repackager 有先例），覆寫 `getAvailableItems()` 回傳子網路摘要、覆寫出貨路徑轉發訂單。
+1. **接法比照打包機**：父網路的原版 Stock Link 直接貼在 Transit Ticker 上（如同貼在 Packager 上）。父側 100% 原版 Link，免費繼承註冊表、keepAlive、紅石優先級。實作：`TransitTickerBlockEntity` 繼承 `PackagerBlockEntity`（Repackager 有先例），覆寫 `getAvailableItems()` 回傳子網路摘要、覆寫出貨路徑轉發訂單。
 2. **純上行**：Proxyer 只把子網路庫存公開給父網路。下行補給用原版 Redstone Requester / Factory Gauge 直接調到父網路，原版已覆蓋。
 3. **環處理 = 查詢期重入防護**（取代拓撲 DFS）：摘要聚合與訂單分派都是同步呼叫棧，用 ThreadLocal visited set（freqId 集合）防重入；環「合法但無效」——環上節點貢獻空摘要。觸發時以 goggles 提示。不做放置期偵測、不做 hop 中繼資料。
 4. **同步轉發約束**：Proxyer 收到請求當場同步呼叫子網路 `broadcastPackageRequest`，不做「欠著補發」的延遲重試（維持 visited set 有效性；未來要做延遲重試時用 promise 表內建的來源資訊當種子）。
@@ -24,7 +24,7 @@ Create 6 附加模組：新增 **Stock Proxyer（庫存代理器）**，讓子�
 
 ## 第一版（v0.1.0）實作範圍
 
-- [ ] Stock Proxyer 可被原版 Stock Link 附著（繼承 `PackagerBlockEntity` 路線）
+- [ ] Transit Ticker 可被原版 Stock Link 附著（繼承 `PackagerBlockEntity` 路線）
 - [ ] 子網路綁定機制（比照 Stock Link 的調頻互動）
 - [ ] 摘要委派 + ThreadLocal visited set 重入防護
 - [ ] 同步訂單轉發 + 地址轉譯

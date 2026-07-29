@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "me.xiaoeyun.createtransit.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "create_transit.refmap.json",
+  "mixins": [
+    "PackageItemMixin"
+  ],
+  "client": [
+    "client.FrogportRendererMixin",
+    "client.PackagePortBlockEntityMixin",
+    "client.PackagePortScreenMixin",
+    "client.PostboxRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

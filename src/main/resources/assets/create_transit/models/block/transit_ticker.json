@@ -1,0 +1,6 @@
+{
+  "parent": "create:block/stock_ticker",
+  "textures": {
+    "0": "create_transit:block/transit_ticker"
+  }
+}

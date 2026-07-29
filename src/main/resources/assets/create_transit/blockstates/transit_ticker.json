@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "create_transit:block/transit_ticker"
+    },
+    "facing=east": {
+      "model": "create_transit:block/transit_ticker",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "create_transit:block/transit_ticker",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "create_transit:block/transit_ticker",
+      "y": 270
+    }
+  }
+}

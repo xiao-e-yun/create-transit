@@ -1,0 +1,7 @@
+{
+  "parent": "create:block/packager/block_vertical",
+  "textures": {
+    "1": "create_transit:block/packager_details",
+    "5": "create_transit:block/packager_vertical_unpowered"
+  }
+}

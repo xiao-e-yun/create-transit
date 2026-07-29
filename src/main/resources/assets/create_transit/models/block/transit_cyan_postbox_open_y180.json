@@ -1,0 +1,7 @@
+{
+  "parent": "create_transit:block/transit_postbox_body_y180",
+  "textures": {
+    "0": "create_transit:block/post_box/post_box_cyan",
+    "1": "create_transit:block/post_box/post_box_cyan_open"
+  }
+}
