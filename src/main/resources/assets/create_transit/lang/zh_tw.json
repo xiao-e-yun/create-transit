@@ -15,7 +15,7 @@
   "create_transit.transit_gate.goggles.strips": "剝除通過包裹的 %s 轉運標籤",
   "create_transit.transit_gate.goggles.wildcard": "無告示牌：剝除首個轉運標籤",
   "create_transit.transit_gate.goggles.adopted": "轉運標籤取自 %s, %s, %s 的告示牌",
-  "create_transit.package_port.transit_endpoint": "過境端點",
+  "create_transit.package_port.transit_endpoint": "跨境端點",
   "create_transit.package_port.endpoint_on": "地址是跨境包裹的轉運標籤",
   "create_transit.package_port.endpoint_off": "地址是一般的域內地址"
 }
