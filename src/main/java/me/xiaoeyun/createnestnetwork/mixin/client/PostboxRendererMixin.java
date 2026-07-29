@@ -5,6 +5,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.content.logistics.packagePort.postbox.PostboxBlockEntity;
 import com.simibubi.create.content.logistics.packagePort.postbox.PostboxRenderer;
 
@@ -12,32 +13,22 @@ import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 import me.xiaoeyun.createnestnetwork.content.transit.AddressLabels;
 import me.xiaoeyun.createnestnetwork.content.transit.TransitNameplate;
 import me.xiaoeyun.createnestnetwork.registry.CnnPartialModels;
-import net.minecraft.network.chat.Component;
 import net.createmod.catnip.render.CachedBuffers;
 import net.createmod.catnip.render.SuperByteBuffer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.state.BlockState;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-
 /**
- * Paints a postbox's flag in the transit livery when the port is an endpoint.
+ * The two things a postbox's renderer decides: what its nameplate says, and
+ * what its flag is made of.
  *
- * The flag is the one part of a postbox a renderer draws — the box itself is a
- * baked model chosen by the block state, which is also what keeps all sixteen
- * dye colours working: the box stays whatever the player dyed it, and only the
- * flag says the port is a border.
- *
- * Nothing new is stored for this: the address already reaches the client for
- * the nameplate, and it is the address that decides the routing in the first
- * place, so a livery read off it cannot end up claiming something the port does
- * not do.
- *
- * The test is a leading label rather than the stricter one the screen's switch
- * uses. The switch has to be able to show a bare name and put it back, but a
- * port catches foreign packages on its head label alone — an address with a
- * path trailing behind one still takes transit traffic, and a box that took it
- * silently would be the block lying about itself.
+ * The flag has to be handled here rather than with the rest of the livery. The
+ * box is a baked model and takes its brass from model data, but the flag is
+ * drawn by this renderer from a partial model of Create's, which no amount of
+ * model data reaches. It is also the only part of a postbox that was going to
+ * carry the network's colour at all — the box belongs to whoever dyed it, and
+ * the frame is where the brass went.
  */
 @Mixin(value = PostboxRenderer.class, remap = false)
 public class PostboxRendererMixin {
