@@ -1,0 +1,7 @@
+{
+  "parent": "create_nest_network:block/transit_postbox_body_y270",
+  "textures": {
+    "0": "create_nest_network:block/post_box/post_box_blue",
+    "1": "create_nest_network:block/post_box/post_box_blue_open"
+  }
+}
