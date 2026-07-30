@@ -21,16 +21,14 @@ import com.simibubi.create.content.logistics.stockTicker.PackageOrderWithCrafts;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 
@@ -58,8 +56,9 @@ import net.minecraftforge.items.ItemStackHandler;
  * <li>with a sign (a <em>named gate</em>): only packages whose head label
  * equals the sign's text, so gates can share one belt without stealing each
  * other's traffic;</li>
- * <li>without a sign (a <em>wildcard exit</em>): any package that carries a
- * head label.</li>
+ * <li>without a sign (the <em>default lane</em>): any package that carries a
+ * head label at all, and on the way out it stamps the label nothing is named
+ * by, which is the door unnamed border traffic is addressed to.</li>
  * </ul>
  *
  * Unlabelled packages are always refused, which keeps a gate from burning its
@@ -90,7 +89,12 @@ import net.minecraftforge.items.ItemStackHandler;
  */
 public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHaveGoggleInformation {
 
-    /** Radius in blocks over which an unsigned gate may adopt a signed gate's label. */
+    /**
+     * How far along a line of gates a sign carries. This is only a guard
+     * against somebody building a row hundreds long and making every gate in it
+     * walk the whole thing; a bank wide enough to be worth building is nowhere
+     * near it.
+     */
     public static final int LABEL_SHARING_RANGE = 16;
 
     /** A vanilla package holds up to nine stacks. */
@@ -157,50 +161,50 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     }
 
     /**
-     * Nearest gate carrying its own sign within {@link #LABEL_SHARING_RANGE},
+     * The nearest gate carrying its own sign along an unbroken line of gates,
      * ties broken by block position so the result is stable across reloads.
      *
-     * Only directly signed gates are eligible: adoption never chains, which
-     * would otherwise let one sign propagate along a line of gates and could
-     * form cycles. Scanning walks the block entity maps of the few chunks in
-     * range rather than the ~36k positions the radius spans, and never forces a
-     * chunk to load.
+     * Contiguous and straight, rather than everything inside a radius, because
+     * a bank of gates is a line of gates: parallel gates have to share the
+     * container they face, and the shape that puts several of them on one
+     * inventory is a row along its wall. A radius also left a gate's meaning
+     * depending on whatever happened to be nearby — an unsigned gate is the
+     * default lane, and having one quietly adopted by a sign ten blocks away is
+     * a mistake with nothing to look at. Out of line, or one block short of
+     * touching, is now the entire isolation gesture.
+     *
+     * Only directly signed gates are eligible, so adoption never chains and no
+     * cycle can form. The walk stops at the first block that is not a gate,
+     * which is also what keeps it cheap.
      */
     @Nullable
     private TransitGateBlockEntity findNearestSignedGate() {
-        ChunkPos min = new ChunkPos(worldPosition.offset(-LABEL_SHARING_RANGE, 0, -LABEL_SHARING_RANGE));
-        ChunkPos max = new ChunkPos(worldPosition.offset(LABEL_SHARING_RANGE, 0, LABEL_SHARING_RANGE));
-
         TransitGateBlockEntity best = null;
-        double bestDistance = Double.MAX_VALUE;
-        int range = LABEL_SHARING_RANGE * LABEL_SHARING_RANGE;
+        int bestSteps = 0;
 
-        for (int cx = min.x; cx <= max.x; cx++) {
-            for (int cz = min.z; cz <= max.z; cz++) {
-                LevelChunk chunk = level.getChunkSource()
-                    .getChunkNow(cx, cz);
-                if (chunk == null)
+        for (Direction direction : Direction.values()) {
+            BlockPos pos = worldPosition;
+            for (int steps = 1; steps <= LABEL_SHARING_RANGE; steps++) {
+                pos = pos.relative(direction);
+                // Level#getBlockEntity resolves its chunk with load = true, so
+                // asking about a position across an unloaded border would
+                // generate terrain. A line that leaves loaded ground simply
+                // ends, and reconnects when the neighbour comes back.
+                if (!level.hasChunkAt(pos))
+                    break;
+                if (!(level.getBlockEntity(pos) instanceof TransitGateBlockEntity gate))
+                    break;
+                if (gate.ownLabel.isEmpty())
                     continue;
 
-                for (Map.Entry<BlockPos, BlockEntity> entry : chunk.getBlockEntities()
-                    .entrySet()) {
-                    if (!(entry.getValue() instanceof TransitGateBlockEntity gate) || gate == this)
-                        continue;
-                    if (gate.ownLabel.isEmpty())
-                        continue;
-
-                    BlockPos pos = entry.getKey();
-                    double distance = pos.distSqr(worldPosition);
-                    if (distance > range)
-                        continue;
-                    if (distance > bestDistance)
-                        continue;
-                    if (distance == bestDistance && best != null && pos.compareTo(best.getBlockPos()) >= 0)
-                        continue;
-
+                if (best == null || steps < bestSteps
+                    || (steps == bestSteps && pos.compareTo(best.getBlockPos()) < 0)) {
                     best = gate;
-                    bestDistance = distance;
+                    bestSteps = steps;
                 }
+                // Walking outward, so the first signed gate along a direction is
+                // the nearest one in it.
+                break;
             }
         }
 
@@ -522,11 +526,6 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
         // than reading the sign -- an unsigned gate looks for a donor too --
         // and the pulse is the moment the answer has to be right.
         refreshLabels();
-        // A gate with no label of its own and no donor in range has nothing to
-        // stamp, so it is an entrance only. Wildcard means "any label" on the
-        // way in, which does not name one on the way out.
-        if (effectiveLabel.isEmpty())
-            return;
 
         IItemHandler storage = getStorage();
         if (storage == null)
@@ -539,7 +538,10 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             String address = PackageItem.getAddress(stack);
             // Stamping our own label onto a package that already carries it
             // would address it right back here, and this gate would strip it
-            // and put it back in the same container it came out of.
+            // and put it back in the same container it came out of. An unsigned
+            // gate compares its empty name against the default lane's, so this
+            // covers that case by itself; an unaddressed package answers null
+            // and is stamped.
             if (effectiveLabel.equals(AddressLabels.headLabelName(address)))
                 continue;
 
@@ -547,7 +549,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             if (sent.isEmpty())
                 continue;
 
-            PackageItem.addAddress(sent, AddressLabels.push(effectiveLabel, address));
+            PackageItem.addAddress(sent, AddressLabels.pushEndpoint(effectiveLabel, address));
             heldBox = sent;
             animationInward = false;
             animationTicks = CYCLE;

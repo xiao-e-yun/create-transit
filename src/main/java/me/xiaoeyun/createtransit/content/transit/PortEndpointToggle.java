@@ -24,6 +24,13 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * endpoint's stored address is the same string a player could type by hand, and
  * the delimiters never take up room in a field the player is typing into.
  *
+ * The box's two vanilla-flavoured values keep their vanilla meanings inside the
+ * switch, one layer up: blank is the default lane, taking border traffic that
+ * names no door, the way a blank filter takes packages that name no address;
+ * {@code *} takes any label, the way it takes any address. Leaving the name out
+ * therefore does something now, which is the point — a switch that quietly did
+ * nothing when the box was empty was a switch that looked broken.
+ *
  * There is no state hiding behind the button, and no {@code <[} {@code ]>} on
  * screen either: the box shows a plain name in both positions, and the button
  * alone says whether that name is a transit label or an ordinary address.
@@ -55,7 +62,7 @@ public class PortEndpointToggle {
 
     /** The address to store for what the player left in the box. */
     public String compose(String boxValue) {
-        return endpoint ? AddressLabels.push(boxValue, "") : boxValue;
+        return endpoint ? AddressLabels.endpoint(boxValue) : boxValue;
     }
 
     /**

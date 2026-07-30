@@ -54,8 +54,19 @@ public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements I
         return label;
     }
 
+    /**
+     * Stores a label, refusing the wildcard name.
+     *
+     * A link stamps what it is given, and "every border" is not a place a
+     * shipment can be sent — {@code *} only means anything to a port deciding
+     * what to let in. The screen declines to send it as well; this is the guard
+     * that does not take the packet's word for it.
+     */
     public void setLabel(String label) {
-        this.label = AddressLabels.sanitizeName(label);
+        String sanitized = AddressLabels.sanitizeName(label);
+        if (AddressLabels.WILDCARD.equals(sanitized))
+            return;
+        this.label = sanitized;
         notifyUpdate();
     }
 

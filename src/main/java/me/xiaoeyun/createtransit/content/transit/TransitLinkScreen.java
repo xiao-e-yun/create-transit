@@ -85,9 +85,12 @@ public class TransitLinkScreen extends AbstractSimiScreen {
 
     @Override
     public void removed() {
-        if (!labelBox.getValue()
-            .isBlank())
-            CtPackets.CHANNEL.sendToServer(new TransitLinkLabelPacket(pos, labelBox.getValue()));
+        String value = labelBox.getValue();
+        // Blank and * are the two things a link cannot declare -- no border, and
+        // every border -- so neither is sent, and closing on one leaves the link
+        // exactly as it was found.
+        if (!value.isBlank() && !AddressLabels.WILDCARD.equals(value.trim()))
+            CtPackets.CHANNEL.sendToServer(new TransitLinkLabelPacket(pos, value));
         super.removed();
     }
 

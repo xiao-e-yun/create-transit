@@ -22,11 +22,23 @@ import javax.annotation.Nullable;
  * identity: each layer is stamped by the transit link that declared the source
  * foreign, routed by that domain's vanilla hardware, and consumed by a transit
  * gate on its boundary. Addresses without labels behave exactly as in vanilla.
+ *
+ * Two names are special, and they are vanilla's own two special filters read
+ * one layer up. A blank name is the default lane, matched only by itself, the
+ * way a blank address filter matches only unaddressed packages. {@code *} takes
+ * any label, the way {@code *} takes any address.
  */
 public final class AddressLabels {
 
     public static final String OPEN = "<[";
     public static final String CLOSE = "]>";
+
+    /**
+     * A label name meaning "any label", the way {@code *} means "any address"
+     * everywhere else in Create. Only a port's filter is read this way; a
+     * package addressed to every border at once is not a thing.
+     */
+    public static final String WILDCARD = "*";
 
     private AddressLabels() {}
 
@@ -78,11 +90,28 @@ public final class AddressLabels {
         String sanitized = sanitizeName(name);
         if (sanitized.isEmpty())
             return address;
-        String label = OPEN + sanitized + CLOSE;
-        String path = trimLeading(address);
-        // A label with nothing behind it is an address in its own right; the
-        // separator only exists to keep the path from touching the delimiter.
-        return path.isEmpty() ? label : label + " " + path;
+        return join(OPEN + sanitized + CLOSE, address);
+    }
+
+    /**
+     * The address a package port holds as a transit endpoint.
+     *
+     * A blank name is a label in its own right here — the default lane, which
+     * unnamed border traffic is addressed to — and that is the opposite of what
+     * {@link #push} means by a blank name, which is why the two cannot share an
+     * entry point. Vanilla draws the same distinction one layer down: a blank
+     * address filter matches unaddressed packages rather than all of them.
+     */
+    public static String endpoint(String name) {
+        return OPEN + sanitizeName(name) + CLOSE;
+    }
+
+    /**
+     * Prefixes the label a port would hold for {@code name}, so a blank name
+     * stamps the default lane rather than nothing at all.
+     */
+    public static String pushEndpoint(String name, String address) {
+        return join(endpoint(name), address);
     }
 
     /** Every head label name, outermost first. */
@@ -138,6 +167,13 @@ public final class AddressLabels {
      * {@code *}, globs and blanks never catch a package in transit — and an
      * unstripped label shadows the path behind it, keeping foreign packages
      * invisible to local address hardware until a gate peels the layer off.
+     *
+     * A filter labelled {@link #WILDCARD} is the one exception, and it takes
+     * any label. Only the filter side, never the package's: every caller in
+     * Create passes the box first and the filter second, and a package that
+     * every border post would claim is a hole rather than a feature. An
+     * unlabelled package is still refused — transit is a space of its own, and
+     * a port that wants all local traffic too is a second port.
      */
     @Nullable
     public static Boolean match(String boxAddress, String address) {
@@ -149,6 +185,8 @@ public final class AddressLabels {
             return true;
         if (!boxLabelled || !addressLabelled)
             return false;
+        if (WILDCARD.equals(headLabelName(address)))
+            return true;
         return headLabel(boxAddress).equals(headLabel(address));
     }
 
@@ -162,6 +200,16 @@ public final class AddressLabels {
             return -1;
         int close = address.indexOf(CLOSE, OPEN.length());
         return close == -1 ? -1 : close + CLOSE.length();
+    }
+
+    /**
+     * Puts a complete label token in front of an address. A label with nothing
+     * behind it is an address in its own right; the separator only exists to
+     * keep a path from touching the delimiter.
+     */
+    private static String join(String label, String address) {
+        String path = trimLeading(address);
+        return path.isEmpty() ? label : label + " " + path;
     }
 
     private static String trimLeading(String text) {

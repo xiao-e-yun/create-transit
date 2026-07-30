@@ -34,13 +34,26 @@ public final class TransitAddress {
      */
     private static final String HOP = " → ";
 
+    /**
+     * What the default lane is called on screen. A blank label name is a real
+     * destination, so it has to read as one — left as the empty string it came
+     * as, a nameplate would go blank and the port would look unconfigured. The
+     * translation carries its own delimiters, marking it as a name the game
+     * supplied rather than one somebody typed.
+     */
+    private static final String DEFAULT_LANE = "create_transit.package_port.default_lane";
+
     private TransitAddress() {}
 
     /** The address as a player should read it, or itself when unlabelled. */
     public static String spell(String address) {
-        List<String> hops = new ArrayList<>(AddressLabels.labelNames(address));
-        if (hops.isEmpty())
+        List<String> names = AddressLabels.labelNames(address);
+        if (names.isEmpty())
             return address;
+        List<String> hops = new ArrayList<>();
+        for (String name : names)
+            hops.add(name.isEmpty() ? Component.translatable(DEFAULT_LANE)
+                .getString() : name);
         String path = AddressLabels.path(address);
         if (!path.isEmpty())
             hops.add(path);
