@@ -1,0 +1,9 @@
+{
+  "parent": "create:block/repackager/block",
+  "textures": {
+    "0": "create_transit:block/transit_repackager_frame",
+    "1": "create_transit:block/packager_details",
+    "2": "create_transit:block/packager_horizontal_unpowered",
+    "particle": "create_transit:block/transit_repackager_particle"
+  }
+}

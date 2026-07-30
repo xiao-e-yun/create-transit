@@ -1,10 +1,10 @@
 {
-  "parent": "create:block/packager/item",
+  "parent": "create:block/repackager/item",
   "textures": {
-    "0": "create_transit:block/transit_gate_frame",
+    "0": "create_transit:block/transit_repackager_frame",
     "1": "create_transit:block/packager_details",
     "2": "create_transit:block/packager_horizontal_unpowered",
     "3": "create_transit:block/transit_iris_closed",
-    "particle": "create_transit:block/transit_gate_particle"
+    "particle": "create_transit:block/transit_repackager_particle"
   }
 }

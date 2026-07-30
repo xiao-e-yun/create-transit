@@ -1,0 +1,163 @@
+{
+	"textures": {
+		"3": "create_transit:block/transit_gate_flaps",
+		"particle": "create_transit:block/transit_gate_particle"
+	},
+	"elements": [
+		{
+			"name": "flap_0",
+			"from": [2, 4, 6.6],
+			"to": [4.925, 14, 7.6],
+			"rotation": {
+				"angle": 22.5,
+				"axis": "x",
+				"origin": [3.4625, 14, 7.1]
+			},
+			"faces": {
+				"south": {
+					"uv": [0, 0, 3, 10],
+					"texture": "#3"
+				},
+				"north": {
+					"uv": [3, 0, 0, 10],
+					"texture": "#3"
+				},
+				"east": {
+					"uv": [6, 0, 7, 10],
+					"texture": "#3"
+				},
+				"west": {
+					"uv": [6, 0, 7, 10],
+					"texture": "#3"
+				},
+				"down": {
+					"uv": [6, 9, 7, 10],
+					"texture": "#3"
+				}
+			}
+		},
+		{
+			"name": "flap_1",
+			"from": [5.025, 4, 6.6],
+			"to": [7.95, 14, 7.6],
+			"rotation": {
+				"angle": 45,
+				"axis": "x",
+				"origin": [6.4875, 14, 7.1]
+			},
+			"faces": {
+				"south": {
+					"uv": [3, 0, 6, 10],
+					"texture": "#3"
+				},
+				"north": {
+					"uv": [6, 0, 3, 10],
+					"texture": "#3"
+				},
+				"east": {
+					"uv": [6, 0, 7, 10],
+					"texture": "#3"
+				},
+				"west": {
+					"uv": [6, 0, 7, 10],
+					"texture": "#3"
+				},
+				"down": {
+					"uv": [6, 9, 7, 10],
+					"texture": "#3"
+				}
+			}
+		},
+		{
+			"name": "flap_2",
+			"from": [8.05, 4, 6.6],
+			"to": [10.975, 14, 7.6],
+			"rotation": {
+				"angle": 45,
+				"axis": "x",
+				"origin": [9.5125, 14, 7.1]
+			},
+			"faces": {
+				"south": {
+					"uv": [0, 0, 3, 10],
+					"texture": "#3"
+				},
+				"north": {
+					"uv": [3, 0, 0, 10],
+					"texture": "#3"
+				},
+				"east": {
+					"uv": [6, 0, 7, 10],
+					"texture": "#3"
+				},
+				"west": {
+					"uv": [6, 0, 7, 10],
+					"texture": "#3"
+				},
+				"down": {
+					"uv": [6, 9, 7, 10],
+					"texture": "#3"
+				}
+			}
+		},
+		{
+			"name": "flap_3",
+			"from": [11.075, 4, 6.6],
+			"to": [14, 14, 7.6],
+			"rotation": {
+				"angle": 22.5,
+				"axis": "x",
+				"origin": [12.5375, 14, 7.1]
+			},
+			"faces": {
+				"south": {
+					"uv": [3, 0, 6, 10],
+					"texture": "#3"
+				},
+				"north": {
+					"uv": [6, 0, 3, 10],
+					"texture": "#3"
+				},
+				"east": {
+					"uv": [6, 0, 7, 10],
+					"texture": "#3"
+				},
+				"west": {
+					"uv": [6, 0, 7, 10],
+					"texture": "#3"
+				},
+				"down": {
+					"uv": [6, 9, 7, 10],
+					"texture": "#3"
+				}
+			}
+		},
+		{
+			"name": "flap_rail",
+			"from": [2, 13, 6.3],
+			"to": [14, 14, 7.85],
+			"faces": {
+				"south": {
+					"uv": [0, 10, 12, 11],
+					"texture": "#3"
+				},
+				"north": {
+					"uv": [12, 10, 0, 11],
+					"texture": "#3"
+				},
+				"down": {
+					"uv": [0, 11, 12, 12],
+					"texture": "#3"
+				},
+				"east": {
+					"uv": [12, 10, 13, 11],
+					"texture": "#3"
+				},
+				"west": {
+					"uv": [13, 10, 12, 11],
+					"texture": "#3"
+				}
+			}
+		}
+	]
+}

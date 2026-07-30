@@ -1,7 +1,9 @@
 {
   "parent": "create:block/packager/block",
   "textures": {
+    "0": "create_transit:block/transit_gate_frame",
     "1": "create_transit:block/packager_details",
-    "2": "create_transit:block/packager_horizontal_unpowered"
+    "2": "create_transit:block/packager_horizontal_unpowered",
+    "particle": "create_transit:block/transit_gate_particle"
   }
 }
