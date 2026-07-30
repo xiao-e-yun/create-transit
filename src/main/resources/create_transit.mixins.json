@@ -6,7 +6,8 @@
   "refmap": "create_transit.refmap.json",
   "mixins": [
     "ChainConveyorRoutingTableMixin",
-    "PackageItemMixin"
+    "PackageItemMixin",
+    "PackagerBlockEntityMixin"
   ],
   "client": [
     "client.FrogportRendererMixin",
