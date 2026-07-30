@@ -1,0 +1,48 @@
+{
+  "mod": "create",
+  "version": "6.0.8-289",
+  "units": "model",
+  "note": "Matrices are keyed by the BLOCKSTATE facing, not the renderer's internal facing variable, so a consumer needs no semantics of its own. Row-major 4x4, model units (16 per block).",
+  "producer": "./gradlew dumpTransforms (me.xiaoeyun.createtransit.tools.DumpTransforms) -- replays each renderer's own chain through Flywheel's Affine default methods, so it cannot drift from Create",
+  "transforms": {
+    "packager_hatch": {
+      "renderer": "com.simibubi.create.content.logistics.packager.PackagerRenderer",
+      "doc": "The iris, or whatever replaces it. Straddles the opening: one unit inside the block and two proud of it.",
+      "animated_along": null,
+      "matrices": {
+        "north": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 7.99984], [0.0, 0.0, 0.0, 1.0]],
+        "south": [[-1.0, 0.0, 0.0, 16.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, -1.0, 8.00016], [0.0, 0.0, 0.0, 1.0]],
+        "east": [[0.0, 0.0, -1.0, 8.00016], [0.0, 1.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0]],
+        "west": [[0.0, 0.0, 1.0, 7.99984], [0.0, 1.0, 0.0, 0.0], [-1.0, 0.0, 0.0, 16.0], [0.0, 0.0, 0.0, 1.0]],
+        "up": [[1.0, 0.0, 0.0, 0.0], [0.0, 0.0, -1.0, 8.00016], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0]],
+        "down": [[1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 7.99984], [0.0, -1.0, 0.0, 16.0], [0.0, 0.0, 0.0, 1.0]]
+      }
+    },
+    "packager_tray": {
+      "renderer": "com.simibubi.create.content.logistics.packager.PackagerRenderer",
+      "doc": "The tray that slides out of the opening. Stored at rest; getTrayOffset(partialTicks) drives it in game.",
+      "animated_along": "opening",
+      "matrices": {
+        "north": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]],
+        "south": [[-1.0, 0.0, 0.0, 16.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, -1.0, 16.0], [0.0, 0.0, 0.0, 1.0]],
+        "east": [[0.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 0.0], [-1.0, 0.0, 0.0, 16.0], [0.0, 0.0, 0.0, 1.0]],
+        "west": [[0.0, 0.0, -1.0, 16.0], [0.0, 1.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0]],
+        "up": [[0.0, 0.0, -1.0, 16.0], [0.0, 1.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0]],
+        "down": [[0.0, 0.0, -1.0, 16.0], [0.0, 1.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
+      }
+    },
+    "packager_box": {
+      "renderer": "com.simibubi.create.content.logistics.packager.PackagerRenderer",
+      "doc": "The package on the tray, drawn as a FIXED item at 1.49 scale.",
+      "animated_along": "opening",
+      "matrices": {
+        "north": [[1.49, 0.0, 0.0, 8.0], [0.0, 1.49, 0.0, 10.0], [0.0, 0.0, 1.49, 8.0], [0.0, 0.0, 0.0, 1.0]],
+        "south": [[-1.49, 0.0, 0.0, 8.0], [0.0, 1.49, 0.0, 10.0], [0.0, 0.0, -1.49, 8.0], [0.0, 0.0, 0.0, 1.0]],
+        "east": [[0.0, 0.0, 1.49, 8.0], [0.0, 1.49, 0.0, 10.0], [-1.49, 0.0, 0.0, 8.0], [0.0, 0.0, 0.0, 1.0]],
+        "west": [[0.0, 0.0, -1.49, 8.0], [0.0, 1.49, 0.0, 10.0], [1.49, 0.0, 0.0, 8.0], [0.0, 0.0, 0.0, 1.0]],
+        "up": [[0.0, 0.0, -1.49, 8.0], [0.0, 1.49, 0.0, 10.0], [1.49, 0.0, 0.0, 8.0], [0.0, 0.0, 0.0, 1.0]],
+        "down": [[0.0, 0.0, -1.49, 8.0], [0.0, 1.49, 0.0, 10.0], [1.49, 0.0, 0.0, 8.0], [0.0, 0.0, 0.0, 1.0]]
+      }
+    }
+  }
+}

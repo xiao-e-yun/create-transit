@@ -220,3 +220,84 @@ publishing {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
+
+// ---------------------------------------------------------------------------
+// Block entity renderer transforms, dumped for the offline renderer.
+//
+// A partial model's coordinates are meaningless until you know which renderer
+// draws it and what it does to the model first -- and Minecraft's model format
+// cannot record that. scripts/mcrender reads those matrices from JSON, and this
+// is what produces them: not a description of Create's arithmetic but a replay
+// of Create's own call chain against a real transform stack, so it cannot drift
+// the way a hand-ported copy would.
+//
+// A separate source set keeps the tool out of the shipped jar while still
+// compiling against the mod's full classpath.
+
+sourceSets {
+    tools {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+
+dependencies {
+    // The mod only compiles against the flywheel API, but this tool *calls* it,
+    // so the real classes have to be there at runtime too.
+    toolsImplementation(fg.deobf("dev.engine-room.flywheel:flywheel-forge-api-${minecraft_version}:${flywheel_version}"))
+}
+
+def transformTable = file("scripts/transforms/create-${create_version}.json")
+
+tasks.register('dumpTransforms', JavaExec) {
+    group = 'build'
+    description = 'Write the renderer transform matrices the offline renderer reads.'
+    classpath = sourceSets.tools.runtimeClasspath
+    mainClass = 'me.xiaoeyun.createtransit.tools.DumpTransforms'
+    args transformTable.absolutePath, create_version as String
+}
+
+// Wiring this into `check` is what makes the committed table trustworthy. Every
+// assertion and every render downstream is computed *through* these matrices, so
+// nothing computed from them can notice them being wrong; only regenerating and
+// comparing can. Failing the build the moment Create's chain changes beats any
+// checksum or version note, because it needs nobody to remember anything.
+tasks.register('checkTransforms', JavaExec) {
+    group = 'verification'
+    description = 'Fail if the committed transform table no longer matches Create.'
+    classpath = sourceSets.tools.runtimeClasspath
+    mainClass = 'me.xiaoeyun.createtransit.tools.DumpTransforms'
+    def fresh = layout.buildDirectory.file('tmp/transforms-check.json')
+    outputs.upToDateWhen { false }
+    args fresh.get().asFile.absolutePath, create_version as String
+    doLast {
+        if (!transformTable.exists())
+            throw new GradleException(
+                "no transform table at ${transformTable}; run ./gradlew dumpTransforms")
+        def slurper = new groovy.json.JsonSlurper()
+        // Compare only the matrices: the surrounding fields carry provenance
+        // that legitimately differs between producers, and diffing those would
+        // train people to ignore this check.
+        def committed = slurper.parse(transformTable).transforms
+            .collectEntries { k, v -> [k, v.matrices] }
+        def current = slurper.parse(fresh.get().asFile).transforms
+            .collectEntries { k, v -> [k, v.matrices] }
+        if (committed != current) {
+            def names = (committed.keySet() + current.keySet()).findAll {
+                committed[it] != current[it]
+            }
+            throw new GradleException(
+                "transform table is out of date for ${names.join(', ')}.\n" +
+                "  committed: ${transformTable}\n" +
+                "  freshly dumped: ${fresh.get().asFile}\n" +
+                "Run ./gradlew dumpTransforms, then re-run the renderer's " +
+                "fixture check -- reference images are computed through these " +
+                "matrices and will need regenerating too.")
+        }
+        logger.lifecycle("transform table matches Create ${create_version}")
+    }
+}
+
+tasks.named('check') {
+    dependsOn 'checkTransforms'
+}

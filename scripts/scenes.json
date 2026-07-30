@@ -1,0 +1,111 @@
+{
+  "_doc": [
+    "What a block actually looks like in game, declared once.",
+    "",
+    "A block model on its own is only part of the picture: the parts a block",
+    "entity renderer draws are separate models placed by a matrix, and typing",
+    "that composition out by hand every time is how a rail ended up in the",
+    "block model while the slats it holds were in the hatch, eight units away.",
+    "Naming the composition here means the renderer, the fixture check and any",
+    "validator all read the same declaration.",
+    "",
+    "`transform` names an entry in scripts/transforms/. `facing` is the",
+    "blockstate value the matrices are looked up with; south is the",
+    "orientation Create's base packager models are authored in.",
+    "",
+    "`views` lists the angles worth committing a reference image for. Keep them",
+    "few and keep them load-bearing -- a view that would not catch anything is",
+    "a fixture that only ever costs you a regeneration."
+  ],
+
+  "scenes": {
+    "packager_reference": {
+      "doc": "Create's own packager, untouched. This is the scene that guards the transform table: the iris must sit on the block's opening, and no assertion downstream can catch it being wrong, because every assertion is computed through the same matrix. The north face is the opening for a facing=south packager.",
+      "facing": "south",
+      "models": [
+        { "model": "create:block/packager/block" },
+        { "model": "create:block/packager/hatch_closed", "transform": "packager_hatch" },
+        { "model": "create:block/packager/tray", "transform": "packager_tray" }
+      ],
+      "views": ["iso", "east"]
+    },
+
+    "transit_gate": {
+      "doc": "The gate with its strip curtain closed. `east` is there to catch geometry that escapes the block, which is what went wrong twice -- flaps ending up outside the north face show as a sliver beside the silhouette. It does not catch depth changes *within* the block, since the frame occludes the curtain from the side; `iso` is what notices those.",
+      "facing": "south",
+      "models": [
+        { "model": "block/transit_gate/block" },
+        { "model": "block/transit_gate/hatch_closed", "transform": "packager_hatch" }
+      ],
+      "views": ["opening", "opening-low", "iso", "east"]
+    },
+
+    "transit_gate_open": {
+      "doc": "The same gate mid-pass, with the curtain parted.",
+      "facing": "south",
+      "models": [
+        { "model": "block/transit_gate/block" },
+        { "model": "block/transit_gate/hatch_open", "transform": "packager_hatch" }
+      ],
+      "views": ["opening", "opening-low", "iso"]
+    },
+
+    "transit_gate_vertical": {
+      "doc": "A gate facing down, so the opening is on top. Catches a transform that only works for horizontal facings.",
+      "facing": "down",
+      "models": [
+        { "model": "block/transit_gate/block_vertical" },
+        { "model": "block/transit_gate/hatch_closed", "transform": "packager_hatch" }
+      ],
+      "views": ["iso"]
+    },
+
+    "transit_gate_powered": {
+      "doc": "The powered variant, which inherits everything but the lit side texture. Its reference image is what makes collapsing block.json into a parent reference a checkable refactor rather than a hopeful one.",
+      "facing": "south",
+      "models": [
+        { "model": "block/transit_gate/block_powered" },
+        { "model": "block/transit_gate/hatch_closed", "transform": "packager_hatch" }
+      ],
+      "views": ["iso"]
+    },
+
+    "transit_link_horizontal": {
+      "doc": "The link, a forge:composite model whose geometry lives in named children rather than in elements of its own.",
+      "facing": "south",
+      "models": [{ "model": "block/transit_link/block_horizontal" }],
+      "views": ["iso"]
+    },
+
+    "transit_link_horizontal_powered": {
+      "doc": "One texture apart from the unpowered variant, which is why it should be a stub rather than a second copy of 121 lines.",
+      "facing": "south",
+      "models": [{ "model": "block/transit_link/block_horizontal_powered" }],
+      "views": ["iso"]
+    },
+
+    "transit_link_vertical": {
+      "doc": "Genuinely different geometry from the horizontal one, so this one stays a full model.",
+      "facing": "south",
+      "models": [{ "model": "block/transit_link/block_vertical" }],
+      "views": ["iso"]
+    },
+
+    "transit_link_vertical_powered": {
+      "doc": "Differs from block_vertical by one texture and by lacking its `display` block. Inheriting brings `display` along, which is inert for a model only ever used through a blockstate -- this reference image is what confirms that.",
+      "facing": "south",
+      "models": [{ "model": "block/transit_link/block_vertical_powered" }],
+      "views": ["iso"]
+    },
+
+    "transit_repackager": {
+      "doc": "The repackager, which shares the packager's geometry but samples the lower half of the side atlases.",
+      "facing": "south",
+      "models": [
+        { "model": "block/transit_repackager/block" },
+        { "model": "create:block/repackager/tray", "transform": "packager_tray" }
+      ],
+      "views": ["iso"]
+    }
+  }
+}
