@@ -1,0 +1,35 @@
+{
+	"textures": {
+		"3": "create_transit:block/transit_gate_flaps",
+		"particle": "create_transit:block/transit_gate_particle"
+	},
+	"elements": [
+		{
+			"name": "flap",
+			"from": [2, 4.5, 6.6],
+			"to": [4.925, 15, 7.6],
+			"faces": {
+				"south": {
+					"uv": [0, 0.5, 3, 11],
+					"texture": "#3"
+				},
+				"north": {
+					"uv": [3, 0.5, 0, 11],
+					"texture": "#3"
+				},
+				"east": {
+					"uv": [6, 0.5, 7, 11],
+					"texture": "#3"
+				},
+				"west": {
+					"uv": [6, 0.5, 7, 11],
+					"texture": "#3"
+				},
+				"down": {
+					"uv": [6, 10, 7, 11],
+					"texture": "#3"
+				}
+			}
+		}
+	]
+}

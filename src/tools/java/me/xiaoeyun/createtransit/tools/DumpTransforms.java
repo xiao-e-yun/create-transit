@@ -14,6 +14,8 @@ import org.joml.Quaternionfc;
 
 import dev.engine_room.flywheel.lib.transform.Affine;
 
+import me.xiaoeyun.createtransit.client.TransitGateCurtain;
+import me.xiaoeyun.createtransit.content.transit.TransitGateBlockEntity;
 import net.createmod.catnip.math.AngleHelper;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec3;
@@ -85,6 +87,19 @@ public final class DumpTransforms {
      * {@code animated_along} in the output is there to tell it.
      */
     private static final float AT_REST = 0f;
+
+    /**
+     * The curtain's three poses, named by the tray position and traffic direction
+     * that produce them, and converted by the same method the game calls — the
+     * sign of a swing is the curtain's business, and a table that hardcoded it
+     * could disagree with the game about which way the strips go. Everything
+     * between rest and either peak is a linear blend of the angle, so a fixture at
+     * each end pins the pivot, the pitch and the shape; nothing in the middle can
+     * be wrong while both ends are right.
+     */
+    private static final float HANGING = 0f;
+    private static final float PUSHED_OUT = TransitGateBlockEntity.CURTAIN_PUSHED_OUT;
+    private static final float PUSHED_IN = TransitGateBlockEntity.CURTAIN_PUSHED_IN;
 
     private DumpTransforms() {
     }
@@ -176,6 +191,35 @@ public final class DumpTransforms {
                     .translate(0, 2 / 16f, 0)
                     .scale(1.49f, 1.49f, 1.49f);
             }));
+
+        // This mod's own, and the reason they belong in a table pinned to a
+        // Create version: each one opens with Create's hatch placement and only
+        // then steps and swings, so they are as exposed to Create moving the
+        // hatch as the entry above is. TransitGateCurtain.place is the same
+        // method the game calls, and the swing is linear between the two poses.
+        String curtain = "me.xiaoeyun.createtransit.client.TransitGateCurtain";
+        for (int strip = 0; strip < TransitGateCurtain.STRIPS; strip++) {
+            int column = strip;
+            TRANSFORMS.put("transit_gate_flap_" + strip, new Entry(curtain,
+                "Strip " + strip + " of " + TransitGateCurtain.STRIPS
+                    + " in a transit gate's curtain, hanging still.",
+                null,
+                (stack, blockstateFacing) ->
+                    TransitGateCurtain.place(stack, blockstateFacing, column, HANGING)));
+            TRANSFORMS.put("transit_gate_flap_" + strip + "_out", new Entry(curtain,
+                "The same strip at the peak of an arrival, when the loaded tray "
+                    + "is travelling out through the curtain.",
+                null,
+                (stack, blockstateFacing) ->
+                    TransitGateCurtain.place(stack, blockstateFacing, column, PUSHED_OUT)));
+            TRANSFORMS.put("transit_gate_flap_" + strip + "_in", new Entry(curtain,
+                "And at the peak of a departure, when the loaded tray is coming "
+                    + "back in through it. The mirror of the pose above, because "
+                    + "the strips follow whichever way the box is riding.",
+                null,
+                (stack, blockstateFacing) ->
+                    TransitGateCurtain.place(stack, blockstateFacing, column, PUSHED_IN)));
+        }
     }
 
     private static float[][] matrixFor(Chain chain, Direction facing) {

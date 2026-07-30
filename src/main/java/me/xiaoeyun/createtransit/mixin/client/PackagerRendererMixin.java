@@ -13,7 +13,7 @@ import me.xiaoeyun.createtransit.content.transit.TransitGateBlockEntity;
 import me.xiaoeyun.createtransit.registry.CtPartialModels;
 
 /**
- * Gives a transit gate strip curtain where a packager has its iris.
+ * Gives a transit gate its curtain rail where a packager has its iris.
  *
  * The hatch is not part of the block model — it is drawn from a partial model
  * this static method picks, so borrowing the packager's geometry means
@@ -21,9 +21,15 @@ import me.xiaoeyun.createtransit.registry.CtPartialModels;
  * reaches a hardcoded {@code create:} location. The method is public and static
  * rather than virtual, so a renderer subclass has nothing to override either.
  *
- * Intercepting it is the narrow fix: gates answer with their own models and
+ * Intercepting it is the narrow fix: gates answer with their own model and
  * every other packager in the world is untouched. {@code PackagerVisual} routes
  * through here as well, so this covers the flywheel path too.
+ *
+ * The answer is the same either way a gate is animating, because the hatch slot
+ * now carries only the rail, which does not move. The strips that do are one
+ * model each, swung per frame by
+ * {@link me.xiaoeyun.createtransit.client.TransitGateCurtain} — a hatch swapped
+ * between two baked poses was the animation this replaced.
  */
 @Mixin(value = PackagerRenderer.class, remap = false)
 public class PackagerRendererMixin {
@@ -36,9 +42,7 @@ public class PackagerRendererMixin {
         CallbackInfoReturnable<PartialModel> cir) {
         if (!(packager instanceof TransitGateBlockEntity))
             return;
-        cir.setReturnValue(PackagerRenderer.isHatchOpen(packager)
-            ? CtPartialModels.TRANSIT_GATE_HATCH_OPEN
-            : CtPartialModels.TRANSIT_GATE_HATCH_CLOSED);
+        cir.setReturnValue(CtPartialModels.TRANSIT_GATE_RAIL);
     }
 
 }

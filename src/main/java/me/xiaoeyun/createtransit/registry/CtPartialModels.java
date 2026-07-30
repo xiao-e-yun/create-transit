@@ -29,14 +29,33 @@ public class CtPartialModels {
      * curtain over its opening — the same hinged-slat vocabulary Create's own
      * funnels use, which reads as "traffic passes through here" without any
      * explanation. Being the hatch rather than block geometry is what makes it
-     * work: the renderer swaps the two states, so the slats actually part for a
-     * package instead of being clipped through.
+     * work: the strips actually part for a package instead of being clipped
+     * through.
+     *
+     * The rail is what the gate hands back where a packager returns its iris,
+     * because the rail is the part that does not move. The strips are one model
+     * each and placed by {@link me.xiaoeyun.createtransit.client.TransitGateCurtain}
+     * — a matrix applies to a whole model, so a curtain in one model could only
+     * hold one pose.
      */
-    public static final PartialModel TRANSIT_GATE_HATCH_CLOSED =
-        PartialModel.of(CreateTransit.asResource("block/transit_gate/hatch_closed"));
+    public static final PartialModel TRANSIT_GATE_RAIL =
+        PartialModel.of(CreateTransit.asResource("block/transit_gate/rail"));
 
-    public static final PartialModel TRANSIT_GATE_HATCH_OPEN =
-        PartialModel.of(CreateTransit.asResource("block/transit_gate/hatch_open"));
+    /**
+     * Two strips, differing only in where the scuff sits, alternated across the
+     * curtain so four identical strips do not read as a printed pattern. Create
+     * breaks up its own repeated slats the same way.
+     */
+    public static final PartialModel TRANSIT_GATE_FLAP =
+        PartialModel.of(CreateTransit.asResource("block/transit_gate/flap"));
+
+    public static final PartialModel TRANSIT_GATE_FLAP_ALT =
+        PartialModel.of(CreateTransit.asResource("block/transit_gate/flap_alt"));
+
+    /** Which of the two strip variants column {@code strip} carries. */
+    public static PartialModel flap(int strip) {
+        return strip % 2 == 0 ? TRANSIT_GATE_FLAP : TRANSIT_GATE_FLAP_ALT;
+    }
 
     /** Loading the class is the registration; this only makes that deliberate. */
     public static void init() {}

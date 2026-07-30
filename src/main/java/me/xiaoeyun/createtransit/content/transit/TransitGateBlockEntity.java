@@ -19,6 +19,8 @@ import com.simibubi.create.content.logistics.packager.PackagingRequest;
 import com.simibubi.create.content.logistics.packager.repackager.RepackagerBlockEntity;
 import com.simibubi.create.content.logistics.stockTicker.PackageOrderWithCrafts;
 
+import net.createmod.catnip.animation.LerpedFloat;
+import net.createmod.catnip.animation.LerpedFloat.Chaser;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -100,6 +102,48 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     /** A vanilla package holds up to nine stacks. */
     private static final int BOX_SLOTS = 9;
 
+    /**
+     * The tray travel, in blocks, over which a package is inside the curtain.
+     *
+     * Measured rather than chosen. Create's tray comes to rest with its front face
+     * at z 2.0 once the hatch transform has placed it, and the strips occupy z 0.4
+     * to 1.4, so the front reaches the back of the curtain 0.038 of a block into
+     * its travel and clears the front of it at 0.100.
+     *
+     * The window matters because the tray's travel is sampled once a tick and the
+     * samples near it are 0.000, 0.062 and 0.214 — one of them, and only one, is
+     * inside. Detecting a threshold being crossed instead reports the first sample
+     * <em>past</em> the window, which on an arrival is 0.214: the curtain then
+     * swings after the package is already clear of it, and looks late. Detecting
+     * the window being entered puts the swing on the tick the package is actually
+     * in the strips, which is the earliest a tick grid this coarse allows.
+     *
+     * Note what crosses. The tray plate spans y 2 to 4 and the strips hang from
+     * y 15 down to y 4.5, so the plate passes underneath them and touches nothing
+     * — it is the package, drawn centred at y 10, that goes through the curtain.
+     * A crossing therefore only counts while there is a package to do it.
+     */
+    public static final float CURTAIN_REACHED = 0.038f;
+    public static final float CURTAIN_CLEARED = 0.100f;
+
+    /**
+     * The two directions a package can shove the strips, and the sign convention
+     * the renderer's swing angle reads: negative swings them out through the
+     * mouth, positive back into the block. They live here rather than with the
+     * geometry because a dedicated server has no Flywheel, and this class ticks
+     * on one.
+     */
+    public static final float CURTAIN_PUSHED_OUT = -1f;
+    public static final float CURTAIN_PUSHED_IN = 1f;
+
+    /**
+     * How fast a pushed curtain settles, as a fraction of the remaining swing per
+     * tick. Create's flaps chase at .05, which is much slower, because their angle
+     * formula oscillates inside a decaying envelope and needs a long tail to show
+     * it; this swing is monotonic, so the same rate would read as sticky.
+     */
+    private static final float CURTAIN_SETTLE = .15f;
+
     /** Label written on this gate's own sign; blank means wildcard. */
     private String ownLabel = "";
 
@@ -109,8 +153,70 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     @Nullable
     private BlockPos adoptedFrom;
 
+    /**
+     * How far the curtain is pushed, and which way. Client side only, and derived
+     * rather than synchronised: {@code animationTicks} is in the block entity's
+     * client packet and counts down on the client too, so the crossing can be
+     * spotted where it is needed and nothing has to be sent for it. Create's
+     * tunnels do need a packet for the same effect, because an item passing a
+     * tunnel is not otherwise visible to a client.
+     */
+    private final LerpedFloat curtain = LerpedFloat.linear()
+        .startWithValue(0)
+        .chase(0, CURTAIN_SETTLE, Chaser.EXP);
+
+    /**
+     * Where the tray was last tick. One field, because both facts the kick needs
+     * come out of it: whether the package has just entered the curtain, and which
+     * way it is travelling.
+     */
+    private float lastTrayOffset;
+
     public TransitGateBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
+    }
+
+    /**
+     * A push and a settle, rather than the curtain tracking the tray.
+     *
+     * The tray is only at the strips for about two ticks of a twenty tick cycle —
+     * it spends the rest of it out beyond them — so following its position would
+     * hold the curtain open the whole time the tray is away and give back two
+     * twitches instead of one shove. Kicking a decaying value at the crossing
+     * turns that two tick event into a movement of its own length, which is the
+     * shape Create's tunnel flaps use for exactly the same reason.
+     *
+     * The direction comes from the travel itself, so nothing has to know which way
+     * the traffic is going: a package on its way out passes through outward and
+     * one being taken out of the buffer passes back in, because Create renders the
+     * box on opposite halves of the tray's travel in the two cases.
+     */
+    @Override
+    public void tick() {
+        super.tick();
+        if (level == null || !level.isClientSide())
+            return;
+
+        float offset = getTrayOffset(0);
+        boolean entered = inCurtain(offset) && !inCurtain(lastTrayOffset);
+        // A tick can be skipped, and the window is 6% of the travel, so also take
+        // a sample that stepped clean over it. Both are the same event.
+        boolean jumped = lastTrayOffset <= CURTAIN_REACHED && offset >= CURTAIN_CLEARED
+            || lastTrayOffset >= CURTAIN_CLEARED && offset <= CURTAIN_REACHED;
+        if ((entered || jumped) && !getRenderedBox().isEmpty())
+            curtain.setValue(offset > lastTrayOffset ? CURTAIN_PUSHED_OUT : CURTAIN_PUSHED_IN);
+
+        lastTrayOffset = offset;
+        curtain.tickChaser();
+    }
+
+    private static boolean inCurtain(float trayOffset) {
+        return trayOffset > CURTAIN_REACHED && trayOffset < CURTAIN_CLEARED;
+    }
+
+    /** How far the curtain is pushed, negative meaning out through the mouth. */
+    public float curtainPush(float partialTicks) {
+        return curtain.getValue(partialTicks);
     }
 
     public String getEffectiveLabel() {

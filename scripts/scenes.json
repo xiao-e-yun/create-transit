@@ -31,31 +31,57 @@
     },
 
     "transit_gate": {
-      "doc": "The gate with its strip curtain closed. `east` is there to catch geometry that escapes the block, which is what went wrong twice -- flaps ending up outside the north face show as a sliver beside the silhouette. It does not catch depth changes *within* the block, since the frame occludes the curtain from the side; `iso` is what notices those.",
+      "doc": "The gate with its strip curtain closed. `east` is there to catch geometry that escapes the block, which is what went wrong twice -- flaps ending up outside the north face show as a sliver beside the silhouette. It does not catch depth changes *within* the block, since the frame occludes the curtain from the side; `iso` is what notices those. `iso-back` is the view that sees the rail: the block is open behind, so its face shows from there and from nowhere on the opening side -- measured at 1029 pixels from iso-back, against 0 square-on and 0 from `iso`. What the opening side does see is its underside, 71 pixels of it at a low front angle, which is `opening-low`'s job.",
       "facing": "south",
       "models": [
         { "model": "block/transit_gate/block" },
-        { "model": "block/transit_gate/hatch_closed", "transform": "packager_hatch" }
+        { "model": "block/transit_gate/rail", "transform": "packager_hatch" },
+        { "model": "block/transit_gate/flap", "transform": "transit_gate_flap_0" },
+        { "model": "block/transit_gate/flap_alt", "transform": "transit_gate_flap_1" },
+        { "model": "block/transit_gate/flap", "transform": "transit_gate_flap_2" },
+        { "model": "block/transit_gate/flap_alt", "transform": "transit_gate_flap_3" }
       ],
-      "views": ["opening", "opening-low", "iso", "east"]
+      "views": ["opening", "opening-low", "iso", "iso-back", "east"]
     },
 
-    "transit_gate_open": {
-      "doc": "The same gate mid-pass, with the curtain parted.",
+    "transit_gate_arriving": {
+      "doc": "The peak of an arrival: a package rides the tray out through the curtain, so the strips are pushed outward and leave the block by up to 6.5 units. This is the scene that shows how far. Note the frame is 25 units wide and centred on the block, so a fully pushed strip sits close to its edge; `east` would put the tips outside the image altogether, which is why it is not listed.",
       "facing": "south",
       "models": [
         { "model": "block/transit_gate/block" },
-        { "model": "block/transit_gate/hatch_open", "transform": "packager_hatch" }
+        { "model": "block/transit_gate/rail", "transform": "packager_hatch" },
+        { "model": "block/transit_gate/flap", "transform": "transit_gate_flap_0_out" },
+        { "model": "block/transit_gate/flap_alt", "transform": "transit_gate_flap_1_out" },
+        { "model": "block/transit_gate/flap", "transform": "transit_gate_flap_2_out" },
+        { "model": "block/transit_gate/flap_alt", "transform": "transit_gate_flap_3_out" }
       ],
       "views": ["opening", "opening-low", "iso"]
     },
 
+    "transit_gate_departing": {
+      "doc": "The peak of a departure, the mirror of the arrival: Create renders the box on the returning half of the tray's travel when a package is leaving, so the strips are pushed inward instead. These two scenes plus the resting one are what guard the animation -- the swing is a linear blend between rest and either peak, so a pivot, a pitch, a swing angle or a sign that is wrong cannot be right at all three. The strips are stepped and swung by TransitGateCurtain.place, dumped per column into the transform table, so what is drawn here is the arithmetic the game runs rather than a second copy of it.",
+      "facing": "south",
+      "models": [
+        { "model": "block/transit_gate/block" },
+        { "model": "block/transit_gate/rail", "transform": "packager_hatch" },
+        { "model": "block/transit_gate/flap", "transform": "transit_gate_flap_0_in" },
+        { "model": "block/transit_gate/flap_alt", "transform": "transit_gate_flap_1_in" },
+        { "model": "block/transit_gate/flap", "transform": "transit_gate_flap_2_in" },
+        { "model": "block/transit_gate/flap_alt", "transform": "transit_gate_flap_3_in" }
+      ],
+      "views": ["opening-low", "iso"]
+    },
+
     "transit_gate_vertical": {
-      "doc": "A gate facing down, so the opening is on top. Catches a transform that only works for horizontal facings.",
+      "doc": "A gate facing down, so the opening is on top. Catches a transform that only works for horizontal facings -- the strips' own swing is about the authored X axis, which Create's vertical chain rotates, so this is where getting that composition backwards shows.",
       "facing": "down",
       "models": [
         { "model": "block/transit_gate/block_vertical" },
-        { "model": "block/transit_gate/hatch_closed", "transform": "packager_hatch" }
+        { "model": "block/transit_gate/rail", "transform": "packager_hatch" },
+        { "model": "block/transit_gate/flap", "transform": "transit_gate_flap_0" },
+        { "model": "block/transit_gate/flap_alt", "transform": "transit_gate_flap_1" },
+        { "model": "block/transit_gate/flap", "transform": "transit_gate_flap_2" },
+        { "model": "block/transit_gate/flap_alt", "transform": "transit_gate_flap_3" }
       ],
       "views": ["iso"]
     },
@@ -65,7 +91,11 @@
       "facing": "south",
       "models": [
         { "model": "block/transit_gate/block_powered" },
-        { "model": "block/transit_gate/hatch_closed", "transform": "packager_hatch" }
+        { "model": "block/transit_gate/rail", "transform": "packager_hatch" },
+        { "model": "block/transit_gate/flap", "transform": "transit_gate_flap_0" },
+        { "model": "block/transit_gate/flap_alt", "transform": "transit_gate_flap_1" },
+        { "model": "block/transit_gate/flap", "transform": "transit_gate_flap_2" },
+        { "model": "block/transit_gate/flap_alt", "transform": "transit_gate_flap_3" }
       ],
       "views": ["iso"]
     },

@@ -1,0 +1,23 @@
+{
+	"textures": {
+		"3": "create_transit:block/transit_gate_flaps",
+		"particle": "create_transit:block/transit_gate_particle"
+	},
+	"elements": [
+		{
+			"name": "flap_rail",
+			"from": [0, 14, 6.3],
+			"to": [16, 16, 8],
+			"faces": {
+				"north": {
+					"uv": [16, 11, 0, 13],
+					"texture": "#3"
+				},
+				"down": {
+					"uv": [0, 13, 16, 14],
+					"texture": "#3"
+				}
+			}
+		}
+	]
+}
