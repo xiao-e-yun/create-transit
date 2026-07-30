@@ -70,6 +70,20 @@ public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements I
         notifyUpdate();
     }
 
+    /**
+     * Holds the bulb lit while there is no label, instead of letting it decay
+     * from the last pulse.
+     *
+     * A missing label is a standing condition rather than something that just
+     * happened, and the pulse was built for the latter. The renderer paints a
+     * held bulb red, so the two readings stay apart: a white blink is a request
+     * going through, a red hold is a link that cannot serve one.
+     */
+    @Override
+    public float getGlow(float partialTicks) {
+        return label.isBlank() ? 1 : super.getGlow(partialTicks);
+    }
+
     @Override
     public Pair<PackagerBlockEntity, PackagingRequest> processRequest(ItemStack stack, int amount, String address,
         int linkIndex, MutableBoolean finalLink, int orderId, @Nullable PackageOrderWithCrafts context,

@@ -60,6 +60,11 @@ public class PortEndpointToggle {
         refresh();
     }
 
+    /** Whether the box is currently being read as a transit label. */
+    public boolean isEndpoint() {
+        return endpoint;
+    }
+
     /** The address to store for what the player left in the box. */
     public String compose(String boxValue) {
         return endpoint ? AddressLabels.endpoint(boxValue) : boxValue;

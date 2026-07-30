@@ -45,6 +45,11 @@ public final class TransitAddress {
 
     private TransitAddress() {}
 
+    /** What to show wherever the default lane needs a name. */
+    public static Component defaultLane() {
+        return Component.translatable(DEFAULT_LANE);
+    }
+
     /** The address as a player should read it, or itself when unlabelled. */
     public static String spell(String address) {
         List<String> names = AddressLabels.labelNames(address);
@@ -52,8 +57,7 @@ public final class TransitAddress {
             return address;
         List<String> hops = new ArrayList<>();
         for (String name : names)
-            hops.add(name.isEmpty() ? Component.translatable(DEFAULT_LANE)
-                .getString() : name);
+            hops.add(name.isEmpty() ? defaultLane().getString() : name);
         String path = AddressLabels.path(address);
         if (!path.isEmpty())
             hops.add(path);

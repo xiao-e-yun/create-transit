@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.simibubi.create.content.logistics.packagePort.PackagePortMenu;
@@ -16,9 +17,11 @@ import com.simibubi.create.foundation.gui.AllGuiTextures;
 import com.simibubi.create.foundation.gui.menu.AbstractSimiContainerScreen;
 
 import me.xiaoeyun.createtransit.content.transit.PortEndpointToggle;
+import me.xiaoeyun.createtransit.content.transit.TransitAddress;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Adds the transit endpoint switch to both package ports — frogports and
@@ -64,6 +67,27 @@ public abstract class PackagePortScreenMixin extends AbstractSimiContainerScreen
         createNestNetwork$endpoint = new PortEndpointToggle(menu.contentHolder.addressFilter, addressBox,
             getGuiLeft() + background.getWidth() - 61, getGuiTop() + background.getHeight() - 24,
             this::addRenderableWidget);
+    }
+
+    /**
+     * The placeholder vanilla draws in an empty address box is the port's own
+     * item name, which says nothing about what an empty box means. With the
+     * switch on it means the default lane — a real destination — so the box has
+     * to say that, or a configured endpoint would look exactly like a port
+     * nobody had touched.
+     *
+     * Redirecting the name rather than the drawing keeps every other decision
+     * vanilla's: this is reached only inside the branch that already decided the
+     * box is empty and unfocused, and the text is still drawn in the same place
+     * in the same colour.
+     */
+    @Redirect(method = "renderBg(Lnet/minecraft/client/gui/GuiGraphics;FII)V",
+        at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/item/ItemStack;getHoverName()Lnet/minecraft/network/chat/Component;"))
+    private Component createNestNetwork$namePlaceholderForEndpoints(ItemStack icon) {
+        if (createNestNetwork$endpoint != null && createNestNetwork$endpoint.isEndpoint())
+            return TransitAddress.defaultLane();
+        return icon.getHoverName();
     }
 
     @ModifyArg(method = "removed",
