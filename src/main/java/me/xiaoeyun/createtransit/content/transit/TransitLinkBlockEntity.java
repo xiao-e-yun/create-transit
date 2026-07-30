@@ -33,10 +33,13 @@ import net.minecraft.world.level.block.state.BlockState;
  * local warehouses served by vanilla links stay unlabelled while foreign
  * sources served by this link get stamped.
  *
- * A blank label is pure forwarding, identical to attaching a vanilla Stock
- * Link. Everything else — tuning, protection, keepAlive, redstone priority — is
- * inherited, so lowering this link's priority with redstone means "spend local
- * stock first, only reach across the border when short".
+ * The label is mandatory: it is what routes the shipment to a border gate and
+ * what the customs machinery keys on. A link left blank — possible only on
+ * legacy saves, since the screen refuses to store blank — stamps nothing and
+ * therefore behaves like a plain Stock Link; the goggle tooltip calls that
+ * out in red. Everything else — tuning, protection, keepAlive, redstone
+ * priority — is inherited, so lowering this link's priority with redstone
+ * means "spend local stock first, only reach across the border when short".
  */
 public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements IHaveGoggleInformation {
 
@@ -85,7 +88,7 @@ public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements I
         if (label.isBlank())
             tooltip.add(Component.literal("    ")
                 .append(Component.translatable("create_transit.transit_link.goggles.forwarding")
-                    .withStyle(ChatFormatting.GRAY)));
+                    .withStyle(ChatFormatting.RED)));
         else
             tooltip.add(Component.literal("    ")
                 .append(Component.translatable("create_transit.transit_link.goggles.label",

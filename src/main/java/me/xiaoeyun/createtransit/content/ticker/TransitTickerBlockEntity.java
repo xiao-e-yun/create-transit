@@ -3,13 +3,18 @@ package me.xiaoeyun.createtransit.content.ticker;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.Multimap;
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
 import com.simibubi.create.api.packager.InventoryIdentifier;
 import com.simibubi.create.content.logistics.BigItemStack;
@@ -25,28 +30,56 @@ import com.simibubi.create.content.logistics.packagerLink.PackagerLinkBlockEntit
 import com.simibubi.create.content.logistics.stockTicker.PackageOrderWithCrafts;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 
+import me.xiaoeyun.createtransit.content.transit.AddressLabels;
+import me.xiaoeyun.createtransit.content.transit.TransitLinkBlockEntity;
+import me.xiaoeyun.createtransit.content.transit.TransitOrderMappings;
 import net.createmod.catnip.data.Iterate;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Transit Ticker: a packager-shaped block that vanilla Stock Links can attach
- * to. Instead of exposing a physical inventory, it delegates to a bound child
- * logistics network, mounting the child's stock onto the parent network.
+ * to. It mounts a bound child logistics network onto the parent network, in
+ * one of two modes decided by what is mounted:
+ *
+ * <ul>
+ * <li><b>Domestic (Stock Link) — flattened mounting.</b> The child network's
+ * links are re-registered under the parent frequency as shadow entries, so to
+ * the parent's summaries and order assignment they simply are members of the
+ * parent network: every child link takes its own link slot, its own packager
+ * packs and ships physically, and identity, numbering, IsFinal, priorities
+ * and inventory-identifier dedup are all vanilla's own. The ticker itself
+ * reports no stock and takes no assignments — it is purely the membership
+ * manager. Membership is one-way: the child's registry is untouched, so the
+ * child browses only itself.</li>
+ * <li><b>Cross-border (Transit Link)</b> — a request whose head label names a
+ * Transit Link mounted here is foreign traffic. The ticker reports the
+ * child's aggregate stock through that link, forwards the request into the
+ * child network as a fresh order of the child's own, packed and shipped
+ * physically under the labelled address, and a customs entry in
+ * {@link TransitOrderMappings} tells the transit gate on the far side which
+ * parent order to re-stamp the boxes for on arrival.</li>
+ * </ul>
+ *
+ * Shadow lifecycle is the vanilla link registry's own: entries live by
+ * {@code keepAlive} and expire twenty ticks after the last refresh, so a
+ * broken link, an unloaded chunk, a retuned binding or a removed ticker all
+ * unmount by simply no longer being refreshed — no bookkeeping to get wrong.
  *
  * Design constraints (see README):
  * - Upstream-only: the child network cannot browse or request from the parent.
- * - Orders are forwarded synchronously into the child network with the parent
- *   requester's address kept intact (pure address forwarding).
- * - Proxy cycles are legal but inert: re-entrant summary/dispatch calls are
- *   cut off by a thread-local visited set and contribute an empty summary.
- * - No tick-driven logic.
+ * - The mounting point never stores: {@link #unwrapBox} refuses everything —
+ *   putting goods into the warehouse must travel physically.
+ * - Proxy cycles are legal but inert: shadowing skips links that already live
+ *   in the target network, and re-entrant summary/dispatch calls are cut off
+ *   by a thread-local visited set.
  *
  * The child binding lives in a non-global {@link LogisticallyLinkedBehaviour},
  * making the proxyer a passive member of the child network: it contributes no
@@ -60,6 +93,9 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
 
     public LogisticallyLinkedBehaviour childLink;
 
+    /** Live shadow registrations, one per (mount frequency, underlying child link). */
+    private Map<UUID, Map<PackagerLinkBlockEntity, LogisticallyLinkedBehaviour>> shadowLinks = new HashMap<>();
+
     private boolean cycleDetected;
 
     public TransitTickerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
@@ -69,7 +105,7 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     @Override
     public void addBehaviours(List<BlockEntityBehaviour> behaviours) {
         super.addBehaviours(behaviours);
-        // The proxy never exposes a physical inventory; keep the inherited
+        // The ticker has no physical inventory of its own; keep the inherited
         // behaviour inert so parent links see no InventoryIdentifier for us.
         targetInventory.withFilter($ -> false);
         behaviours.add(childLink = new LogisticallyLinkedBehaviour(this, false));
@@ -93,6 +129,12 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     public InventorySummary getAvailableItems(boolean scanInputSlots) {
         if (level == null || level.isClientSide)
             return InventorySummary.EMPTY;
+        // Flattened mounting: with a vanilla Stock Link mounted, the child's
+        // links report into the parent network themselves through shadow
+        // registration, and a summary from the ticker on top of that would
+        // count the warehouse twice. The aggregate below serves Transit Links.
+        if (!collectAdjacentMountFrequencies().isEmpty())
+            return InventorySummary.EMPTY;
         UUID childFreqId = childLink.freqId;
 
         Set<UUID> visited = VISITED_NETWORKS.get();
@@ -112,56 +154,219 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         return summary;
     }
 
-    // Order forwarding
+    // Order handling
 
     @Override
     public void attemptToSend(List<PackagingRequest> queuedRequests) {
-        // Redstone/manual packing paths pass null; the proxy has nothing to pack.
+        // Redstone/manual packing paths pass null; a pulse must not be able
+        // to drain the warehouse through the mounting point.
         if (queuedRequests == null || queuedRequests.isEmpty())
             return;
-        try {
-            if (level == null || level.isClientSide)
-                return;
-            UUID childFreqId = childLink.freqId;
+        if (level == null || level.isClientSide)
+            return;
 
-            Set<UUID> visited = VISITED_NETWORKS.get();
-            Set<UUID> parentFreqs = collectAdjacentParentFrequencies();
-            if (visited.contains(childFreqId) || parentFreqs.contains(childFreqId))
-                return;
+        List<PackagingRequest> crossBorder = extractCrossBorderRequests(queuedRequests);
+        if (!crossBorder.isEmpty())
+            forwardCrossBorder(crossBorder);
 
-            String address = queuedRequests.get(0)
-                .address();
-            List<BigItemStack> orderStacks = new ArrayList<>();
-            for (PackagingRequest request : queuedRequests)
-                if (!request.item()
-                    .isEmpty() && request.getCount() > 0)
-                    orderStacks.add(new BigItemStack(request.item()
-                        .copy(), request.getCount()));
-            if (orderStacks.isEmpty())
-                return;
+        // Nothing else has business here: under flattened mounting the
+        // child's own links take assignments directly and the ticker reports
+        // no stock. What still lands here is a blank-labelled legacy Transit
+        // Link's traffic, which the goggles already flag in red.
+        queuedRequests.clear();
+    }
 
-            Set<UUID> added = enterNetworks(visited, childFreqId, parentFreqs);
-            try {
-                // Two-phase ordering: clamp against the child's live stock
-                // before committing to the synchronous broadcast.
-                InventorySummary liveStock = LogisticsManager.getSummaryOfNetwork(childFreqId, true);
-                List<BigItemStack> feasible = new ArrayList<>();
-                for (BigItemStack entry : orderStacks) {
-                    int count = Math.min(entry.count, liveStock.getCountOf(entry.stack));
-                    if (count > 0)
-                        feasible.add(new BigItemStack(entry.stack, count));
-                }
-                if (feasible.isEmpty())
-                    return;
-
-                LogisticsManager.broadcastPackageRequest(childFreqId, RequestType.REDSTONE,
-                    PackageOrderWithCrafts.simple(feasible), null, address);
-            } finally {
-                visited.removeAll(added);
-            }
-        } finally {
-            queuedRequests.clear();
+    /**
+     * A request is cross-border exactly when its head label names a Transit
+     * Link mounted on this ticker: that label was stamped by the link that
+     * carried the request here, declaring the child network foreign. Any
+     * other label belongs to an outer border and travels with the address —
+     * a request may arrive wearing labels for borders it has yet to clear,
+     * and those are cargo, not routing directives for this hop.
+     */
+    private List<PackagingRequest> extractCrossBorderRequests(List<PackagingRequest> queuedRequests) {
+        Set<String> transitLabels = collectAdjacentTransitLabels();
+        if (transitLabels.isEmpty())
+            return List.of();
+        List<PackagingRequest> crossBorder = new ArrayList<>();
+        for (Iterator<PackagingRequest> iterator = queuedRequests.iterator(); iterator.hasNext();) {
+            PackagingRequest request = iterator.next();
+            String headLabel = AddressLabels.headLabelName(request.address());
+            if (headLabel == null || !transitLabels.contains(headLabel))
+                continue;
+            crossBorder.add(request);
+            iterator.remove();
         }
+        return crossBorder;
+    }
+
+    private void forwardCrossBorder(List<PackagingRequest> crossBorder) {
+        UUID childFreqId = childLink.freqId;
+        Set<UUID> visited = VISITED_NETWORKS.get();
+        Set<UUID> parentFreqs = collectAdjacentParentFrequencies();
+        if (visited.contains(childFreqId) || parentFreqs.contains(childFreqId))
+            return;
+
+        // The queue can legitimately mix link slots — several Transit Links
+        // on one ticker, or two broadcasts landing back to back — and each
+        // slot must become its own child order with its own customs entry.
+        Map<Long, List<PackagingRequest>> slots = new LinkedHashMap<>();
+        for (PackagingRequest request : crossBorder)
+            slots.computeIfAbsent(slotKey(request.orderId(), request.linkIndex()), $ -> new ArrayList<>())
+                .add(request);
+
+        Set<UUID> added = enterNetworks(visited, childFreqId, parentFreqs);
+        try {
+            for (List<PackagingRequest> slot : slots.values())
+                forwardSlot(childFreqId, slot);
+        } finally {
+            visited.removeAll(added);
+        }
+    }
+
+    /**
+     * One parent link slot becomes one whole child order. The broadcast mints
+     * a fresh order id, the child network packs and ships under it exactly as
+     * if a local player had ordered, and the customs entry filed here is what
+     * lets the transit gate on the far side hand the boxes back to the parent
+     * order on arrival. No identity is smuggled into the child network.
+     *
+     * The context registered is the parent's when it has one: vanilla stamps
+     * the full order — stacks and crafts — onto every fragment, and the
+     * crafts are what a destination repackager rebuilds recipe boxes from.
+     */
+    private void forwardSlot(UUID childFreqId, List<PackagingRequest> requests) {
+        PackagingRequest parent = requests.get(0);
+        String address = parent.address();
+
+        List<BigItemStack> orderStacks = new ArrayList<>();
+        for (PackagingRequest request : requests)
+            if (!request.item()
+                .isEmpty() && request.getCount() > 0)
+                orderStacks.add(new BigItemStack(request.item()
+                    .copy(), request.getCount()));
+        if (orderStacks.isEmpty())
+            return;
+
+        // Two-phase ordering: clamp against the child's live stock before
+        // committing to the synchronous broadcast.
+        InventorySummary liveStock = LogisticsManager.getSummaryOfNetwork(childFreqId, true);
+        List<BigItemStack> feasible = new ArrayList<>();
+        for (BigItemStack entry : orderStacks) {
+            int count = Math.min(entry.count, liveStock.getCountOf(entry.stack));
+            if (count > 0)
+                feasible.add(new BigItemStack(entry.stack, count));
+        }
+        if (feasible.isEmpty())
+            return;
+
+        Multimap<PackagerBlockEntity, PackagingRequest> assignment = LogisticsManager
+            .findPackagersForRequest(childFreqId, PackageOrderWithCrafts.simple(feasible), null, address);
+        if (assignment.isEmpty())
+            return;
+        for (PackagerBlockEntity packager : assignment.keySet())
+            if (packager.isTooBusyFor(RequestType.REDSTONE))
+                return;
+
+        PackageOrderWithCrafts context =
+            parent.context() != null ? parent.context() : PackageOrderWithCrafts.simple(feasible);
+        int childOrderId = assignment.values()
+            .iterator()
+            .next()
+            .orderId();
+        TransitOrderMappings.get((ServerLevel) level)
+            .register(childOrderId, parent.orderId(), parent.linkIndex(), parent.finalLink()
+                .booleanValue(), context, level.getGameTime());
+        LogisticsManager.performPackageRequests(assignment);
+    }
+
+    private static long slotKey(int orderId, int linkIndex) {
+        return ((long) orderId << 32) | (linkIndex & 0xFFFFFFFFL);
+    }
+
+    // Flattened mounting
+
+    @Override
+    public void lazyTick() {
+        super.lazyTick();
+        if (level == null || level.isClientSide())
+            return;
+        refreshShadowLinks();
+    }
+
+    /**
+     * Re-registers every link of the child network under each mounted parent
+     * frequency, on the registry's own keepAlive cadence. A shadow is a plain
+     * {@link LogisticallyLinkedBehaviour} whose block entity is the real child
+     * link — summaries and request processing delegate to it natively — with
+     * only the frequency swapped, a link id of its own, and the child link's
+     * redstone priority mirrored so disabling and de-prioritising carry over.
+     *
+     * Shadows a nested ticker injected into the child network are enumerated
+     * like any other link, so mounting chains flatten transitively, one
+     * lazyTick per layer. Two guards keep cycles inert: a link that already
+     * lives in the target network is never shadowed back into it, and each
+     * underlying link gets at most one shadow per mount frequency no matter
+     * how many paths reach it.
+     */
+    private void refreshShadowLinks() {
+        Map<UUID, Map<PackagerLinkBlockEntity, LogisticallyLinkedBehaviour>> refreshed = new HashMap<>();
+        UUID childFreqId = childLink.freqId;
+        for (UUID mountFreq : collectAdjacentMountFrequencies()) {
+            if (mountFreq.equals(childFreqId))
+                continue;
+            Map<PackagerLinkBlockEntity, LogisticallyLinkedBehaviour> existing =
+                shadowLinks.getOrDefault(mountFreq, Map.of());
+            Map<PackagerLinkBlockEntity, LogisticallyLinkedBehaviour> current = new HashMap<>();
+            for (LogisticallyLinkedBehaviour link : LogisticallyLinkedBehaviour.getAllPresent(childFreqId, false)) {
+                if (!(link.blockEntity instanceof PackagerLinkBlockEntity plbe))
+                    continue;
+                if (plbe.behaviour == null || mountFreq.equals(plbe.behaviour.freqId))
+                    continue;
+                if (current.containsKey(plbe))
+                    continue;
+                LogisticallyLinkedBehaviour shadow = existing.get(plbe);
+                if (shadow == null) {
+                    shadow = new LogisticallyLinkedBehaviour(plbe, false);
+                    shadow.freqId = mountFreq;
+                }
+                shadow.redstonePower = plbe.behaviour.redstonePower;
+                LogisticallyLinkedBehaviour.keepAlive(shadow);
+                current.put(plbe, shadow);
+            }
+            refreshed.put(mountFreq, current);
+        }
+        // Anything dropped here simply stops being refreshed and expires out
+        // of the registry within twenty ticks.
+        shadowLinks = refreshed;
+    }
+
+    /**
+     * Frequencies of the vanilla Stock Links mounted on this ticker — the
+     * networks the child's links are flattened into. Transit Links are never
+     * mount points: a border stays opaque, that being the point of one. A
+     * link silenced by full redstone unmounts, mirroring how vanilla links
+     * leave their own network.
+     */
+    private Set<UUID> collectAdjacentMountFrequencies() {
+        Set<UUID> result = new HashSet<>();
+        for (Direction d : Iterate.directions) {
+            BlockPos pos = worldPosition.relative(d);
+            if (!level.isLoaded(pos))
+                continue;
+            BlockState adjacentState = level.getBlockState(pos);
+            if (!(adjacentState.getBlock() instanceof PackagerLinkBlock))
+                continue;
+            if (PackagerLinkBlock.getConnectedDirection(adjacentState) != d)
+                continue;
+            if (!(level.getBlockEntity(pos) instanceof PackagerLinkBlockEntity plbe))
+                continue;
+            if (plbe instanceof TransitLinkBlockEntity)
+                continue;
+            if (plbe.behaviour != null && plbe.behaviour.redstonePower != 15)
+                result.add(plbe.behaviour.freqId);
+        }
+        return result;
     }
 
     @Override
@@ -197,6 +402,29 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
             if (level.getBlockEntity(pos) instanceof PackagerLinkBlockEntity plbe && plbe.behaviour != null
                 && plbe.behaviour.redstonePower != 15)
                 result.add(plbe.behaviour.freqId);
+        }
+        return result;
+    }
+
+    /**
+     * Labels of the Transit Links mounted on this ticker — the set of borders
+     * this mounting point is declared to sit on. A blank label contributes
+     * nothing: it stamps nothing, so no request can carry it here.
+     */
+    private Set<String> collectAdjacentTransitLabels() {
+        Set<String> result = new HashSet<>();
+        for (Direction d : Iterate.directions) {
+            BlockPos pos = worldPosition.relative(d);
+            if (!level.isLoaded(pos))
+                continue;
+            BlockState adjacentState = level.getBlockState(pos);
+            if (!(adjacentState.getBlock() instanceof PackagerLinkBlock))
+                continue;
+            if (PackagerLinkBlock.getConnectedDirection(adjacentState) != d)
+                continue;
+            if (level.getBlockEntity(pos) instanceof TransitLinkBlockEntity tlbe && !tlbe.getLabel()
+                .isBlank())
+                result.add(tlbe.getLabel());
         }
         return result;
     }

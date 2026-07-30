@@ -1,22 +1,30 @@
 package me.xiaoeyun.createtransit.content.transit;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
+import com.simibubi.create.content.logistics.BigItemStack;
 import com.simibubi.create.content.logistics.box.PackageItem;
+import com.simibubi.create.content.logistics.packager.InventorySummary;
 import com.simibubi.create.content.logistics.packager.PackagerItemHandler;
 import com.simibubi.create.content.logistics.packager.PackagingRequest;
 import com.simibubi.create.content.logistics.packager.repackager.RepackagerBlockEntity;
+import com.simibubi.create.content.logistics.stockTicker.PackageOrderWithCrafts;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -24,13 +32,26 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemStackHandler;
 
 /**
  * Transit on a domain boundary: packages passing through lose exactly one head
- * label, LIFO, and nothing else about the address is touched.
+ * label, LIFO, and the gate is the customs office where a forwarded child
+ * order is handed back to the parent order it fulfils.
+ *
+ * Arrivals go into the buffer the gate faces exactly as they came. Most leave
+ * again on the next pass, stripped of one label and otherwise untouched. The
+ * exception is boxes of a child order registered in
+ * {@link TransitOrderMappings}: a ticker forwarding across this border filed
+ * which parent order the child order stands in for, and those boxes wait for
+ * their siblings — the whole child order converges on this label by
+ * construction — then leave merged, renumbered and re-stamped with the parent
+ * identity, exactly the link slot the destination's defragmenter is waiting
+ * on. An entry that expired while the boxes were at sea degrades to the
+ * plain strip-and-pass behaviour; a jam is never on the menu.
  *
  * The gate does no routing whatsoever — routing stays 100% vanilla hardware.
- * It only rewrites the address of packages handed to it, and it accepts exactly
+ * It only rewrites packages handed to it, and it accepts exactly
  * the packages it can act on:
  *
  * <ul>
@@ -72,6 +93,9 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     /** Radius in blocks over which an unsigned gate may adopt a signed gate's label. */
     public static final int LABEL_SHARING_RANGE = 16;
 
+    /** A vanilla package holds up to nine stacks. */
+    private static final int BOX_SLOTS = 9;
+
     /** Label written on this gate's own sign; blank means wildcard. */
     private String ownLabel = "";
 
@@ -102,6 +126,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
         if (level == null || level.isClientSide())
             return;
         refreshLabels();
+        processCustoms();
     }
 
     @Override
@@ -116,7 +141,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
         BlockPos previousSource = adoptedFrom;
 
         updateSignAddress();
-        ownLabel = readLabel(signBasedAddress);
+        ownLabel = AddressLabels.signLabel(signBasedAddress);
 
         if (!ownLabel.isEmpty()) {
             effectiveLabel = ownLabel;
@@ -129,17 +154,6 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
 
         if (!effectiveLabel.equals(previousLabel) || !Objects.equals(adoptedFrom, previousSource))
             notifyUpdate();
-    }
-
-    /**
-     * Accepts either a bare name or a fully delimited label on the sign, so a
-     * player copying an address verbatim off a package still gets what they
-     * meant.
-     */
-    private static String readLabel(String signText) {
-        String text = signText == null ? "" : signText.trim();
-        String name = AddressLabels.headLabelName(text);
-        return AddressLabels.sanitizeName(name != null ? name : text);
     }
 
     /**
@@ -193,12 +207,16 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
         return best;
     }
 
-    // Label stripping
+    // Intake
 
     /**
-     * Admitting a package: the label comes off on the way in, and the stripped
-     * package lands in the buffer the gate faces. Refusing before anything moves
-     * keeps traffic this gate has no business with on its original route.
+     * Admitting a package: it goes into the customs buffer — the container the
+     * gate faces — exactly as it arrived. Stripping happens on release, because
+     * what release looks like depends on the box: a registered child order
+     * waits for its siblings and leaves merged under its parent's identity,
+     * anything else leaves stripped and otherwise untouched. Refusing before
+     * anything moves keeps traffic this gate has no business with on its
+     * original route.
      */
     @Override
     public boolean unwrapBox(ItemStack box, boolean simulate) {
@@ -207,8 +225,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
         if (!PackageItem.isPackage(box))
             return false;
 
-        String address = PackageItem.getAddress(box);
-        String headLabel = AddressLabels.headLabelName(address);
+        String headLabel = AddressLabels.headLabelName(PackageItem.getAddress(box));
         if (headLabel == null)
             return false;
         if (!effectiveLabel.isEmpty() && !effectiveLabel.equals(headLabel))
@@ -218,16 +235,10 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
         if (storage == null)
             return false;
 
-        ItemStack stripped = box.copyWithCount(1);
-        String remaining = AddressLabels.stripHeadLabel(address);
-        if (remaining.isBlank())
-            PackageItem.clearAddress(stripped);
-        else
-            PackageItem.addAddress(stripped, remaining);
-
+        ItemStack buffered = box.copyWithCount(1);
         boolean anySpace = false;
         for (int slot = 0; slot < storage.getSlots(); slot++) {
-            if (!storage.insertItem(slot, stripped, simulate)
+            if (!storage.insertItem(slot, buffered, simulate)
                 .isEmpty())
                 continue;
             anySpace = true;
@@ -238,10 +249,239 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
         if (simulate)
             return true;
 
-        // The box drawn travelling inward is the one that arrived, labelled.
         previouslyUnwrapped = box;
         animationInward = true;
         animationTicks = CYCLE;
+        notifyUpdate();
+        return true;
+    }
+
+    // Customs
+
+    private record Member(int slot, ItemStack box) {
+
+        CompoundTag fragment() {
+            return box.getOrCreateTag()
+                .getCompound("Fragment");
+        }
+    }
+
+    /**
+     * One action per pass, on the packager family's usual cadence: either one
+     * box that owes nothing here is released, or one complete child order is
+     * merged and re-stamped. Boxes of a registered child order wait in the
+     * buffer for their siblings; everything else passes through immediately,
+     * stripped of one label — which is what this gate did before it learned
+     * customs, and remains the behaviour for legacy traffic and for orders
+     * whose entry has expired.
+     */
+    private void processCustoms() {
+        if (!heldBox.isEmpty() || animationTicks != 0 || buttonCooldown > 0)
+            return;
+        if (!queuedExitingPackages.isEmpty())
+            return;
+        IItemHandler storage = getStorage();
+        if (storage == null)
+            return;
+
+        TransitOrderMappings mappings = TransitOrderMappings.get((ServerLevel) level);
+        long gameTime = level.getGameTime();
+
+        // orderId -> linkIndex -> box index -> member; registered orders only
+        Map<Integer, Map<Integer, Map<Integer, Member>>> held = new HashMap<>();
+        // A duplicate box index means two shipments collided on one identity;
+        // merging either would corrupt both. The order stays frozen until its
+        // customs entry expires, at which point the boxes release one by one.
+        Set<Integer> broken = new HashSet<>();
+
+        for (int slot = 0; slot < storage.getSlots(); slot++) {
+            ItemStack stack = storage.extractItem(slot, 1, true);
+            if (stack.isEmpty() || !PackageItem.isPackage(stack))
+                continue;
+            String headLabel = AddressLabels.headLabelName(PackageItem.getAddress(stack));
+            if (headLabel == null)
+                continue;
+            if (!effectiveLabel.isEmpty() && !effectiveLabel.equals(headLabel))
+                continue;
+
+            if (!repackageHelper.isFragmented(stack)) {
+                release(storage, slot, stack);
+                return;
+            }
+            int orderId = PackageItem.getOrderId(stack);
+            if (mappings.peek(orderId, gameTime) == null) {
+                release(storage, slot, stack);
+                return;
+            }
+            Member member = new Member(slot, stack);
+            CompoundTag fragment = member.fragment();
+            Member previous = held.computeIfAbsent(orderId, $ -> new HashMap<>())
+                .computeIfAbsent(fragment.getInt("LinkIndex"), $ -> new HashMap<>())
+                .put(fragment.getInt("Index"), member);
+            if (previous != null)
+                broken.add(orderId);
+        }
+
+        for (Map.Entry<Integer, Map<Integer, Map<Integer, Member>>> order : held.entrySet()) {
+            if (broken.contains(order.getKey()))
+                continue;
+            if (!isOrderComplete(order.getValue()))
+                continue;
+            List<Member> members = new ArrayList<>();
+            order.getValue()
+                .values()
+                .forEach(shipment -> members.addAll(shipment.values()));
+            if (mergeOrder(storage, order.getKey(), members, mappings, gameTime))
+                return;
+        }
+    }
+
+    /** Box indices run 0..n with exactly the last one stamped IsFinal. */
+    private static boolean isShipmentComplete(Map<Integer, Member> shipment) {
+        int finalIndex = -1;
+        for (Map.Entry<Integer, Member> member : shipment.entrySet()) {
+            if (!member.getValue()
+                .fragment()
+                .getBoolean("IsFinal"))
+                continue;
+            if (finalIndex != -1)
+                return false;
+            finalIndex = member.getKey();
+        }
+        if (finalIndex == -1 || shipment.size() != finalIndex + 1)
+            return false;
+        for (int i = 0; i <= finalIndex; i++)
+            if (!shipment.containsKey(i))
+                return false;
+        return true;
+    }
+
+    /**
+     * Links run 0..n with exactly the last one flagged IsFinalLink, every link
+     * complete, and one address across the board — the whole child order is in
+     * the buffer, so its true total is known and merging is sound.
+     */
+    private static boolean isOrderComplete(Map<Integer, Map<Integer, Member>> links) {
+        int finalLink = -1;
+        String address = null;
+        for (Map.Entry<Integer, Map<Integer, Member>> link : links.entrySet()) {
+            if (!isShipmentComplete(link.getValue()))
+                return false;
+            for (Member member : link.getValue()
+                .values()) {
+                String memberAddress = PackageItem.getAddress(member.box());
+                if (address == null)
+                    address = memberAddress;
+                else if (!address.equals(memberAddress))
+                    return false;
+            }
+            if (!link.getValue()
+                .get(0)
+                .fragment()
+                .getBoolean("IsFinalLink"))
+                continue;
+            if (finalLink != -1)
+                return false;
+            finalLink = link.getKey();
+        }
+        if (finalLink == -1 || links.size() != finalLink + 1)
+            return false;
+        for (int i = 0; i <= finalLink; i++)
+            if (!links.containsKey(i))
+                return false;
+        return true;
+    }
+
+    /**
+     * Passing a single box through: one label off, nothing else touched. For
+     * unregistered fragments this preserves whatever identity they carry — a
+     * Transit Link on an ordinary packager forwards the parent identity
+     * natively, and such boxes must reach the destination defragmenter intact.
+     */
+    private void release(IItemHandler storage, int slot, ItemStack box) {
+        ItemStack sent = storage.extractItem(slot, 1, false);
+        if (sent.isEmpty())
+            return;
+        String remaining = AddressLabels.stripHeadLabel(PackageItem.getAddress(sent));
+        if (remaining.isBlank())
+            PackageItem.clearAddress(sent);
+        else
+            PackageItem.addAddress(sent, remaining);
+        heldBox = sent;
+        animationInward = false;
+        animationTicks = CYCLE;
+        notifyUpdate();
+    }
+
+    /**
+     * The whole child order becomes the parent link slot it was ordered as.
+     * One label comes off the shared address; identity comes from the customs
+     * entry filed by the forwarding ticker, and the numbering is rebuilt 0..n
+     * with IsFinal on the last — a complete slot, exactly as if the ticker had
+     * packed it locally. If the entry expired while the boxes were at sea, the
+     * merge still stands, under the child's own identity as a single-link
+     * order a destination defragmenter can settle by itself.
+     */
+    private boolean mergeOrder(IItemHandler storage, int childOrderId, List<Member> members,
+        TransitOrderMappings mappings, long gameTime) {
+        String address = null;
+        PackageOrderWithCrafts boxContext = null;
+        InventorySummary contents = new InventorySummary();
+        for (Member member : members) {
+            if (address == null)
+                address = PackageItem.getAddress(member.box());
+            if (boxContext == null)
+                boxContext = PackageItem.getOrderContext(member.box());
+            ItemStackHandler boxContents = PackageItem.getContents(member.box());
+            for (int slot = 0; slot < boxContents.getSlots(); slot++) {
+                ItemStack stack = boxContents.getStackInSlot(slot);
+                if (!stack.isEmpty())
+                    contents.add(stack);
+            }
+        }
+
+        List<ItemStack> stacks = new ArrayList<>();
+        for (BigItemStack entry : contents.getStacks()) {
+            int remaining = entry.count;
+            while (remaining > 0) {
+                int taken = Math.min(remaining, entry.stack.getMaxStackSize());
+                stacks.add(entry.stack.copyWithCount(taken));
+                remaining -= taken;
+            }
+        }
+        // Empty boxes merged to nothing would make the shipment vanish; leave
+        // such an oddity untouched rather than swallow it.
+        if (stacks.isEmpty())
+            return false;
+
+        for (Member member : members)
+            storage.extractItem(member.slot(), 1, false);
+
+        TransitOrderMappings.Mapping mapping = mappings.take(childOrderId, gameTime);
+        int orderId = mapping != null ? mapping.parentOrderId() : childOrderId;
+        int linkIndex = mapping != null ? mapping.parentLinkIndex() : 0;
+        boolean isFinalLink = mapping == null || mapping.parentIsFinalLink();
+        PackageOrderWithCrafts context = mapping != null && mapping.context() != null ? mapping.context() : boxContext;
+        String remaining = AddressLabels.stripHeadLabel(address);
+
+        int boxCount = (stacks.size() + BOX_SLOTS - 1) / BOX_SLOTS;
+        List<BigItemStack> merged = new ArrayList<>();
+        for (int boxIndex = 0; boxIndex < boxCount; boxIndex++) {
+            ItemStackHandler handler = new ItemStackHandler(BOX_SLOTS);
+            for (int slot = 0; slot < BOX_SLOTS; slot++) {
+                int stackIndex = boxIndex * BOX_SLOTS + slot;
+                if (stackIndex >= stacks.size())
+                    break;
+                handler.setStackInSlot(slot, stacks.get(stackIndex));
+            }
+            ItemStack box = PackageItem.containing(handler);
+            if (!remaining.isBlank())
+                PackageItem.addAddress(box, remaining);
+            PackageItem.setOrder(box, orderId, linkIndex, isFinalLink, boxIndex, boxIndex == boxCount - 1, context);
+            merged.add(new BigItemStack(box, 1));
+        }
+
+        queuedExitingPackages.addAll(merged);
         notifyUpdate();
         return true;
     }

@@ -119,6 +119,17 @@ public final class AddressLabels {
     }
 
     /**
+     * Reads a label name off a sign, accepting either a bare name or a fully
+     * delimited label, so a player copying an address verbatim off a package
+     * still gets what they meant.
+     */
+    public static String signLabel(String signText) {
+        String text = signText == null ? "" : signText.trim();
+        String name = headLabelName(text);
+        return sanitizeName(name != null ? name : text);
+    }
+
+    /**
      * The narrow matching rule injected in front of {@code PackageItem#matchAddress}.
      *
      * Returns null when neither side is labelled, leaving vanilla semantics

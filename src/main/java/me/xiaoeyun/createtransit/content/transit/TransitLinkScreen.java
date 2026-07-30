@@ -16,9 +16,11 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
- * Single-field editor for a transit link's transit label. Leaving it blank
- * makes the link a plain forwarder, which is why the placeholder spells that
- * out rather than showing an empty box.
+ * Single-field editor for a transit link's transit label. The label is
+ * mandatory — it names the border this link declares, and without one the
+ * link degrades to a plain Stock Link — so a blank box on close changes
+ * nothing: a set label cannot be cleared back into the legacy blank state,
+ * and the placeholder says what is missing rather than showing an empty box.
  */
 @OnlyIn(Dist.CLIENT)
 public class TransitLinkScreen extends AbstractSimiScreen {
@@ -83,7 +85,9 @@ public class TransitLinkScreen extends AbstractSimiScreen {
 
     @Override
     public void removed() {
-        CtPackets.CHANNEL.sendToServer(new TransitLinkLabelPacket(pos, labelBox.getValue()));
+        if (!labelBox.getValue()
+            .isBlank())
+            CtPackets.CHANNEL.sendToServer(new TransitLinkLabelPacket(pos, labelBox.getValue()));
         super.removed();
     }
 
