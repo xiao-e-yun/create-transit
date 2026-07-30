@@ -5,7 +5,7 @@ Respond in 繁體中文 (zh-TW).
 ## Upstream source lookup
 
 Never guess Create / Flywheel / Forge APIs from memory — read the real source with `gh`.
-The repos and their 1.20.1 branches are in the 相關模組 table in [README.md](README.md).
+The repos and their 1.20.1 branches are in the Upstream sources table in [README.md](README.md).
 
 **Always pass `?ref=`.** Every upstream repo's default branch is a newer Minecraft version
 (Create's `master` is NeoForge 1.21); reading it yields APIs that are silently wrong here.
