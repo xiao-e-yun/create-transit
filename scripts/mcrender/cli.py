@@ -170,7 +170,7 @@ examples
   render_model.py --scene-all --sheet
   render_model.py --check-fixtures
   render_model.py --view below block/transit_gate/block
-  render_model.py --with 'block/transit_gate/hatch_closed@packager_hatch' \\
+  render_model.py --with 'block/transit_gate/rail@packager_hatch' \\
                   block/transit_gate/block
 
 Model ids may be bare (resolved against this mod) or namespaced
@@ -204,9 +204,12 @@ that renders, fixture checks and validators all read the same declaration.
                     help='draw this into the same scene as every model given, '
                          'depth-tested against it')
     ap.add_argument('--only', action='append', default=[], metavar='GLOB',
-                    help='draw only elements whose handle matches, e.g. '
-                         "'hatch_closed#flap_rail' or 'block#*'. Handles are "
-                         'printed whenever --only or --paint is used.')
+                    help="draw only elements whose handle matches, e.g. "
+                         "'rail#flap_rail' or 'block#*'. Handles are printed "
+                         'whenever --only or --paint is used. A handle is the '
+                         "model's name and the element's, so a scene drawing one "
+                         'model several times -- the gate\'s strips -- matches '
+                         'all of those copies at once.')
     ap.add_argument('--paint', action='append', default=[],
                     metavar='GLOB=#RRGGBB',
                     help='flat-fill matching elements, to see which geometry is '
@@ -217,8 +220,9 @@ that renders, fixture checks and validators all read the same declaration.
                          'block models are authored in)')
     ap.add_argument('--view', choices=sorted(VIEWS),
                     help='named camera angle instead of --yaw/--pitch')
-    ap.add_argument('--yaw', type=float, default=225.0)
-    ap.add_argument('--pitch', type=float, default=30.0,
+    ap.add_argument('--yaw', type=float,
+                    help='default: 225, or the scene\'s first listed view')
+    ap.add_argument('--pitch', type=float,
                     help='negative looks up at the block from below')
     ap.add_argument('--sheet', action='store_true',
                     help='also write sheet.png, every render tiled and labelled')
@@ -266,7 +270,22 @@ that renders, fixture checks and validators all read the same declaration.
         paint[pattern] = [int(colour[i:i + 2], 16) for i in (0, 2, 4)]
     debug = dict(only=args.only or None, paint=paint or None)
 
-    yaw, pitch = (VIEWS[args.view] if args.view else (args.yaw, args.pitch))
+    def angle(named):
+        """Resolve the camera, most explicit wins.
+
+        A scene naming its own views must not swallow an angle asked for on the
+        command line: doing that is how thirteen renders at thirteen pitches came
+        out as thirteen copies of one head-on view, and got reported as evidence.
+        """
+        if args.view:
+            return VIEWS[args.view], args.view
+        base = VIEWS[named] if named else (225.0, 30.0)
+        y = args.yaw if args.yaw is not None else base[0]
+        p = args.pitch if args.pitch is not None else base[1]
+        if (y, p) == base and named:
+            return base, named
+        return (y, p), 'y%gp%g' % (y, p)
+
     outdir = args.out if os.path.isabs(args.out) else os.path.join(REPO, args.out)
     os.makedirs(outdir, exist_ok=True)
     rendered = []
@@ -277,12 +296,11 @@ that renders, fixture checks and validators all read the same declaration.
             print('error: no scene %r; --list to see them' % name, file=sys.stderr)
             return 2
         scene = scenes[name]
-        view = args.view or scene.get('views', ['iso'])[0]
-        y, p = VIEWS[view]
-        print('%s @ %s' % (name, view), flush=True)
+        (y, p), how = angle(scene.get('views', ['iso'])[0])
+        print('%s @ %s' % (name, how), flush=True)
         im = render(assets, specs_for(scene, table), size=args.size,
                     yaw=y, pitch=p, ss=args.ss, **debug)
-        label = '%s.%s' % (name, view)
+        label = '%s.%s' % (name, how)
         im.save(os.path.join(outdir, label + '.png'))
         rendered.append((label, im))
 
@@ -293,6 +311,7 @@ that renders, fixture checks and validators all read the same declaration.
             model, _, tname = spec.partition('@')
             extra.append((model, table.matrix(tname or 'none', args.facing)))
         import numpy as np
+        (yaw, pitch), _ = angle(None)
         for res in loose:
             print(res, flush=True)
             im = render(assets, [(res, np.eye(4))] + extra, size=args.size,
