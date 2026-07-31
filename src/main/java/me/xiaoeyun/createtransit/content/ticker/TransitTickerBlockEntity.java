@@ -99,8 +99,8 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
 
     private boolean cycleDetected;
 
-    /** Links in the child network other than our own binding; 0 means unbound or unloaded. */
-    private int childComponents;
+    /** Whether the child network holds anything besides our own binding. */
+    private boolean childConnected;
 
     public TransitTickerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -500,39 +500,43 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     }
 
     /**
-     * How many links the bound child network has besides our own binding.
+     * Whether the binding reaches anything at all.
      *
-     * Counted on the server and synced, which is the whole point of the field.
-     * The registry has a client half, but it is filled by links calling
+     * Answered on the server and synced, which is the whole point of the field.
+     * The link registry has a client half, but it is filled by links calling
      * keepAlive from their own lazyTick, so it only ever holds what the player
      * has loaded — a warehouse across the world contributes nothing to it, and
-     * anything reading it would call a perfectly healthy network unbound.
+     * anything answering this there would call a healthy network unbound. That
+     * half exists for the tuning item's sixty-four block highlight, which asks
+     * a different question: what is near me, not whether the binding is alive.
      */
-    public int getChildComponents() {
-        return childComponents;
-    }
-
-    /** Whether the binding reaches anything at all. */
     public boolean isChildConnected() {
-        return childComponents > 0;
+        return childConnected;
     }
 
     private void refreshNetworkState() {
         boolean detected = computeCycleDetected();
-        int components = computeChildComponents();
-        if (detected == cycleDetected && components == childComponents)
+        boolean connected = computeChildConnected();
+        if (detected == cycleDetected && connected == childConnected)
             return;
         cycleDetected = detected;
-        childComponents = components;
+        childConnected = connected;
         notifyUpdate();
     }
 
-    private int computeChildComponents() {
-        int components = 0;
+    /**
+     * Whether anything else is on the child frequency. A boolean rather than a
+     * count on purpose: the count moves whenever a chunk somewhere in the child
+     * network loads or unloads, and every move would be an update packet for a
+     * number nothing reads. Create keeps the same distinction — it tracks
+     * {@code contributingLinks} internally but only ever shows the player
+     * {@code activeLinks == 0}.
+     */
+    private boolean computeChildConnected() {
         for (LogisticallyLinkedBehaviour link : LogisticallyLinkedBehaviour.getAllPresent(childLink.freqId, false))
             if (link != childLink)
-                components++;
-        return components;
+                return true;
+        return false;
     }
 
     /**
@@ -635,14 +639,14 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         if (tag.hasUUID("ChildFreq"))
             childLink.freqId = tag.getUUID("ChildFreq");
         cycleDetected = tag.getBoolean("CycleDetected");
-        childComponents = tag.getInt("ChildComponents");
+        childConnected = tag.getBoolean("ChildConnected");
     }
 
     @Override
     protected void write(CompoundTag tag, boolean clientPacket) {
         super.write(tag, clientPacket);
         tag.putBoolean("CycleDetected", cycleDetected);
-        tag.putInt("ChildComponents", childComponents);
+        tag.putBoolean("ChildConnected", childConnected);
     }
 
     // Goggles
@@ -653,16 +657,18 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
             .append(Component.translatable("block.create_transit.transit_ticker")
                 .withStyle(ChatFormatting.WHITE)));
 
-        // The synced count, not a fresh one. This runs on the client, where the
-        // link registry holds only what the player has loaded, so counting here
-        // would report a warehouse across the world as unreachable — and would
+        // Only the faults get a line, which is Create's own shape for this:
+        // StockKeeperRequestScreen answers with a troubleshooting message and
+        // otherwise shows the stock, so a healthy network is never announced,
+        // it is simply what you see. Here the bulb is what you see -- a white
+        // heartbeat is the mounting point saying it is bound and polling -- so
+        // a line repeating that would be the tooltip talking over the block.
+        //
+        // The synced field, never a fresh count. This runs on the client, where
+        // the link registry holds only what the player has loaded, so asking
+        // here would call a warehouse across the world unreachable, and would
         // disagree with the bulb, which reads the same field.
-        if (isChildConnected())
-            tooltip.add(Component.literal("    ")
-                .append(Component.translatable("create_transit.transit_ticker.goggles.connected",
-                    childComponents)
-                    .withStyle(ChatFormatting.GREEN)));
-        else
+        if (!isChildConnected())
             tooltip.add(Component.literal("    ")
                 .append(Component.translatable("create_transit.transit_ticker.goggles.disconnected")
                     .withStyle(ChatFormatting.GRAY)));

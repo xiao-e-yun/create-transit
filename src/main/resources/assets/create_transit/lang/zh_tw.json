@@ -1,6 +1,5 @@
 {
   "block.create_transit.transit_ticker": "跨境發報機",
-  "create_transit.transit_ticker.goggles.connected": "子網路元件（已載入）：%s",
   "create_transit.transit_ticker.goggles.disconnected": "子網路未連接（未綁定或未載入）",
   "create_transit.transit_ticker.goggles.cycle": "警告：偵測到代理循環，此路徑貢獻空庫存",
   "create_transit.transit_ticker.converted": "已轉換庫存收銀機，子網路綁定完成",

@@ -1,6 +1,5 @@
 {
   "block.create_transit.transit_ticker": "Transit Ticker",
-  "create_transit.transit_ticker.goggles.connected": "Child network components (loaded): %s",
   "create_transit.transit_ticker.goggles.disconnected": "Child network not reachable (unbound or unloaded)",
   "create_transit.transit_ticker.goggles.cycle": "Warning: proxy cycle detected, contributing empty stock",
   "create_transit.transit_ticker.converted": "Stock Ticker converted, child network bound",
