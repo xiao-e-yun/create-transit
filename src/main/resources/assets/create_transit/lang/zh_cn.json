@@ -1,0 +1,22 @@
+{
+  "block.create_transit.transit_ticker": "跨境发报机",
+  "create_transit.transit_ticker.goggles.disconnected": "子网络未连接（未绑定或未加载）",
+  "create_transit.transit_ticker.goggles.cycle": "警告：检测到代理循环，此路径贡献空库存",
+  "create_transit.transit_ticker.converted": "已转换仓储发报机，子网络绑定完成",
+  "create_transit.transit_ticker.reverted": "已还原为仓储发报机，频率保留",
+  "create_transit.transit_ticker.conversion_denied": "你没有管理此网络的权限",
+  "block.create_transit.transit_link": "跨境链接站",
+  "create_transit.transit_link.goggles.label": "请求将通过 %s 转运",
+  "create_transit.transit_link.goggles.forwarding": "未设转运标签：行为等同普通仓储链接站，请填写",
+  "create_transit.transit_link.label_empty": "（必填转运标签）",
+  "create_transit.transit_link.label_hint": "必填：对应货运通关的边境关口名称",
+  "block.create_transit.transit_gate": "跨境关口",
+  "create_transit.transit_gate.goggles.strips": "剥除通过包裹的 %s 转运标签",
+  "create_transit.transit_gate.goggles.wildcard": "无告示牌：剥除任何转运标签，出境盖上默认转运",
+  "create_transit.transit_gate.goggles.adopted": "转运标签取自 %s, %s, %s 的告示牌",
+  "create_transit.package_port.transit_endpoint": "跨境端点",
+  "create_transit.package_port.endpoint_on": "地址是跨境包裹的转运标签（留空＝默认转运，* ＝全部）",
+  "create_transit.package_port.endpoint_off": "地址是普通的域内地址",
+  "create_transit.package_port.default_lane": "*默认转运*",
+  "item.create_transit.transit_package": "跨境包裹"
+}
