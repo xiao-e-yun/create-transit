@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "L": {
+      "item": "create:stock_link"
+    },
+    "R": {
+      "item": "create:railway_casing"
+    }
+  },
+  "pattern": [
+    "L",
+    "R"
+  ],
+  "result": {
+    "item": "create_transit:transit_link"
+  },
+  "show_notification": true
+}
