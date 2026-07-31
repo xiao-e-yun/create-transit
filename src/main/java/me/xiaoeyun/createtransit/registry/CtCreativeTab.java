@@ -2,9 +2,12 @@ package me.xiaoeyun.createtransit.registry;
 
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.AllCreativeModeTabs;
+import com.simibubi.create.content.logistics.box.PackageStyles;
 
 import net.minecraft.world.item.CreativeModeTab.TabVisibility;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Places this mod's items in Create's own creative tab.
@@ -43,6 +46,18 @@ public final class CtCreativeTab {
                 TabVisibility.PARENT_AND_SEARCH_TABS);
         event.getEntries()
             .putAfter(AllBlocks.STOCK_LINK.asStack(), CtBlocks.TRANSIT_LINK.asStack(),
+                TabVisibility.PARENT_AND_SEARCH_TABS);
+
+        // The package rides with Create's own boxes, which sit in the tab in
+        // registration order -- so "after the last style Create declares" is
+        // the end of that run. Deriving the anchor from PackageStyles.STYLES
+        // instead of hard-coding an id keeps it pointed there even if the
+        // list changes shape upstream.
+        ItemStack lastBox = new ItemStack(ForgeRegistries.ITEMS.getValue(
+            PackageStyles.STYLES.get(PackageStyles.STYLES.size() - 1)
+                .getItemId()));
+        event.getEntries()
+            .putAfter(lastBox, CtItems.TRANSIT_PACKAGE.asStack(),
                 TabVisibility.PARENT_AND_SEARCH_TABS);
     }
 
