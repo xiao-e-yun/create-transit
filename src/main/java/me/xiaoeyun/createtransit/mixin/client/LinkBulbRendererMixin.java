@@ -12,6 +12,7 @@ import com.simibubi.create.content.redstone.displayLink.LinkBulbRenderer;
 import com.simibubi.create.content.redstone.displayLink.LinkWithBulbBlockEntity;
 
 import me.xiaoeyun.createtransit.content.ticker.TransitTickerBlockEntity;
+import me.xiaoeyun.createtransit.content.transit.TransitLinkBlockEntity;
 import net.createmod.catnip.render.SuperByteBuffer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.level.Level;
@@ -22,11 +23,18 @@ import net.minecraft.world.level.Level;
  * <p><b>Dark while inert.</b> Two conditions stop a link from doing anything at
  * all: a transit link with no label stamps no border, and a mounting point whose
  * binding reaches nothing has no network to poll. Neither gets a blink, because
- * a blink means work happened and none did. Both readings live outside this
- * class in the sense that neither draws anything — one is the block entity
- * returning zero glow, the other is this file declining to offer a heartbeat —
- * and that is deliberate: below Create's glow threshold no bulb is drawn at all,
- * so inert blocks simply look like the idle links they have become.
+ * a blink means work happened and none did.
+ *
+ * <p>Both are made dark here, by refusing the heartbeat, and the unlabelled case
+ * needs that as well as its block entity returning zero glow — not instead of
+ * it. The heartbeat is offered <em>over</em> whatever the link reports, through
+ * {@link Math#max}, so zeroing a link's own glow only silences it while nothing
+ * is being offered on top. A blank label pins the link's own contribution at
+ * nothing; this file is what decides nothing is added to it.
+ *
+ * <p>Below Create's glow threshold no bulb is drawn at all, so an inert block
+ * ends up looking exactly like the idle link it has become. That is the price
+ * of the paragraph below and is paid on purpose.
  *
  * <p><b>A heartbeat on a mounting point.</b> A link attached to a Transit Ticker
  * never blinks on its own. Nothing is packed there — under flattened mounting
@@ -147,10 +155,14 @@ public class LinkBulbRendererMixin {
             return glow;
         if (isCycling(ticker, be))
             return flash(ticker, partialTicks);
-        // Nothing bound below, nothing to report being alive about. The
-        // heartbeat is simply not offered, and the bulb falls to whatever it
-        // would have been without us — which for an idle link is dark.
-        if (!ticker.isChildConnected())
+        // Nothing to report being alive about, from either end: a binding that
+        // reaches nothing has no poll worth announcing, and an unlabelled link
+        // is not part of the poll being announced — the ticker never counts it
+        // as a border, so it is standing on the mounting rather than making
+        // one. Refusing the heartbeat is what actually makes these dark;
+        // zeroing the link's own glow does not, because the heartbeat is
+        // offered over the top of it and Math#max would hand it straight back.
+        if (!ticker.isChildConnected() || isInert(be))
             return glow;
         return Math.max(glow, heartbeat(ticker, partialTicks));
     }
@@ -223,6 +235,19 @@ public class LinkBulbRendererMixin {
         if (isCycling(mountedTicker(be), be))
             return glow.color(FAULT_RED, FAULT_GREEN, FAULT_BLUE, alpha);
         return glow.color(red, green, blue, alpha);
+    }
+
+    /**
+     * Whether this link can do anything at all.
+     *
+     * Only a transit link can fail this, and only by having no label: it stamps
+     * no border, so the ticker it sits on never counts it as one, never sees a
+     * request arrive through it, and drops what does. There is no mounting here
+     * for a heartbeat to be about.
+     */
+    private static boolean isInert(LinkWithBulbBlockEntity be) {
+        return be instanceof TransitLinkBlockEntity link && link.getLabel()
+            .isBlank();
     }
 
     /**
