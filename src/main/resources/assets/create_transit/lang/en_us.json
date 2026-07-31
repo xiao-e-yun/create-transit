@@ -18,5 +18,6 @@
   "create_transit.package_port.transit_endpoint": "Transit Endpoint",
   "create_transit.package_port.endpoint_on": "The address is a foreign package's transit label (blank = default lane, * = any)",
   "create_transit.package_port.endpoint_off": "The address is an ordinary local one",
-  "create_transit.package_port.default_lane": "*default lane*"
+  "create_transit.package_port.default_lane": "*default lane*",
+  "item.create_transit.transit_package": "Transit Package"
 }

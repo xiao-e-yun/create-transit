@@ -8,6 +8,7 @@ import me.xiaoeyun.createtransit.content.ticker.TransitTickerConversion;
 import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.registry.CtBlockEntities;
 import me.xiaoeyun.createtransit.registry.CtBlocks;
+import me.xiaoeyun.createtransit.registry.CtItems;
 import me.xiaoeyun.createtransit.registry.CtCreativeTab;
 import me.xiaoeyun.createtransit.registry.CtPartialModels;
 import net.minecraft.resources.ResourceLocation;
@@ -37,6 +38,7 @@ public class CreateTransit {
 
         CtBlocks.register();
         CtBlockEntities.register();
+        CtItems.register();
         // Partial models must exist before the first model bake collects them,
         // which the constructor comfortably precedes and a setup event may not.
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> CtPartialModels::init);

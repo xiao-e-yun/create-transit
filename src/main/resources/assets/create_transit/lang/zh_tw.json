@@ -18,5 +18,6 @@
   "create_transit.package_port.transit_endpoint": "跨境端點",
   "create_transit.package_port.endpoint_on": "地址是跨境包裹的轉運標籤（留空＝默認轉運，* ＝全部）",
   "create_transit.package_port.endpoint_off": "地址是一般的域內地址",
-  "create_transit.package_port.default_lane": "*默認轉運*"
+  "create_transit.package_port.default_lane": "*默認轉運*",
+  "item.create_transit.transit_package": "跨境包裹"
 }

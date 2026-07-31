@@ -559,7 +559,10 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             PackageItem.clearAddress(sent);
         else
             PackageItem.addAddress(sent, remaining);
-        heldBox = sent;
+        // The box a package wears follows the address it now carries, so a
+        // shipment that just cleared its last border comes home in an ordinary
+        // one and a shipment with borders left keeps the transit box.
+        heldBox = TransitPackaging.restyle(sent);
         animationInward = false;
         animationTicks = CYCLE;
         notifyUpdate();
@@ -633,7 +636,8 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             // an identity ourselves, and so the one place the order matters.
             // Borders further along are still owed their own paperwork.
             TransitCustoms.store(box, onward);
-            merged.add(new BigItemStack(box, 1));
+            // After the tag is written, since restyling copies it across.
+            merged.add(new BigItemStack(TransitPackaging.restyle(box), 1));
         }
 
         queuedExitingPackages.addAll(merged);
@@ -705,7 +709,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             // stay answerable too: a declaration counts what is below it, and
             // this label goes on top.
             PackageItem.addAddress(sent, AddressLabels.pushEndpoint(effectiveLabel, address));
-            heldBox = sent;
+            heldBox = TransitPackaging.restyle(sent);
             animationInward = false;
             animationTicks = CYCLE;
             notifyUpdate();

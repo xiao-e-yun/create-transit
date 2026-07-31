@@ -1,8 +1,11 @@
 package me.xiaoeyun.createtransit.registry;
 
+import com.simibubi.create.AllPartialModels;
+
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 
 import me.xiaoeyun.createtransit.CreateTransit;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -57,7 +60,32 @@ public class CtPartialModels {
         return strip % 2 == 0 ? TRANSIT_GATE_FLAP : TRANSIT_GATE_FLAP_ALT;
     }
 
+    /**
+     * Enrols the transit package in the map Create's renderers look a box's
+     * model up in.
+     *
+     * Half of Create's package drawing never touches the item model: dropped
+     * package entities, frogports and chain conveyors all ask
+     * {@code AllPartialModels.PACKAGES} for a model keyed by item id, in both a
+     * block-entity renderer and a Flywheel visual. The map is a plain public
+     * {@code HashMap} that Create fills from its own styles, so an addon's box
+     * is simply absent — {@code PackageRenderer} would draw nothing and the
+     * frogport would hand null to a buffer.
+     *
+     * Putting the entry in is the whole fix, and no mixin is involved. The
+     * rigging is Create's own: a transit package is twelve by ten, the size
+     * every rare box is, so the rope model for that size already fits.
+     */
+    private static void registerPackage() {
+        ResourceLocation id = CreateTransit.asResource("transit_package");
+        AllPartialModels.PACKAGES.put(id, PartialModel.of(CreateTransit.asResource("item/transit_package")));
+        AllPartialModels.PACKAGE_RIGGING.put(id,
+            PartialModel.of(new ResourceLocation("create", "item/package/rigging_12x10")));
+    }
+
     /** Loading the class is the registration; this only makes that deliberate. */
-    public static void init() {}
+    public static void init() {
+        registerPackage();
+    }
 
 }

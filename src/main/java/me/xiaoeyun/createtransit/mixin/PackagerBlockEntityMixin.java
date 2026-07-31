@@ -1,13 +1,22 @@
 package me.xiaoeyun.createtransit.mixin;
 
+import java.util.List;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import com.simibubi.create.content.logistics.packager.PackagerBlockEntity;
+import com.simibubi.create.content.logistics.packager.PackagingRequest;
 import com.tterrag.registrate.util.entry.BlockEntry;
 
+import me.xiaoeyun.createtransit.content.transit.TransitPackaging;
 import me.xiaoeyun.createtransit.registry.CtBlocks;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
@@ -59,6 +68,33 @@ public class PackagerBlockEntityMixin {
         require = 2)
     private boolean createNestNetwork$transitLinksCountToo(BlockEntry<?> stockLink, BlockState adjacent) {
         return stockLink.has(adjacent) || CtBlocks.TRANSIT_LINK.has(adjacent);
+    }
+
+    /**
+     * Puts a freshly packed box into the right kind of box for where it is
+     * going: still-labelled addresses leave in a transit package, everything
+     * else in one of Create's.
+     *
+     * The moment matters twice over. It has to be after the address is on —
+     * the address is the only thing the choice depends on — and before the box
+     * goes anywhere, and there is exactly one instruction between the last
+     * {@code addAddress} and the two places {@code createdBox} is handed off.
+     * Injecting at the {@code getLinkPos} call that sits in that gap catches
+     * both of them at once, which is why this is one injection rather than one
+     * per exit.
+     *
+     * Rewriting the local is the point: an item stack's item is final, so the
+     * box cannot be converted in place, only replaced before anything holds a
+     * reference to it. A gate is untouched here because it overrides
+     * {@code attemptToSend} outright and does its own restyling.
+     */
+    @Inject(method = "attemptToSend(Ljava/util/List;)V",
+        at = @At(value = "INVOKE",
+            target = "Lcom/simibubi/create/content/logistics/packager/PackagerBlockEntity;"
+                + "getLinkPos()Lnet/minecraft/core/BlockPos;"))
+    private void createNestNetwork$boxForeignPackages(List<PackagingRequest> queuedRequests, CallbackInfo ci,
+        @Local(name = "createdBox") LocalRef<ItemStack> createdBox) {
+        createdBox.set(TransitPackaging.restyle(createdBox.get()));
     }
 
 }
