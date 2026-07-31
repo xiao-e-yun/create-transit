@@ -20,10 +20,26 @@ This mod is built against these projects at these branches. See [CLAUDE.md](CLAU
 | Flywheel | <https://github.com/Engine-Room/Flywheel> | `1.20.1/dev` | `flywheel_version=1.0.5` |
 | Minecraft Forge | <https://github.com/MinecraftForge/MinecraftForge> | `1.20.1` | `forge_version=47.4.22` |
 | JEI | <https://github.com/mezz/JustEnoughItems> | `1.20.1` | `jei_version=15.21.0.148` |
+| JEI Integration | <https://github.com/SnowShock35/JEI-Integration> | `main` (archived) | `jei_integration_file=4999754` |
 
-JEI is a convenience for the development client only: it is a `runtimeOnly`
-dependency, no source file mentions it, and the shipped mod neither requires it
-nor behaves differently when it is present.
+Both are conveniences for the development client only: they are `runtimeOnly`
+dependencies, no source file mentions either, and the shipped mod neither
+requires them nor behaves differently when they are present.
+
+JEI Integration breaks the table's own rules twice, and both are deliberate.
+Its 1.20.1 code is on `main`, not on a version branch — the repository was
+archived after that port, so for once the default branch is the right one to
+read. And it is pinned by a CurseForge file id rather than a version, because
+CurseForge is the only place it is published; nothing about `4999754` can be
+worked out or bumped by hand. To find another, ask a CurseForge mirror for the
+project's file list (`https://api.cfwidget.com/265917`) and read the id off the
+build you want.
+
+Despite the name it needs nothing from JEI: the 1.20.1 jar is four classes
+hanging off Forge's `ItemTooltipEvent`, and its own `mods.toml` marks `jei` as
+a non-mandatory dependency. It is here to put registry names and tags in
+tooltips, which is worth having while building blocks that are copies of
+Create's and have to be told apart.
 
 ## Development
 

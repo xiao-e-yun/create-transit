@@ -134,6 +134,12 @@ repositories {
     maven { url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/" }
     // JEI
     maven { url = "https://maven.blamejared.com" }
+    // JEI Integration, which is published to CurseForge and nowhere else.
+    // Scoped to its own group so no other dependency is ever looked for here.
+    maven {
+        url = "https://cursemaven.com"
+        content { includeGroup "curse.maven" }
+    }
 }
 
 dependencies {
@@ -163,6 +169,18 @@ dependencies {
     // dependency -- nothing to compile against, and nothing for mods.toml to
     // declare, because the shipped mod neither needs JEI nor notices it.
     runtimeOnly(fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}"))
+
+    // JEI Integration, which puts registry names and tags in item tooltips --
+    // worth having while building blocks that are copies of Create's and have
+    // to be told apart. Same terms as JEI above: runtime, dev only. Despite the
+    // name it asks nothing of JEI; the 1.20.1 jar is four classes on Forge's
+    // ItemTooltipEvent, and marks jei itself as a non-mandatory dependency.
+    //
+    // Pinned by CurseForge file id rather than by a version string because it is
+    // published to CurseForge alone, and read through cursemaven because that is
+    // the only maven that fronts it. The id is not a version and cannot be
+    // bumped by editing digits -- see the README row for where it comes from.
+    runtimeOnly(fg.deobf("curse.maven:jei-integration-${jei_integration_project}:${jei_integration_file}"))
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
