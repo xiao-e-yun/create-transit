@@ -1,9 +1,9 @@
 {
-  "block.create_transit.transit_ticker": "跨境發報機",
+  "block.create_transit.transit_ticker": "跨境終端",
   "create_transit.transit_ticker.goggles.disconnected": "子網路未連接（未綁定或未載入）",
   "create_transit.transit_ticker.goggles.cycle": "警告：偵測到代理循環，此路徑貢獻空庫存",
-  "create_transit.transit_ticker.converted": "已轉換庫存收銀機，子網路綁定完成",
-  "create_transit.transit_ticker.reverted": "已還原為庫存收銀機，頻率保留",
+  "create_transit.transit_ticker.converted": "已轉換庫存終端，子網路綁定完成",
+  "create_transit.transit_ticker.reverted": "已還原為庫存終端，頻率保留",
   "create_transit.transit_ticker.conversion_denied": "你沒有管理此網路的權限",
   "block.create_transit.transit_link": "跨境鏈路",
   "create_transit.transit_link.goggles.label": "請求將通過 %s 轉運",
@@ -12,11 +12,11 @@
   "create_transit.transit_link.label_hint": "必填：對應貨運通關的邊境關口名稱",
   "block.create_transit.transit_gate": "跨境關口",
   "create_transit.transit_gate.goggles.strips": "剝除通過包裹的 %s 轉運標籤",
-  "create_transit.transit_gate.goggles.wildcard": "無告示牌：剝除任何轉運標籤，出境蓋上默認轉運",
+  "create_transit.transit_gate.goggles.wildcard": "無告示牌：剝除任何轉運標籤，出境蓋上預設轉運",
   "create_transit.transit_gate.goggles.adopted": "轉運標籤取自 %s, %s, %s 的告示牌",
   "create_transit.package_port.transit_endpoint": "跨境端點",
-  "create_transit.package_port.endpoint_on": "地址是跨境包裹的轉運標籤（留空＝默認轉運，* ＝全部）",
+  "create_transit.package_port.endpoint_on": "地址是跨境包裹的轉運標籤（留空＝預設轉運，* ＝全部）",
   "create_transit.package_port.endpoint_off": "地址是一般的域內地址",
-  "create_transit.package_port.default_lane": "*默認轉運*",
+  "create_transit.package_port.default_lane": "*預設轉運*",
   "item.create_transit.transit_package": "跨境包裹"
 }
