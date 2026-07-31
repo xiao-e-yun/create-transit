@@ -12,7 +12,6 @@ import com.simibubi.create.content.redstone.displayLink.LinkBulbRenderer;
 import com.simibubi.create.content.redstone.displayLink.LinkWithBulbBlockEntity;
 
 import me.xiaoeyun.createtransit.content.ticker.TransitTickerBlockEntity;
-import me.xiaoeyun.createtransit.content.transit.TransitLinkBlockEntity;
 import net.createmod.catnip.render.SuperByteBuffer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.level.Level;
@@ -20,16 +19,14 @@ import net.minecraft.world.level.Level;
 /**
  * The three things a link's bulb has to say that Create's own never had to.
  *
- * <p><b>Red while unlabelled.</b> A transit link without a label is not a link
- * that is idle, it is a link that cannot do its job: it stamps nothing and
- * silently behaves like a plain Stock Link. That was only visible through
- * goggles, which is the wrong place for a fault a player wants to spot while
- * walking past. The bulb is the natural place to say so, and the glow layer is
- * already tinted per frame — Create passes the same value three times for a
- * neutral white — so this costs no model and no texture, only different
- * arguments. The steady half belongs to the block entity, which holds
- * {@code getGlow} at full for a blank label instead of letting it decay: a
- * missing label is a standing condition, not the event the pulse was built for.
+ * <p><b>Dark while inert.</b> Two conditions stop a link from doing anything at
+ * all: a transit link with no label stamps no border, and a mounting point whose
+ * binding reaches nothing has no network to poll. Neither gets a blink, because
+ * a blink means work happened and none did. Both readings live outside this
+ * class in the sense that neither draws anything — one is the block entity
+ * returning zero glow, the other is this file declining to offer a heartbeat —
+ * and that is deliberate: below Create's glow threshold no bulb is drawn at all,
+ * so inert blocks simply look like the idle links they have become.
  *
  * <p><b>A heartbeat on a mounting point.</b> A link attached to a Transit Ticker
  * never blinks on its own. Nothing is packed there — under flattened mounting
@@ -52,18 +49,20 @@ import net.minecraft.world.level.Level;
  * fault vocabulary of its own and no block entity of ours to put one in. Reading
  * the flag off the ticker through the link is what lets an unmodified block
  * report our fault, and it is why this state lives in the renderer rather than
- * beside the other two in the block entity. It flashes rather than holds so that
- * the two reds stay apart: a bulb held lit is a link that cannot do its job, a
- * bulb flashing is a network that cannot.
+ * beside the other two in the block entity. It is asked per frequency, not per
+ * ticker: a mounting point can wear several links on unrelated networks, and a
+ * loop closing through one of them is no reason to accuse the rest.
  *
- * <p>All three land on the same two values Create already computes, and two
- * thirds of the precedence falls out for free: a fault pins or squares the glow
- * while the heartbeat only offers, {@link Math#max} cannot raise a pin, and the
- * tint is decided by a test that asks about faults first — so either fault
- * outranks the heartbeat with no code to say so. The one ordering that is
- * spelled out is between the faults themselves, where the flash has to be able
- * to pull a held bulb dark and {@link Math#max} would have prevented exactly
- * that.
+ * <p>Red now means exactly one thing, which is the point of the first paragraph
+ * giving its own colour up. Inert is dark, working is white, and the single red
+ * left is the one fault a player cannot find by looking — a loop spanning
+ * chunks with nothing to point at.
+ *
+ * <p>All three land on the same two values Create already computes, so the
+ * precedence falls out for free: the flash squares the glow outright while the
+ * heartbeat only offers through {@link Math#max}, and the tint is decided by
+ * the same test the flash is — so a cycle outranks everything with no code to
+ * say so.
  *
  * <p>Every other link in the game reaches these methods too, hence the type
  * checks.
@@ -146,17 +145,11 @@ public class LinkBulbRendererMixin {
         TransitTickerBlockEntity ticker = mountedTicker(be);
         if (ticker == null)
             return glow;
-        // The flash overrides even a bulb held lit by a blank label. Both are
-        // faults and both draw the same red, so the only reading it can cost is
-        // one already being made; a hold winning instead would swallow the
-        // cycle whole, and the cycle is the fault a player cannot otherwise
-        // find, spanning chunks with nothing to point at.
-        if (ticker.isCycleDetected())
+        if (isCycling(ticker, be))
             return flash(ticker, partialTicks);
-        // Nothing bound below, nothing to report being alive about. Falling
-        // through to the underlying glow rather than to zero is what keeps a
-        // blank label still readable here: that fault is the link's own, and it
-        // is true whether or not the ticker reaches anything.
+        // Nothing bound below, nothing to report being alive about. The
+        // heartbeat is simply not offered, and the bulb falls to whatever it
+        // would have been without us — which for an idle link is dark.
         if (!ticker.isChildConnected())
             return glow;
         return Math.max(glow, heartbeat(ticker, partialTicks));
@@ -167,9 +160,11 @@ public class LinkBulbRendererMixin {
      *
      * Deliberately <em>not</em> offset by position the way the heartbeat is.
      * The heartbeat desyncs because each ticker polls on a phase of its own and
-     * a chorus would claim a coordination that is not there; a cycle is the
-     * opposite case — it runs through several mounting points at once and they
-     * are one fault, so the bulbs saying so in unison is the true reading.
+     * a chorus would claim a coordination that is not there; a loop is the
+     * opposite case — every link it closes through is the same one fault,
+     * however many tickers and chunks it spans, so those bulbs saying so in
+     * unison is the true reading. Which links those are is decided elsewhere,
+     * and is not all of them.
      */
     private static float flash(TransitTickerBlockEntity ticker, float partialTicks) {
         Level level = ticker.getLevel();
@@ -222,29 +217,33 @@ public class LinkBulbRendererMixin {
     @Redirect(method = RENDER_SAFE,
         at = @At(value = "INVOKE",
             target = "Lnet/createmod/catnip/render/SuperByteBuffer;color(IIII)Lnet/createmod/catnip/render/SuperByteBuffer;"))
-    private SuperByteBuffer createNestNetwork$redOnFaults(SuperByteBuffer glow, int red, int green, int blue,
+    private SuperByteBuffer createNestNetwork$redOnCycle(SuperByteBuffer glow, int red, int green, int blue,
         int alpha, LinkWithBulbBlockEntity be, float partialTicks, PoseStack ms, MultiBufferSource buffer, int light,
         int overlay) {
-        if (isFaulted(be))
+        if (isCycling(mountedTicker(be), be))
             return glow.color(FAULT_RED, FAULT_GREEN, FAULT_BLUE, alpha);
         return glow.color(red, green, blue, alpha);
     }
 
     /**
-     * The two standing conditions a link's bulb reports in red.
+     * Whether the loop this ticker reports closes through <em>this</em> link.
      *
-     * <p>A missing label is the link's own fault and only a Transit Link can
-     * have it. A proxy cycle is the ticker's, and so belongs on whatever link
-     * happens to be mounted there — under a domestic mounting that is a vanilla
-     * Stock Link, which has no fault vocabulary of its own and would otherwise
-     * beat a contented white over a network that contributes nothing.
+     * A ticker can wear several links at once, on networks that have nothing to
+     * do with each other, and a loop closing through one of them says nothing
+     * about the rest. Asking by frequency is what keeps an innocent mounting
+     * dark: the ticker names the networks the child can reach back around to,
+     * and a link whose own network is not among them is doing its job.
+     *
+     * <p>The frequency comes off Create's own behaviour, which writes it into
+     * both save and update tags unconditionally — so the answer is available on
+     * the client for a vanilla Stock Link no less than for ours, which is the
+     * point, since under a domestic mounting the vanilla link is the block a
+     * player is looking at.
      */
-    private static boolean isFaulted(LinkWithBulbBlockEntity be) {
-        if (be instanceof TransitLinkBlockEntity link && link.getLabel()
-            .isBlank())
-            return true;
-        TransitTickerBlockEntity ticker = mountedTicker(be);
-        return ticker != null && ticker.isCycleDetected();
+    private static boolean isCycling(@Nullable TransitTickerBlockEntity ticker, LinkWithBulbBlockEntity be) {
+        if (ticker == null || !(be instanceof PackagerLinkBlockEntity link) || link.behaviour == null)
+            return false;
+        return ticker.isCycling(link.behaviour.freqId);
     }
 
 }

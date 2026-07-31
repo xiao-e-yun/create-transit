@@ -40,6 +40,9 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -97,7 +100,8 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     /** Live shadow registrations, one per (mount frequency, underlying child link). */
     private Map<UUID, Map<PackagerLinkBlockEntity, LogisticallyLinkedBehaviour>> shadowLinks = new HashMap<>();
 
-    private boolean cycleDetected;
+    /** Parent frequencies the child network loops back around to. */
+    private Set<UUID> cyclingFrequencies = Set.of();
 
     /** Whether the child network holds anything besides our own binding. */
     private boolean childConnected;
@@ -488,15 +492,28 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         refreshNetworkState();
     }
 
-    /**
-     * Whether a proxy cycle runs through this mounting point.
-     *
-     * Readable on the client: the field is written into every update tag, so
-     * the bulb renderer of an attached link can ask without a lookup of its own
-     * and without anything being synced for its sake.
-     */
+    /** Whether any proxy cycle runs through this mounting point. */
     public boolean isCycleDetected() {
-        return cycleDetected;
+        return !cyclingFrequencies.isEmpty();
+    }
+
+    /**
+     * Whether a cycle runs through the parent network on {@code freq}.
+     *
+     * Asked per frequency rather than per mounting point because a ticker can
+     * wear several links at once, and a loop closing through one of them says
+     * nothing about the others: a network the child cannot reach is a healthy
+     * mounting however badly its neighbour is tangled. The walk below already
+     * knew which network it had come back around to; only the answer used to
+     * throw that away.
+     *
+     * Readable on the client: the set is written into every update tag, and a
+     * link's own frequency is already synced by Create, so the bulb renderer
+     * can ask without a lookup of its own and without anything being synced
+     * for its sake.
+     */
+    public boolean isCycling(UUID freq) {
+        return cyclingFrequencies.contains(freq);
     }
 
     /**
@@ -515,11 +532,11 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     }
 
     private void refreshNetworkState() {
-        boolean detected = computeCycleDetected();
+        Set<UUID> cycling = computeCyclingFrequencies();
         boolean connected = computeChildConnected();
-        if (detected == cycleDetected && connected == childConnected)
+        if (cycling.equals(cyclingFrequencies) && connected == childConnected)
             return;
-        cycleDetected = detected;
+        cyclingFrequencies = cycling;
         childConnected = connected;
         notifyUpdate();
     }
@@ -540,32 +557,41 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     }
 
     /**
-     * Walks downward from the bound child network through every loaded
-     * proxyer; a cycle through this proxyer exists iff the walk reaches a
-     * network one of our attached parent links belongs to. Advisory only —
-     * the thread-local guard remains the actual correctness mechanism.
+     * Walks downward from the bound child network through every loaded proxyer
+     * and reports which of our attached parent networks the walk comes back
+     * around to. Each of those is a closed loop through this mounting point;
+     * a parent the child cannot reach is not implicated and is left out.
+     *
+     * The walk runs to exhaustion rather than stopping at the first hit, which
+     * is the whole of the cost of naming the networks instead of merely
+     * counting one. It is bounded by the number of distinct frequencies that
+     * have a proxyer on them, and it touches only the in-memory link registry.
+     *
+     * Advisory only — the thread-local guard remains the actual correctness
+     * mechanism.
      */
-    private boolean computeCycleDetected() {
+    private Set<UUID> computeCyclingFrequencies() {
         Set<UUID> parentFreqs = collectAdjacentParentFrequencies();
         if (parentFreqs.isEmpty())
-            return false;
+            return Set.of();
 
-        Set<UUID> seen = new HashSet<>();
+        Set<UUID> reachable = new HashSet<>();
         Deque<UUID> pending = new ArrayDeque<>();
         pending.push(childLink.freqId);
 
         while (!pending.isEmpty()) {
             UUID freq = pending.pop();
-            if (!seen.add(freq))
+            if (!reachable.add(freq))
                 continue;
-            if (parentFreqs.contains(freq))
-                return true;
             for (LogisticallyLinkedBehaviour link : LogisticallyLinkedBehaviour.getAllPresent(freq, false))
                 if (link.blockEntity instanceof PackagerLinkBlockEntity plbe
                     && plbe.getPackager() instanceof TransitTickerBlockEntity proxy)
                     pending.push(proxy.childLink.freqId);
         }
-        return false;
+
+        Set<UUID> cycling = new HashSet<>(parentFreqs);
+        cycling.retainAll(reachable);
+        return cycling;
     }
 
     // Duplicate-count protection: inventories visible to both the parent
@@ -638,14 +664,20 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         // Legacy saves stored the binding outside the behaviour
         if (tag.hasUUID("ChildFreq"))
             childLink.freqId = tag.getUUID("ChildFreq");
-        cycleDetected = tag.getBoolean("CycleDetected");
+        Set<UUID> cycling = new HashSet<>();
+        for (Tag entry : tag.getList("CyclingFrequencies", Tag.TAG_INT_ARRAY))
+            cycling.add(NbtUtils.loadUUID(entry));
+        cyclingFrequencies = cycling;
         childConnected = tag.getBoolean("ChildConnected");
     }
 
     @Override
     protected void write(CompoundTag tag, boolean clientPacket) {
         super.write(tag, clientPacket);
-        tag.putBoolean("CycleDetected", cycleDetected);
+        ListTag cycling = new ListTag();
+        for (UUID freq : cyclingFrequencies)
+            cycling.add(NbtUtils.createUUID(freq));
+        tag.put("CyclingFrequencies", cycling);
         tag.putBoolean("ChildConnected", childConnected);
     }
 
@@ -673,7 +705,7 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
                 .append(Component.translatable("create_transit.transit_ticker.goggles.disconnected")
                     .withStyle(ChatFormatting.GRAY)));
 
-        if (cycleDetected)
+        if (isCycleDetected())
             tooltip.add(Component.literal("    ")
                 .append(Component.translatable("create_transit.transit_ticker.goggles.cycle")
                     .withStyle(ChatFormatting.RED)));

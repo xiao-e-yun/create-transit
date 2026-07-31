@@ -71,17 +71,23 @@ public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements I
     }
 
     /**
-     * Holds the bulb lit while there is no label, instead of letting it decay
-     * from the last pulse.
+     * Keeps the bulb dark while there is no label, instead of letting it blink.
      *
-     * A missing label is a standing condition rather than something that just
-     * happened, and the pulse was built for the latter. The renderer paints a
-     * held bulb red, so the two readings stay apart: a white blink is a request
-     * going through, a red hold is a link that cannot serve one.
+     * The blink means a request went through, and through an unlabelled link
+     * nothing does: it stamps no border, so the ticker on the other side finds
+     * no crossing to answer for and drops what arrives. Blinking would be the
+     * link reporting work it did not do. Dark is the honest reading, and it is
+     * the same one an unbound mounting point gives — both are blocks that
+     * cannot act, and the bulb keeps red for the one fault a player has to go
+     * and find.
+     *
+     * The cost is that a misconfigured link now looks like an idle one, since
+     * Create draws no bulb at all below its glow threshold. The goggles keep
+     * saying it in words.
      */
     @Override
     public float getGlow(float partialTicks) {
-        return label.isBlank() ? 1 : super.getGlow(partialTicks);
+        return label.isBlank() ? 0 : super.getGlow(partialTicks);
     }
 
     @Override
