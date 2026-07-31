@@ -18,24 +18,34 @@ clean function over 42 colours with no conflicts, which means the original
 recolour was systematic and is reproducible exactly. Its rule is two lines:
 
     zinc  -> brass          the frame, rails and hinges
-    wood  -> theme blue     Create's logistics accent, restyled
+    wood  -> THEME          Create's logistics accent, restyled
     everything else kept    neutrals, navy, and every red
 
 Red staying put is deliberate and predates this script: red means powered
 across all of Create, and that vocabulary is worth more than palette purity.
+The postbox flag keeps its blue for the same kind of reason -- see SIGNALS.
 
 `--canon` drops the wood rule instead of applying it, which returns the accent
 to Create's own logistics wood. That is the whole difference between the mod's
-look and a fully canon one -- the blue occupies the slot Create fills with wood.
+look and a fully canon one -- THEME occupies the slot Create fills with wood.
 
     uv run scripts/repalette.py            # rebuild
     uv run scripts/repalette.py --check    # report only, touch nothing
     uv run scripts/repalette.py --verify   # assert the rebuild matches git HEAD
 
-Hand-drawn textures -- the gate's flaps, the postboxes -- have no Create source
-and are not managed here.
+A second, smaller group is handled too: HAND_LAID, the sheets drawn for this
+mod that carry the accent but recolour nothing. They cannot follow the rule
+above because they have no Create original, so their original is the committed
+art and the only thing done to them is moving the accent. Without that they
+would be hand-edited every time the theme moved, which is the exact thing the
+paragraph above says never to do -- and a shade of accent the table has never
+seen is a hard error there too, for the same reason.
+
+Truly hand-drawn work with no accent in it at all -- the gate's flaps, the
+postboxes -- is not managed here either way.
 """
 import argparse
+import colorsys
 import io
 import os
 import subprocess
@@ -70,12 +80,58 @@ ZINC_TO_BRASS = {rgb(a): rgb(b) for a, b in [
     ('252F2D', '724731'), ('2B2B2E', '724731'),
 ]}
 
-# Create's logistics wood -> the mod's theme blue, rung for rung
-WOOD_TO_BLUE = {rgb(a): rgb(b) for a, b in [
-    ('886539', '42709D'), ('82613A', '426B94'), ('7A5A34', '3C648C'),
-    ('70522E', '355B81'), ('614B2E', '35526F'), ('5A4424', '2B4B6B'),
-    ('553A1F', '234261'),
-]}
+# Create's logistics wood, brightest rung first.
+WOOD = ['886539', '82613A', '7A5A34', '70522E', '614B2E', '5A4424', '553A1F']
+
+# The accent as it stood when it was a steel blue: seven rungs, one per rung of
+# wood. Kept because the hand-laid sheets below have no Create original to
+# rebuild from -- the committed art is their original, so moving their accent
+# needs to know where it is moving from.
+PREVIOUS_THEME = ['42709D', '426B94', '3C648C', '355B81', '35526F', '2B4B6B',
+                  '234261']
+
+# Every shade the mod draws its accent with, and where each one lands: on
+# Railway Casing's own dark ramp.
+#
+# Trains are the one long-distance carrier the game has, and distance is the
+# argument this whole mod exists to make, so the blocks say it in the only
+# vocabulary Create has for it. Half of that was already true and nobody had
+# noticed -- ZINC_TO_BRASS targets Brass Casing's ramp, and Railway Casing's
+# metal is five sixths the same six colours, so the frame has been wearing
+# train brass all along. This puts the accent in the same livery.
+#
+# The casing runs darker than the wood it stands in for, 73 down to 25 in
+# luminance against wood's 106 down to 63. That is the cost of the change, not
+# an oversight in it: Create shades the casing dark on purpose, and a ramp
+# lifted into the wood's band would be a colour that resembles the casing
+# instead of being it.
+#
+# Twenty-three entries rather than seven because the accent is only seven rungs
+# in the textures rebuilt from Create. The link sheets were drawn for this mod
+# and shaded by hand across twenty-one, of which the seven are a subset -- so a
+# seven-entry map recoloured a third of a link and left the rest steel blue.
+# The table is generated, not designed: each shade keeps its place in the ramp,
+# its brightness rescaled from the accent's range into the casing's.
+ACCENT = dict([
+    ('42709D', '444B4C'), ('416F9C', '434A4B'), ('426B94', '3A4043'),
+    ('416A93', '3A4043'), ('3C648C', '363C3F'), ('3B638B', '353B3E'),
+    ('3D6287', '33393C'), ('355B81', '303639'), ('2F5376', '2C3035'),
+    ('2D5073', '2B2F34'), ('35526F', '2A2E33'), ('284B6F', '2A2E33'),
+    ('2A4B6D', '2A2E33'), ('2B4B6B', '292D32'), ('294969', '282C31'),
+    ('294968', '282C31'), ('254463', '262A2F'), ('244463', '262A2F'),
+    ('234261', '25292E'), ('203F5D', '24272C'), ('1E3955', '1F2227'),
+    ('1A354F', '1C1E22'), ('163049', '17191C'),
+])
+
+# What an accent shade looks like, so that one the table has never seen is a
+# hard error instead of a patch of the old colour left behind. This is exactly
+# how the seven-entry version got caught.
+ACCENT_HUE = (195, 225)
+ACCENT_SATURATION = 0.45
+
+THEME = [ACCENT[c] for c in PREVIOUS_THEME]
+WOOD_TO_THEME = {rgb(a): rgb(b) for a, b in zip(WOOD, THEME)}
+RETHEME = {rgb(a): rgb(b) for a, b in ACCENT.items()}
 
 # left exactly as Create drew them: the neutral greys of the tray, arm and
 # rails, the navy of the interior floor, and every red
@@ -93,9 +149,9 @@ def palette(canon):
     table = {c: c for c in KEEP}
     table.update(ZINC_TO_BRASS)
     if canon:
-        table.update({c: c for c in WOOD_TO_BLUE})
+        table.update({c: c for c in WOOD_TO_THEME})
     else:
-        table.update(WOOD_TO_BLUE)
+        table.update(WOOD_TO_THEME)
     return table
 
 
@@ -126,6 +182,37 @@ OUTPUTS = {
     'transit_gate_particle': ('packager_particle', None),
     'transit_repackager_particle': ('repackager_particle', None),
 }
+
+# Textures that carry the accent but are not recolours of anything.
+#
+# The link sheets and the ticker were laid out for this mod -- the link's four
+# models share one 32x32 sheet where Create's stock link has four 16x16 ones --
+# so no Create texture reproduces them and none can be their source. That left
+# 1074 accent texels outside this script's reach, which is fine right up until
+# the theme changes and five files have to be hand-edited: the one thing the
+# docstring above says never to do.
+#
+# So their original is the committed art, and the only thing done to them is
+# RETHEME -- a total, exact map over the seven accent rungs, which touches no
+# other colour and cannot invent one. Anything left holding a PREVIOUS_THEME
+# colour afterwards is a hard error, the same way an unmapped source colour is.
+HAND_LAID = [
+    'link_base_powered',
+    'link_base_unpowered',
+    'link_details',
+    'transit_frogport_base',
+    'transit_ticker',
+]
+
+# Accent-coloured art that keeps its blue on purpose, and is therefore not a
+# straggler.
+#
+# The postbox flag is a signal, not decoration: four texels wide, raised only
+# when the box has mail, and read at whatever distance the player happens to
+# be standing. On the casing ramp it came out the same shade as the pole it
+# hangs from -- a flag that no longer says anything, which costs more than the
+# livery gains. Same trade as the red above.
+SIGNALS = ['transit_postbox_flag']
 
 
 def pinned_create_version():
@@ -177,6 +264,85 @@ def head_version(name):
     return Image.open(io.BytesIO(raw)).convert('RGBA') if raw else None
 
 
+def looks_like_accent(c):
+    """Whether a colour is in the accent's corner of the wheel."""
+    h, s, _ = colorsys.rgb_to_hsv(*[k / 255 for k in c[:3]])
+    lo, hi = ACCENT_HUE
+    return lo <= h * 360 <= hi and s >= ACCENT_SATURATION
+
+
+def colours(im):
+    """Every distinct colour in an image. 24 bits is more than any of these."""
+    return {c for _, c in im.getcolors(1 << 24)}
+
+
+def stragglers(jar):
+    """Accent-coloured art that nothing above is managing.
+
+    Both lists are opt-in, so a sheet drawn later carries the accent and then
+    quietly keeps the old colour the next time the theme moves. That is exactly
+    how the postbox flag was missed, and it is not the sort of thing anyone
+    spots by looking -- the flag is four texels wide and only up when the box
+    has mail.
+
+    Subtracting what Create draws is what makes the question answerable without
+    a list of exceptions to keep: a blue postbox is blue because the player
+    dyed it, and every one of those shades is already in Create's texture of
+    the same name. Whatever is left in the accent's corner is ours.
+    """
+    managed = set(OUTPUTS) | set(HAND_LAID) | set(SIGNALS)
+    ramp = set(RETHEME.values())
+    found = {}
+    for base, dirs, files in sorted(os.walk(OUT)):
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        for f in sorted(files):
+            if not f.endswith('.png') or f[:-4] in managed:
+                continue
+            path = os.path.join(base, f)
+            rel = os.path.relpath(path, OUT)[:-4].replace(os.sep, '/')
+            ours = Image.open(path).convert('RGBA')
+            try:
+                theirs = Image.open(io.BytesIO(jar.read(
+                    'assets/create/textures/block/%s.png' % rel))).convert('RGBA')
+                creates = colours(theirs)
+            except KeyError:
+                creates = set()
+            for c in colours(ours):
+                if c[3] and c not in ramp and c not in creates \
+                        and looks_like_accent(c):
+                    found.setdefault('#%02X%02X%02X' % c[:3], set()).add(rel)
+    return found
+
+
+def retheme(im, canon):
+    """Move a hand-laid texture's accent onto the casing ramp.
+
+    Returns the shades that read as accent and had no entry, which is fatal:
+    one would survive the pass still wearing the old colour, and that is how a
+    sheet ends up half rethemed -- the failure this pass exists to prevent, and
+    the one its first version shipped.
+
+    A shade already on the casing ramp is passed over rather than flagged. The
+    pass has to be a no-op on art that has already been through it, since the
+    committed art is its own source, so "this colour is already the arriving
+    one" is the steady state and not a finding.
+    """
+    table = {c: c for c in RETHEME} if canon else RETHEME
+    arriving = set(table.values())
+    px = im.load()
+    missing = set()
+    for y in range(im.height):
+        for x in range(im.width):
+            c = px[x, y]
+            if c[3] == 0:
+                continue
+            if c in table:
+                px[x, y] = table[c]
+            elif c not in arriving and looks_like_accent(c):
+                missing.add('#%02X%02X%02X' % c[:3])
+    return missing
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--check', action='store_true',
@@ -185,11 +351,17 @@ def main():
                     help='rebuild in memory and diff against git HEAD')
     ap.add_argument('--canon', action='store_true',
                     help="keep Create's logistics wood instead of recolouring "
-                         'it to the theme blue')
+                         'it to THEME')
     ap.add_argument('--out', default=OUT,
                     help='write elsewhere, to preview a variant without '
                          'touching the working tree')
     args = ap.parse_args()
+
+    if set(THEME) & set(PREVIOUS_THEME):
+        print('THEME and PREVIOUS_THEME share a colour, so rethemeing the '
+              'hand-laid textures would stop being a no-op the second time it '
+              'ran', file=sys.stderr)
+        return 1
 
     jar = create_jar()
     table = palette(args.canon)
@@ -216,6 +388,18 @@ def main():
                     continue
                 px[x, y] = here[c]
         built.append((out, im))
+
+    for out in sorted(HAND_LAID):
+        im = head_version(out)
+        if im is None:
+            gaps.setdefault('(no committed art)', set()).add(out)
+            continue
+        for c in retheme(im, args.canon):
+            gaps.setdefault(c, set()).add(out)
+        built.append((out, im))
+
+    for c, where in sorted(stragglers(jar).items()):
+        gaps.setdefault(c, set()).update(where)
 
     if gaps:
         print('unmapped source colours -- nothing written:', file=sys.stderr)
