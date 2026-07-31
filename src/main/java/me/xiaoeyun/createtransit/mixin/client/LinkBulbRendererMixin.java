@@ -39,7 +39,9 @@ import net.minecraft.world.level.Level;
  * the ticker is there and polling, which is the one thing the block does
  * continuously, and it stays white deliberately: the ticker and its link are
  * ours, and periodic work is still work, so it belongs in the same vocabulary
- * rather than beside it.
+ * rather than beside it. It is withheld when the binding reaches nothing, which
+ * is what makes silence a reading of its own: a dark bulb on a ticker says
+ * unbound or unloaded, rather than merely saying no traffic.
  *
  * <p><b>Red on a proxy cycle.</b> The heartbeat's own premise is what makes this
  * necessary: a mounting point beats the same contented white whether the network
@@ -151,6 +153,12 @@ public class LinkBulbRendererMixin {
         // find, spanning chunks with nothing to point at.
         if (ticker.isCycleDetected())
             return flash(ticker, partialTicks);
+        // Nothing bound below, nothing to report being alive about. Falling
+        // through to the underlying glow rather than to zero is what keeps a
+        // blank label still readable here: that fault is the link's own, and it
+        // is true whether or not the ticker reaches anything.
+        if (!ticker.isChildConnected())
+            return glow;
         return Math.max(glow, heartbeat(ticker, partialTicks));
     }
 

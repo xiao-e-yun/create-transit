@@ -99,6 +99,9 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
 
     private boolean cycleDetected;
 
+    /** Links in the child network other than our own binding; 0 means unbound or unloaded. */
+    private int childComponents;
+
     public TransitTickerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
     }
@@ -121,7 +124,7 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         childLink.freqId = freqId;
         LogisticallyLinkedBehaviour.keepAlive(childLink);
         notifyUpdate();
-        refreshCycleDetected();
+        refreshNetworkState();
     }
 
     // Summary delegation
@@ -482,7 +485,7 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         super.recheckIfLinksPresent();
         if (level == null || level.isClientSide())
             return;
-        refreshCycleDetected();
+        refreshNetworkState();
     }
 
     /**
@@ -496,12 +499,40 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         return cycleDetected;
     }
 
-    private void refreshCycleDetected() {
+    /**
+     * How many links the bound child network has besides our own binding.
+     *
+     * Counted on the server and synced, which is the whole point of the field.
+     * The registry has a client half, but it is filled by links calling
+     * keepAlive from their own lazyTick, so it only ever holds what the player
+     * has loaded — a warehouse across the world contributes nothing to it, and
+     * anything reading it would call a perfectly healthy network unbound.
+     */
+    public int getChildComponents() {
+        return childComponents;
+    }
+
+    /** Whether the binding reaches anything at all. */
+    public boolean isChildConnected() {
+        return childComponents > 0;
+    }
+
+    private void refreshNetworkState() {
         boolean detected = computeCycleDetected();
-        if (detected != cycleDetected) {
-            cycleDetected = detected;
-            notifyUpdate();
-        }
+        int components = computeChildComponents();
+        if (detected == cycleDetected && components == childComponents)
+            return;
+        cycleDetected = detected;
+        childComponents = components;
+        notifyUpdate();
+    }
+
+    private int computeChildComponents() {
+        int components = 0;
+        for (LogisticallyLinkedBehaviour link : LogisticallyLinkedBehaviour.getAllPresent(childLink.freqId, false))
+            if (link != childLink)
+                components++;
+        return components;
     }
 
     /**
@@ -604,12 +635,14 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         if (tag.hasUUID("ChildFreq"))
             childLink.freqId = tag.getUUID("ChildFreq");
         cycleDetected = tag.getBoolean("CycleDetected");
+        childComponents = tag.getInt("ChildComponents");
     }
 
     @Override
     protected void write(CompoundTag tag, boolean clientPacket) {
         super.write(tag, clientPacket);
         tag.putBoolean("CycleDetected", cycleDetected);
+        tag.putInt("ChildComponents", childComponents);
     }
 
     // Goggles
@@ -620,16 +653,14 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
             .append(Component.translatable("block.create_transit.transit_ticker")
                 .withStyle(ChatFormatting.WHITE)));
 
-        int loadedComponents = 0;
-        for (LogisticallyLinkedBehaviour link : LogisticallyLinkedBehaviour.getAllPresent(childLink.freqId, false,
-            true))
-            if (link != childLink)
-                loadedComponents++;
-
-        if (loadedComponents > 0)
+        // The synced count, not a fresh one. This runs on the client, where the
+        // link registry holds only what the player has loaded, so counting here
+        // would report a warehouse across the world as unreachable — and would
+        // disagree with the bulb, which reads the same field.
+        if (isChildConnected())
             tooltip.add(Component.literal("    ")
                 .append(Component.translatable("create_transit.transit_ticker.goggles.connected",
-                    loadedComponents)
+                    childComponents)
                     .withStyle(ChatFormatting.GREEN)));
         else
             tooltip.add(Component.literal("    ")
