@@ -5,13 +5,13 @@
     "L": {
       "item": "create:stock_link"
     },
-    "R": {
-      "item": "create:railway_casing"
+    "S": {
+      "tag": "forge:plates/obsidian"
     }
   },
   "pattern": [
     "L",
-    "R"
+    "S"
   ],
   "result": {
     "item": "create_transit:transit_link"
