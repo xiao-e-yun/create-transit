@@ -132,6 +132,8 @@ repositories {
     maven { url = "https://maven.ithundxr.dev/mirror" }
     // Forge Config API Port
     maven { url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/" }
+    // JEI
+    maven { url = "https://maven.blamejared.com" }
 }
 
 dependencies {
@@ -155,6 +157,12 @@ dependencies {
 
     // Mixin's annotation processor, which generates the refmap MixinGradle declares
     annotationProcessor("org.spongepowered:mixin:${mixin_version}:processor")
+
+    // JEI, so the development client can look up recipes. The mod ships no JEI
+    // plugin and no source file mentions it, so the runtime jar is the entire
+    // dependency -- nothing to compile against, and nothing for mods.toml to
+    // declare, because the shipped mod neither needs JEI nor notices it.
+    runtimeOnly(fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}"))
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

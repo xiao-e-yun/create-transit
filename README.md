@@ -19,6 +19,11 @@ This mod is built against these projects at these branches. See [CLAUDE.md](CLAU
 | Create | <https://github.com/Creators-of-Create/Create> | `mc1.20.1/dev` | `create_version=6.0.8-289` |
 | Flywheel | <https://github.com/Engine-Room/Flywheel> | `1.20.1/dev` | `flywheel_version=1.0.5` |
 | Minecraft Forge | <https://github.com/MinecraftForge/MinecraftForge> | `1.20.1` | `forge_version=47.4.22` |
+| JEI | <https://github.com/mezz/JustEnoughItems> | `1.20.1` | `jei_version=15.21.0.148` |
+
+JEI is a convenience for the development client only: it is a `runtimeOnly`
+dependency, no source file mentions it, and the shipped mod neither requires it
+nor behaves differently when it is present.
 
 ## Development
 
