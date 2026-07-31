@@ -8,6 +8,7 @@ import me.xiaoeyun.createtransit.content.ticker.TransitTickerConversion;
 import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.registry.CtBlockEntities;
 import me.xiaoeyun.createtransit.registry.CtBlocks;
+import me.xiaoeyun.createtransit.registry.CtCreativeTab;
 import me.xiaoeyun.createtransit.registry.CtPartialModels;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
@@ -41,6 +42,9 @@ public class CreateTransit {
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> CtPartialModels::init);
 
         modEventBus.addListener(CreateTransit::commonSetup);
+        // Create's creative tab is filled from Create's own registrate, which
+        // never sees an addon's entries, so our blocks have to add themselves.
+        modEventBus.addListener(CtCreativeTab::onBuildContents);
         // Any logistics link placed against a tuned Stock Ticker converts it,
         // vanilla Stock Links included, so this cannot live on our own block.
         //
