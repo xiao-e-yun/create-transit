@@ -143,15 +143,30 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
             return InventorySummary.EMPTY;
 
         Set<UUID> added = enterNetworks(visited, childFreqId, parentFreqs);
-        InventorySummary summary;
         try {
-            summary = LogisticsManager.getSummaryOfNetwork(childFreqId, true)
-                .copy();
-            subtractInventoriesSharedWithParents(summary, childFreqId, parentFreqs);
+            InventorySummary childStock = LogisticsManager.getSummaryOfNetwork(childFreqId, true);
+            // Nothing shared means nothing to subtract, and the copy that would
+            // have been subtracted from is the expensive part of this call: a
+            // summary copy is one ItemStack copy per distinct item, NBT and
+            // all, and this runs once per item type of every order that passes
+            // through. Parent and child warehousing the same container is the
+            // corner the subtraction exists for, not the usual shape, so the
+            // usual shape should not pay for it. Handing back the cached
+            // summary uncopied is vanilla's own contract — a packager returns
+            // its cached field the same way, and callers only read it.
+            List<LogisticallyLinkedBehaviour> shared = linksSharedWithParents(childFreqId, parentFreqs);
+            if (shared.isEmpty())
+                return childStock;
+
+            InventorySummary summary = childStock.copy();
+            for (LogisticallyLinkedBehaviour link : shared)
+                for (BigItemStack entry : link.getSummary(null)
+                    .getStacks())
+                    subtractClamped(summary, entry.stack, entry.count);
+            return summary;
         } finally {
             visited.removeAll(added);
         }
-        return summary;
     }
 
     // Order handling
@@ -484,10 +499,18 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     // Duplicate-count protection: inventories visible to both the parent
     // network (directly) and the child network (through us) only count once.
 
-    private void subtractInventoriesSharedWithParents(InventorySummary summary, UUID childFreqId,
-        Set<UUID> parentFreqs) {
+    /**
+     * The child links whose inventory the parent network can already see for
+     * itself, one per shared inventory.
+     *
+     * Answered before anything is copied, so that the common topology — parent
+     * and child warehousing separate containers — costs a scan and no
+     * allocation at all. The scan was being paid for anyway; only the copy it
+     * used to be handed was avoidable.
+     */
+    private List<LogisticallyLinkedBehaviour> linksSharedWithParents(UUID childFreqId, Set<UUID> parentFreqs) {
         if (parentFreqs.isEmpty())
-            return;
+            return List.of();
 
         Set<InventoryIdentifier> parentInventories = new HashSet<>();
         for (UUID parentFreq : parentFreqs)
@@ -497,21 +520,20 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
                     parentInventories.add(identifier);
             }
         if (parentInventories.isEmpty())
-            return;
+            return List.of();
 
-        Set<InventoryIdentifier> subtracted = new HashSet<>();
+        List<LogisticallyLinkedBehaviour> shared = new ArrayList<>();
+        Set<InventoryIdentifier> seen = new HashSet<>();
         for (LogisticallyLinkedBehaviour link : LogisticallyLinkedBehaviour.getAllPresent(childFreqId, false)) {
             InventoryIdentifier identifier = inventoryIdentifierOf(link);
             if (identifier == null || !parentInventories.contains(identifier))
                 continue;
             // The child-side aggregation already de-duplicated per identifier,
             // so subtract each shared inventory at most once.
-            if (!subtracted.add(identifier))
-                continue;
-            for (BigItemStack entry : link.getSummary(null)
-                .getStacks())
-                subtractClamped(summary, entry.stack, entry.count);
+            if (seen.add(identifier))
+                shared.add(link);
         }
+        return shared;
     }
 
     @Nullable
