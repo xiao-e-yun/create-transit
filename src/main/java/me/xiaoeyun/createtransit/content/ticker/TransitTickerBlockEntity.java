@@ -485,6 +485,17 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         refreshCycleDetected();
     }
 
+    /**
+     * Whether a proxy cycle runs through this mounting point.
+     *
+     * Readable on the client: the field is written into every update tag, so
+     * the bulb renderer of an attached link can ask without a lookup of its own
+     * and without anything being synced for its sake.
+     */
+    public boolean isCycleDetected() {
+        return cycleDetected;
+    }
+
     private void refreshCycleDetected() {
         boolean detected = computeCycleDetected();
         if (detected != cycleDetected) {
