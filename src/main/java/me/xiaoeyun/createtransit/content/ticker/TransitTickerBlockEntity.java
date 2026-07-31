@@ -27,19 +27,20 @@ import com.simibubi.create.content.logistics.packagerLink.LogisticallyLinkedBeha
 import com.simibubi.create.content.logistics.packagerLink.LogisticsManager;
 import com.simibubi.create.content.logistics.packagerLink.PackagerLinkBlock;
 import com.simibubi.create.content.logistics.packagerLink.PackagerLinkBlockEntity;
+import com.simibubi.create.content.logistics.stockTicker.PackageOrder;
 import com.simibubi.create.content.logistics.stockTicker.PackageOrderWithCrafts;
+import com.simibubi.create.content.logistics.stockTicker.PackageOrderWithCrafts.CraftingEntry;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 
 import me.xiaoeyun.createtransit.content.transit.AddressLabels;
+import me.xiaoeyun.createtransit.content.transit.TransitCustoms;
 import me.xiaoeyun.createtransit.content.transit.TransitLinkBlockEntity;
-import me.xiaoeyun.createtransit.content.transit.TransitOrderMappings;
 import net.createmod.catnip.data.Iterate;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -63,9 +64,9 @@ import net.minecraft.world.level.block.state.BlockState;
  * Transit Link mounted here is foreign traffic. The ticker reports the
  * child's aggregate stock through that link, forwards the request into the
  * child network as a fresh order of the child's own, packed and shipped
- * physically under the labelled address, and a customs entry in
- * {@link TransitOrderMappings} tells the transit gate on the far side which
- * parent order to re-stamp the boxes for on arrival.</li>
+ * physically under the labelled address, and a {@link TransitCustoms}
+ * declaration rides along on that address telling the transit gate on the far
+ * side which parent order to re-stamp the boxes for on arrival.</li>
  * </ul>
  *
  * Shadow lifecycle is the vanilla link registry's own: entries live by
@@ -224,7 +225,7 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
 
         // The queue can legitimately mix link slots — several Transit Links
         // on one ticker, or two broadcasts landing back to back — and each
-        // slot must become its own child order with its own customs entry.
+        // slot must become its own child order with its own declaration.
         Map<Long, List<PackagingRequest>> slots = new LinkedHashMap<>();
         for (PackagingRequest request : crossBorder)
             slots.computeIfAbsent(slotKey(request.orderId(), request.linkIndex()), $ -> new ArrayList<>())
@@ -242,17 +243,22 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     /**
      * One parent link slot becomes one whole child order. The broadcast mints
      * a fresh order id, the child network packs and ships under it exactly as
-     * if a local player had ordered, and the customs entry filed here is what
-     * lets the transit gate on the far side hand the boxes back to the parent
-     * order on arrival. No identity is smuggled into the child network.
-     *
-     * The context registered is the parent's when it has one: vanilla stamps
-     * the full order — stacks and crafts — onto every fragment, and the
-     * crafts are what a destination repackager rebuilds recipe boxes from.
+     * if a local player had ordered, and the customs declaration filed here is
+     * what lets the transit gate on the far side hand the boxes back to the
+     * parent order on arrival. No identity is smuggled into the child network:
+     * to the child, this is an ordinary order to an ordinary address, and the
+     * declaration exists only between this call and the boxes it produces.
      */
     private void forwardSlot(UUID childFreqId, List<PackagingRequest> requests) {
         PackagingRequest parent = requests.get(0);
         String address = parent.address();
+        TransitCustoms declaration = TransitCustoms.of(address, parent.orderId(), parent.linkIndex(), parent.finalLink()
+            .booleanValue());
+        // An unlabelled request names no border, so no gate would ever answer
+        // to a declaration about it. That is a blank-labelled legacy transit
+        // link, which the goggles already flag in red.
+        if (declaration == null)
+            return;
 
         List<BigItemStack> orderStacks = new ArrayList<>();
         for (PackagingRequest request : requests)
@@ -275,24 +281,44 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         if (feasible.isEmpty())
             return;
 
-        Multimap<PackagerBlockEntity, PackagingRequest> assignment = LogisticsManager
-            .findPackagersForRequest(childFreqId, PackageOrderWithCrafts.simple(feasible), null, address);
+        // The stacks are the child's own — they are what decides what gets
+        // packed — but the crafts are the parent's. Vanilla only reads the
+        // stacks to assign the order and carries the crafts as passenger data
+        // on the context it stamps onto the first box, so handing the parent's
+        // crafts to the child order is what puts them on the goods, where a
+        // destination repackager still finds them to rebuild recipe boxes.
+        List<CraftingEntry> crafts = parent.context() == null ? List.of()
+            : parent.context()
+                .orderedCrafts();
+        PackageOrderWithCrafts childOrder = new PackageOrderWithCrafts(new PackageOrder(feasible), crafts);
+
+        Multimap<PackagerBlockEntity, PackagingRequest> assignment =
+            LogisticsManager.findPackagersForRequest(childFreqId, childOrder, null, address);
         if (assignment.isEmpty())
             return;
         for (PackagerBlockEntity packager : assignment.keySet())
             if (packager.isTooBusyFor(RequestType.REDSTONE))
                 return;
 
-        PackageOrderWithCrafts context =
-            parent.context() != null ? parent.context() : PackageOrderWithCrafts.simple(feasible);
+        // Borders chain here. A ticker forwarding across an inner border is one
+        // of the packagers driven by the outer border's own broadcast, so the
+        // outer filing is still open and its declarations ride onto this order
+        // behind ours — the same stack the boxes will be stamped with, built by
+        // the call chain rather than reconstructed from anything.
+        List<TransitCustoms> declarations = new ArrayList<>();
+        declarations.add(declaration);
+        declarations.addAll(TransitCustoms.filedFor(parent.orderId()));
+
         int childOrderId = assignment.values()
             .iterator()
             .next()
             .orderId();
-        TransitOrderMappings.get((ServerLevel) level)
-            .register(childOrderId, parent.orderId(), parent.linkIndex(), parent.finalLink()
-                .booleanValue(), context, level.getGameTime());
-        LogisticsManager.performPackageRequests(assignment);
+        TransitCustoms.file(childOrderId, declarations);
+        try {
+            LogisticsManager.performPackageRequests(assignment);
+        } finally {
+            TransitCustoms.close(childOrderId);
+        }
     }
 
     private static long slotKey(int orderId, int linkIndex) {
