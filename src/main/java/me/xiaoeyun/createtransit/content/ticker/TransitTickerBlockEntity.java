@@ -495,9 +495,6 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     @Override
     protected void read(CompoundTag tag, boolean clientPacket) {
         super.read(tag, clientPacket);
-        // Legacy saves stored the binding outside the behaviour
-        if (tag.hasUUID("ChildFreq"))
-            childLink.freqId = tag.getUUID("ChildFreq");
         Set<UUID> cycling = new HashSet<>();
         for (Tag entry : tag.getList("CyclingFrequencies", Tag.TAG_INT_ARRAY))
             cycling.add(NbtUtils.loadUUID(entry));
