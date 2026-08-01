@@ -20,6 +20,10 @@ build
 # python
 __pycache__
 
+# agent tooling scratch, which lands anywhere it is invoked -- including under
+# src/main/resources, where processResources also has to exclude it
+.omc/
+
 # other
 eclipse
 run
