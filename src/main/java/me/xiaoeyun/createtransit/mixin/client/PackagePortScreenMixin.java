@@ -16,8 +16,8 @@ import com.simibubi.create.content.logistics.packagePort.PackagePortScreen;
 import com.simibubi.create.foundation.gui.AllGuiTextures;
 import com.simibubi.create.foundation.gui.menu.AbstractSimiContainerScreen;
 
-import me.xiaoeyun.createtransit.content.transit.PortEndpointToggle;
-import me.xiaoeyun.createtransit.content.transit.TransitAddress;
+import me.xiaoeyun.createtransit.client.PortEndpointToggle;
+import me.xiaoeyun.createtransit.client.TransitAddress;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -44,7 +44,7 @@ public abstract class PackagePortScreenMixin extends AbstractSimiContainerScreen
 
     @Unique
     @Nullable
-    private PortEndpointToggle createNestNetwork$endpoint;
+    private PortEndpointToggle createTransit$endpoint;
 
     private PackagePortScreenMixin(PackagePortMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -63,8 +63,8 @@ public abstract class PackagePortScreenMixin extends AbstractSimiContainerScreen
      * the background art bakes in six pixels left of the button it holds.
      */
     @Inject(method = "init", at = @At("TAIL"))
-    private void createNestNetwork$addEndpointToggle(CallbackInfo ci) {
-        createNestNetwork$endpoint = new PortEndpointToggle(menu.contentHolder.addressFilter, addressBox,
+    private void createTransit$addEndpointToggle(CallbackInfo ci) {
+        createTransit$endpoint = new PortEndpointToggle(menu.contentHolder.addressFilter, addressBox,
             getGuiLeft() + background.getWidth() - 61, getGuiTop() + background.getHeight() - 24,
             this::addRenderableWidget);
     }
@@ -84,8 +84,8 @@ public abstract class PackagePortScreenMixin extends AbstractSimiContainerScreen
     @Redirect(method = "renderBg(Lnet/minecraft/client/gui/GuiGraphics;FII)V",
         at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/item/ItemStack;getHoverName()Lnet/minecraft/network/chat/Component;"))
-    private Component createNestNetwork$namePlaceholderForEndpoints(ItemStack icon) {
-        if (createNestNetwork$endpoint != null && createNestNetwork$endpoint.isEndpoint())
+    private Component createTransit$namePlaceholderForEndpoints(ItemStack icon) {
+        if (createTransit$endpoint != null && createTransit$endpoint.isEndpoint())
             return TransitAddress.defaultLane();
         return icon.getHoverName();
     }
@@ -96,8 +96,8 @@ public abstract class PackagePortScreenMixin extends AbstractSimiContainerScreen
                 + "(Lnet/minecraft/core/BlockPos;Ljava/lang/String;Z)V",
             remap = false),
         index = 1)
-    private String createNestNetwork$composeAddress(String boxValue) {
-        return createNestNetwork$endpoint == null ? boxValue : createNestNetwork$endpoint.compose(boxValue);
+    private String createTransit$composeAddress(String boxValue) {
+        return createTransit$endpoint == null ? boxValue : createTransit$endpoint.compose(boxValue);
     }
 
 }

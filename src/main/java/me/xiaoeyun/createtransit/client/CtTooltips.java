@@ -6,7 +6,6 @@ import com.simibubi.create.content.logistics.box.PackageItem;
 
 import me.xiaoeyun.createtransit.CreateTransit;
 import me.xiaoeyun.createtransit.content.transit.AddressLabels;
-import me.xiaoeyun.createtransit.content.transit.TransitAddress;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;

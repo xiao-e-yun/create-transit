@@ -1,11 +1,10 @@
-package me.xiaoeyun.createtransit.content.transit;
+package me.xiaoeyun.createtransit.client;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import me.xiaoeyun.createtransit.content.transit.AddressLabels;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
  * How a labelled address is spelled out for a player to read.
@@ -24,7 +23,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * behind a label still shows that path — the routing ignores it, and a spelling
  * that quietly swallowed it would be the reason nobody could work out why.
  */
-@OnlyIn(Dist.CLIENT)
 public final class TransitAddress {
 
     /**

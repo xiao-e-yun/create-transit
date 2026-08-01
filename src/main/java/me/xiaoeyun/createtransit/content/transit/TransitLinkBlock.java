@@ -5,6 +5,7 @@ import com.simibubi.create.content.logistics.packagerLink.LogisticallyLinkedBloc
 import com.simibubi.create.content.logistics.packagerLink.PackagerLinkBlock;
 import com.simibubi.create.content.logistics.packagerLink.PackagerLinkBlockEntity;
 
+import me.xiaoeyun.createtransit.client.TransitLinkScreen;
 import me.xiaoeyun.createtransit.registry.CtBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
@@ -22,11 +23,6 @@ import net.minecraftforge.fml.DistExecutor;
  * The block half of the transit link. Everything structural — placement, face
  * attachment, redstone, waterlogging, wrenching — comes from the vanilla Stock
  * Link; the only addition is right-clicking to edit the transit label.
- *
- * Converting an attached Stock Ticker into a proxyer is deliberately not done
- * here: the vanilla Stock Link has to do it too, so it lives on a place event
- * in {@link me.xiaoeyun.createtransit.content.ticker.TransitTickerConversion}
- * that covers the whole link family at once.
  *
  * Note this cannot re-declare {@code IBE<TransitLinkBlockEntity>}: the vanilla
  * superclass already binds the interface to PackagerLinkBlockEntity, so the

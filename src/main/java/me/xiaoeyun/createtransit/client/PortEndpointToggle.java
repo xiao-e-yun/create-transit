@@ -1,4 +1,4 @@
-package me.xiaoeyun.createtransit.content.transit;
+package me.xiaoeyun.createtransit.client;
 
 import java.util.function.Consumer;
 
@@ -7,12 +7,11 @@ import javax.annotation.Nullable;
 import com.simibubi.create.foundation.gui.AllIcons;
 import com.simibubi.create.foundation.gui.widget.IconButton;
 
+import me.xiaoeyun.createtransit.content.transit.AddressLabels;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
  * Turns a package port into a transit endpoint: a door that foreign packages
@@ -35,7 +34,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * screen either: the box shows a plain name in both positions, and the button
  * alone says whether that name is a transit label or an ordinary address.
  */
-@OnlyIn(Dist.CLIENT)
 public class PortEndpointToggle {
 
     private final EditBox addressBox;

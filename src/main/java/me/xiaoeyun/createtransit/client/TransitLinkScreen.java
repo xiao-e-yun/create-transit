@@ -1,9 +1,11 @@
-package me.xiaoeyun.createtransit.content.transit;
+package me.xiaoeyun.createtransit.client;
 
 import com.simibubi.create.content.logistics.AddressEditBox;
 import com.simibubi.create.foundation.gui.AllIcons;
 import com.simibubi.create.foundation.gui.widget.IconButton;
 
+import me.xiaoeyun.createtransit.content.transit.AddressLabels;
+import me.xiaoeyun.createtransit.content.transit.TransitLinkBlockEntity;
 import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.network.TransitLinkLabelPacket;
 import net.createmod.catnip.gui.AbstractSimiScreen;
@@ -12,17 +14,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
- * Single-field editor for a transit link's transit label. The label is
- * mandatory — it names the border this link declares, and without one the
- * link degrades to a plain Stock Link — so a blank box on close changes
- * nothing: a set label cannot be cleared back into the legacy blank state,
- * and the placeholder says what is missing rather than showing an empty box.
+ * Single-field editor for a transit link's transit label, which names the
+ * border this link declares. Clearing the field and confirming disables the
+ * link, so a blank box is submitted like any other value.
  */
-@OnlyIn(Dist.CLIENT)
 public class TransitLinkScreen extends AbstractSimiScreen {
 
     private static final int WIDTH = 184;
@@ -86,10 +83,9 @@ public class TransitLinkScreen extends AbstractSimiScreen {
     @Override
     public void removed() {
         String value = labelBox.getValue();
-        // Blank and * are the two things a link cannot declare -- no border, and
-        // every border -- so neither is sent, and closing on one leaves the link
-        // exactly as it was found.
-        if (!value.isBlank() && !AddressLabels.WILDCARD.equals(value.trim()))
+        // * is the one thing a link cannot declare, so closing on it leaves the
+        // link exactly as it was found; blank is the legitimate disabled state.
+        if (!AddressLabels.WILDCARD.equals(value.trim()))
             CtPackets.CHANNEL.sendToServer(new TransitLinkLabelPacket(pos, value));
         super.removed();
     }

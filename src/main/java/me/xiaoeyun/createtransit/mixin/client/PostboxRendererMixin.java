@@ -11,7 +11,7 @@ import com.simibubi.create.content.logistics.packagePort.postbox.PostboxRenderer
 
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 import me.xiaoeyun.createtransit.content.transit.AddressLabels;
-import me.xiaoeyun.createtransit.content.transit.TransitAddress;
+import me.xiaoeyun.createtransit.client.TransitAddress;
 import me.xiaoeyun.createtransit.registry.CtPartialModels;
 import net.createmod.catnip.render.CachedBuffers;
 import net.createmod.catnip.render.SuperByteBuffer;
@@ -42,7 +42,7 @@ public class PostboxRendererMixin {
                 + "Lnet/minecraft/network/chat/Component;FLcom/mojang/blaze3d/vertex/PoseStack;"
                 + "Lnet/minecraft/client/renderer/MultiBufferSource;I)V"),
         index = 1)
-    private Component createNestNetwork$plainNameplate(Component address) {
+    private Component createTransit$plainNameplate(Component address) {
         return TransitAddress.spell(address);
     }
 
@@ -54,7 +54,7 @@ public class PostboxRendererMixin {
                 + "(Ldev/engine_room/flywheel/lib/model/baked/PartialModel;"
                 + "Lnet/minecraft/world/level/block/state/BlockState;)"
                 + "Lnet/createmod/catnip/render/SuperByteBuffer;"))
-    private SuperByteBuffer createNestNetwork$paintEndpointFlag(PartialModel flag, BlockState state,
+    private SuperByteBuffer createTransit$paintEndpointFlag(PartialModel flag, BlockState state,
         PostboxBlockEntity postbox, float partialTicks, PoseStack ms, MultiBufferSource buffer, int light,
         int overlay) {
         if (AddressLabels.startsWithLabel(postbox.addressFilter))
