@@ -203,6 +203,8 @@ that renders, fixture checks and validators all read the same declaration.
                     metavar='MODEL[@TRANSFORM]',
                     help='draw this into the same scene as every model given, '
                          'depth-tested against it')
+    ap.add_argument('--frame', default='8,25', metavar='CY,SPAN',
+                    help='vertical centre and world units across; default 8,25 frames one block')
     ap.add_argument('--only', action='append', default=[], metavar='GLOB',
                     help="draw only elements whose handle matches, e.g. "
                          "'rail#flap_rail' or 'block#*'. Handles are printed "
@@ -235,6 +237,7 @@ that renders, fixture checks and validators all read the same declaration.
     ap.add_argument('--jar', action='append', default=[],
                     help='extra jar to resolve foreign namespaces from')
     args = ap.parse_args(argv)
+    frame = tuple(float(v) for v in args.frame.split(','))
 
     props = gradle_properties(REPO)
     try:
@@ -299,7 +302,7 @@ that renders, fixture checks and validators all read the same declaration.
         (y, p), how = angle(scene.get('views', ['iso'])[0])
         print('%s @ %s' % (name, how), flush=True)
         im = render(assets, specs_for(scene, table), size=args.size,
-                    yaw=y, pitch=p, ss=args.ss, **debug)
+                    yaw=y, pitch=p, ss=args.ss, frame=frame, **debug)
         label = '%s.%s' % (name, how)
         im.save(os.path.join(outdir, label + '.png'))
         rendered.append((label, im))
@@ -315,7 +318,7 @@ that renders, fixture checks and validators all read the same declaration.
         for res in loose:
             print(res, flush=True)
             im = render(assets, [(res, np.eye(4))] + extra, size=args.size,
-                        yaw=yaw, pitch=pitch, ss=args.ss, **debug)
+                        yaw=yaw, pitch=pitch, ss=args.ss, frame=frame, **debug)
             label = res.split(':')[-1].replace('/', '_')
             im.save(os.path.join(outdir, label + '.png'))
             rendered.append((label, im))

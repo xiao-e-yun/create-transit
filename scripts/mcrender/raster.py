@@ -87,7 +87,7 @@ def element_name(model_res, index, el):
 
 
 def render(assets, specs, size=384, yaw=225.0, pitch=30.0, ss=2, quiet=False,
-           only=None, paint=None):
+           only=None, paint=None, frame=(8.0, 25.0)):
     """Draw every (model id, 4x4 placement matrix) pair into one image.
 
     `only` keeps just the elements whose handle matches one of its glob
@@ -102,11 +102,13 @@ def render(assets, specs, size=384, yaw=225.0, pitch=30.0, ss=2, quiet=False,
 
     cy, sy = math.cos(math.radians(yaw)), math.sin(math.radians(yaw))
     cp, sp = math.cos(math.radians(pitch)), math.sin(math.radians(pitch))
-    scale = W / 25.0
+    # frame = (vertical centre, world units across): (8, 25) is the one-block default.
+    centre_y, span = frame
+    scale = W / span
     tinted = set()
 
     def project(p):
-        x, y, z = p[..., 0] - 8, p[..., 1] - 8, p[..., 2] - 8
+        x, y, z = p[..., 0] - 8, p[..., 1] - centre_y, p[..., 2] - 8
         x, z = x * cy + z * sy, -x * sy + z * cy
         y, z = y * cp - z * sp, y * sp + z * cp
         return W / 2 + x * scale, W / 2 - y * scale, z
