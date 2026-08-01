@@ -1,7 +1,7 @@
 package me.xiaoeyun.createtransit.client;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.content.logistics.AddressEditBox;
-import com.simibubi.create.content.trains.station.NoShadowFontWrapper;
 import com.simibubi.create.foundation.gui.AllGuiTextures;
 import com.simibubi.create.foundation.gui.AllIcons;
 import com.simibubi.create.foundation.gui.widget.IconButton;
@@ -10,6 +10,7 @@ import me.xiaoeyun.createtransit.content.transit.AddressLabels;
 import me.xiaoeyun.createtransit.content.transit.TransitLinkBlockEntity;
 import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.network.TransitLinkLabelPacket;
+import me.xiaoeyun.createtransit.registry.CtItems;
 import net.createmod.catnip.gui.AbstractSimiScreen;
 import net.createmod.catnip.gui.element.GuiGameElement;
 import net.minecraft.client.Minecraft;
@@ -19,14 +20,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Single-field editor for a transit link's transit label, laid out as the
- * package port's address filter is: the same header plaque, the same centred
- * borderless address box, and the block's own name shown while it is empty.
+ * Single-field editor for a transit link's transit label, laid out as Create's
+ * Package Filter config screen is: title plaque, one row of package icon plus
+ * address box, and a trash/confirm pair. The player inventory that screen
+ * carries is dropped — a link has no menu and nothing to show in one.
  */
 public class TransitLinkScreen extends AbstractSimiScreen {
 
-    private static final AllGuiTextures BACKGROUND = AllGuiTextures.FROGPORT_BG;
-    private static final AllGuiTextures HEADER = AllGuiTextures.POSTBOX_HEADER;
+    private static final AllGuiTextures BACKGROUND = AllGuiTextures.PACKAGE_FILTER;
 
     private final BlockPos pos;
     private final String initialLabel;
@@ -53,24 +54,25 @@ public class TransitLinkScreen extends AbstractSimiScreen {
         super.init();
         clearWidgets();
 
-        labelBox = new AddressEditBox(this, new NoShadowFontWrapper(font), guiLeft + 23, guiTop - 11,
-            BACKGROUND.getWidth() - 20, 10, false);
+        labelBox = new AddressEditBox(this, font, guiLeft + 44, guiTop + 28, 129, 9, false);
         labelBox.setValue(initialLabel);
-        labelBox.setTextColor(0x3D3C48);
-        // Re-centres as it is typed into; AddressEditBox chains this behind its
-        // own suggestion responder rather than replacing it.
-        labelBox.setResponder(s -> labelBox.setX(labelBoxX(s)));
-        labelBox.setX(labelBoxX(labelBox.getValue()));
+        labelBox.setTextColor(0xFFFFFF);
         addRenderableWidget(labelBox);
+
+        IconButton reset = new IconButton(guiLeft + BACKGROUND.getWidth() - 62,
+            guiTop + BACKGROUND.getHeight() - 24, AllIcons.I_TRASH);
+        reset.withCallback(() -> {
+            labelBox.setValue("");
+            setFocused(labelBox);
+        });
+        addRenderableWidget(reset);
 
         IconButton confirm = new IconButton(guiLeft + BACKGROUND.getWidth() - 33,
             guiTop + BACKGROUND.getHeight() - 24, AllIcons.I_CONFIRM);
         confirm.withCallback(this::onClose);
         addRenderableWidget(confirm);
-    }
 
-    private int labelBoxX(String text) {
-        return guiLeft + BACKGROUND.getWidth() / 2 - (Math.min(font.width(text), labelBox.getWidth()) + 10) / 2;
+        setFocused(labelBox);
     }
 
     @Override
@@ -81,21 +83,20 @@ public class TransitLinkScreen extends AbstractSimiScreen {
 
     @Override
     protected void renderWindow(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        HEADER.render(graphics, guiLeft, guiTop - HEADER.getHeight());
         BACKGROUND.render(graphics, guiLeft, guiTop);
+        graphics.drawString(font, title,
+            guiLeft + (BACKGROUND.getWidth() - 8) / 2 - font.width(title) / 2, guiTop + 4, 0x3D3C48, false);
 
-        String text = labelBox.getValue();
-        if (!labelBox.isFocused()) {
-            if (text.isEmpty()) {
-                text = title.getString();
-                graphics.drawString(font, text, labelBoxX(text), guiTop - 11, 0x3D3C48, false);
-            }
-            AllGuiTextures.FROGPORT_EDIT_NAME.render(graphics, labelBoxX(text) + font.width(text) + 5, guiTop - 14);
-        }
+        PoseStack ms = graphics.pose();
+        ms.pushPose();
+        ms.translate(guiLeft + 16, guiTop + 23, 0);
+        GuiGameElement.of(CtItems.TRANSIT_PACKAGE.asStack())
+            .render(graphics);
+        ms.popPose();
 
         GuiGameElement.of(icon)
-            .<GuiGameElement.GuiRenderBuilder>at(guiLeft + BACKGROUND.getWidth() + 6,
-                guiTop + BACKGROUND.getHeight() - 56, -200)
+            .<GuiGameElement.GuiRenderBuilder>at(guiLeft + BACKGROUND.getWidth() + 8,
+                guiTop + BACKGROUND.getHeight() - 52, -200)
             .scale(4)
             .render(graphics);
     }
