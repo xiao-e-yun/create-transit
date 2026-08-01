@@ -46,7 +46,9 @@ Create's and have to be told apart.
 ```bash
 ./gradlew build        # package the mod
 ./gradlew runClient    # launch the development client
-./gradlew runData      # data generation (models, lang files; written to src/generated/resources)
 ```
+
+All resource JSONs (models, recipes, lang) are hand-authored under
+`src/main/resources` — there is no datagen, so `runData` does nothing here.
 
 Dependencies are set up as described in the official guide: <https://wiki.createmod.net/developers/depend-on-create/forge-1.20.1>
