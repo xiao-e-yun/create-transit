@@ -126,16 +126,6 @@
       "facing": "south",
       "models": [{ "model": "block/transit_link/block_vertical_powered" }],
       "views": ["iso"]
-    },
-
-    "transit_repackager": {
-      "doc": "The repackager, which shares the packager's geometry but samples the lower half of the side atlases.",
-      "facing": "south",
-      "models": [
-        { "model": "block/transit_repackager/block" },
-        { "model": "create:block/repackager/tray", "transform": "packager_tray" }
-      ],
-      "views": ["iso"]
     }
   }
 }
