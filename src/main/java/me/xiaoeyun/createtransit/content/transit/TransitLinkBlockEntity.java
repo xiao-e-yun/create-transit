@@ -33,13 +33,12 @@ import net.minecraft.world.level.block.state.BlockState;
  * local warehouses served by vanilla links stay unlabelled while foreign
  * sources served by this link get stamped.
  *
- * The label is mandatory: it is what routes the shipment to a border gate and
- * what the customs machinery keys on. A link left blank — possible only on
- * legacy saves, since the screen refuses to store blank — stamps nothing and
- * therefore behaves like a plain Stock Link; the goggle tooltip calls that
- * out in red. Everything else — tuning, protection, keepAlive, redstone
- * priority — is inherited, so lowering this link's priority with redstone
- * means "spend local stock first, only reach across the border when short".
+ * The label is what routes the shipment to a border gate and what the customs
+ * machinery keys on. Clearing it disables the link: it stamps nothing, declares
+ * no border, and behaves like a plain Stock Link, with the bulb dark to say so.
+ * Everything else — tuning, protection, keepAlive, redstone priority — is
+ * inherited, so lowering this link's priority with redstone means "spend local
+ * stock first, only reach across the border when short".
  */
 public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements IHaveGoggleInformation {
 
@@ -54,14 +53,12 @@ public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements I
         return label;
     }
 
-    /**
-     * Stores a label, refusing the wildcard name.
-     *
-     * A link stamps what it is given, and "every border" is not a place a
-     * shipment can be sent — {@code *} only means anything to a port deciding
-     * what to let in. The screen declines to send it as well; this is the guard
-     * that does not take the packet's word for it.
-     */
+    /** Whether this link declares a border at all; a blank label is the disabled state. */
+    public boolean isActive() {
+        return !label.isBlank();
+    }
+
+    /** Stores a label, refusing only the wildcard: "every border" is not a place a shipment can be sent. */
     public void setLabel(String label) {
         String sanitized = AddressLabels.sanitizeName(label);
         if (AddressLabels.WILDCARD.equals(sanitized))
@@ -70,24 +67,10 @@ public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements I
         notifyUpdate();
     }
 
-    /**
-     * Keeps the bulb dark while there is no label, instead of letting it blink.
-     *
-     * The blink means a request went through, and through an unlabelled link
-     * nothing does: it stamps no border, so the ticker on the other side finds
-     * no crossing to answer for and drops what arrives. Blinking would be the
-     * link reporting work it did not do. Dark is the honest reading, and it is
-     * the same one an unbound mounting point gives — both are blocks that
-     * cannot act, and the bulb keeps red for the one fault a player has to go
-     * and find.
-     *
-     * The cost is that a misconfigured link now looks like an idle one, since
-     * Create draws no bulb at all below its glow threshold. The goggles keep
-     * saying it in words.
-     */
+    /** Dark while disabled: the blink means a request went through, and through a disabled link none does. */
     @Override
     public float getGlow(float partialTicks) {
-        return label.isBlank() ? 0 : super.getGlow(partialTicks);
+        return isActive() ? super.getGlow(partialTicks) : 0;
     }
 
     @Override
@@ -116,10 +99,10 @@ public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements I
             .append(Component.translatable("block.create_transit.transit_link")
                 .withStyle(ChatFormatting.WHITE)));
 
-        if (label.isBlank())
+        if (!isActive())
             tooltip.add(Component.literal("    ")
-                .append(Component.translatable("create_transit.transit_link.goggles.forwarding")
-                    .withStyle(ChatFormatting.RED)));
+                .append(Component.translatable("create_transit.transit_link.goggles.disabled")
+                    .withStyle(ChatFormatting.GRAY)));
         else
             tooltip.add(Component.literal("    ")
                 .append(Component.translatable("create_transit.transit_link.goggles.label",
