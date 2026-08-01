@@ -2,16 +2,22 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
+    "T": {
+      "item": "create:transmitter"
+    },
+    "E": {
+      "item": "create:electron_tube"
+    },
     "L": {
       "item": "create:stock_link"
     },
-    "S": {
-      "tag": "forge:plates/obsidian"
+    "C": {
+      "item": "create:railway_casing"
     }
   },
   "pattern": [
-    "L",
-    "S"
+    "TE",
+    "LC"
   ],
   "result": {
     "item": "create_transit:transit_link"
