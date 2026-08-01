@@ -21,9 +21,11 @@ jobs:
       - name: Build
         run: ./gradlew build
 
-      - name: Publish to GitHub Releases
+      - name: Publish
         uses: Kira-NT/mc-publish@v3.3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-tag: ${{ github.ref_name }}
+          modrinth-id: TiQAYxVn
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           files: build/libs/*.jar
