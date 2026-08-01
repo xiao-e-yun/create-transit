@@ -32,6 +32,9 @@ public class TransitLinkScreen extends AbstractSimiScreen {
     /** Create's own placeholder grey for a light-on-dark field (StationScreen). */
     private static final int HINT_COLOUR = 0xA6A6A6;
 
+    /** Create's dark-on-light secondary text (PackagePortScreen's placeholder). */
+    private static final int CAPTION_COLOUR = 0x3D3C48;
+
     /** The footer: caption starts here, the trash button ends it. */
     private static final int CAPTION_X = 12;
     private static final int BUTTON_ROW_X = AllGuiTextures.PACKAGE_FILTER.getWidth() - 62;
@@ -124,7 +127,7 @@ public class TransitLinkScreen extends AbstractSimiScreen {
         ms.translate(guiLeft + CAPTION_X,
             guiTop + BACKGROUND.getHeight() - 24 + (18 - 8 * scale) / 2f, 0);
         ms.scale(scale, scale, 1);
-        graphics.drawString(font, caption, 0, 0, HINT_COLOUR, false);
+        graphics.drawString(font, caption, 0, 0, CAPTION_COLOUR, false);
         ms.popPose();
     }
 
