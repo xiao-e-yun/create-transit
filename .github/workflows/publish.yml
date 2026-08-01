@@ -30,4 +30,7 @@ jobs:
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           curseforge-id: 1634308
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          environment: client | server
+          # A re-pushed tag should not die on Modrinth's "version already exists".
+          modrinth-fail-mode: warn
           files: build/libs/*.jar
