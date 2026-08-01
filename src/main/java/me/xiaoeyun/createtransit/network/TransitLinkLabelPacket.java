@@ -34,27 +34,23 @@ public class TransitLinkLabelPacket {
         buffer.writeUtf(label, MAX_LABEL_LENGTH);
     }
 
+    /** Registered with {@code consumerMainThread}, which does the enqueueWork and the setPacketHandled itself. */
     public void handle(Supplier<NetworkEvent.Context> context) {
-        context.get()
-            .enqueueWork(() -> {
-                ServerPlayer sender = context.get()
-                    .getSender();
-                if (sender == null)
-                    return;
-                Level level = sender.level();
-                // Guard against a spoofed position pointing at unloaded or
-                // out-of-reach chunks, then defer to the network's own
-                // permissions so links cannot be relabelled by outsiders.
-                if (!level.isLoaded(pos) || sender.distanceToSqr(Vec3.atCenterOf(pos)) > 64 * 64)
-                    return;
-                if (!(level.getBlockEntity(pos) instanceof TransitLinkBlockEntity link))
-                    return;
-                if (!link.behaviour.mayInteract(sender))
-                    return;
-                link.setLabel(label);
-            });
-        context.get()
-            .setPacketHandled(true);
+        ServerPlayer sender = context.get()
+            .getSender();
+        if (sender == null)
+            return;
+        Level level = sender.level();
+        // Guard against a spoofed position pointing at unloaded or out-of-reach
+        // chunks, then defer to the network's own permissions so links cannot
+        // be relabelled by outsiders.
+        if (!level.isLoaded(pos) || sender.distanceToSqr(Vec3.atCenterOf(pos)) > 64 * 64)
+            return;
+        if (!(level.getBlockEntity(pos) instanceof TransitLinkBlockEntity link))
+            return;
+        if (!link.behaviour.mayInteract(sender))
+            return;
+        link.setLabel(label);
     }
 
 }
