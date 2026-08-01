@@ -8,8 +8,6 @@
   "block.create_transit.transit_link.tooltip.summary": "在此网络上声明一道_边境_。经它转发的货运都会盖上它的_转运标签_。",
   "create_transit.transit_link.goggles.label": "请求将通过 %s 转运",
   "create_transit.transit_link.goggles.disabled": "未启用：没有转运标签，此链接站不声明任何边境",
-  "create_transit.transit_link.label_empty": "（未启用）",
-  "create_transit.transit_link.label_hint": "对应货运通关的边境关口名称；留空则停用此链接站",
   "block.create_transit.transit_gate": "跨境关口",
   "block.create_transit.transit_gate.tooltip.summary": "为入境货运办理_通关_，剥除_一层转运标签_，并将已申报的订单合并回单一批货。",
   "create_transit.transit_gate.goggles.strips": "剥除通过包裹的 %s 转运标签",
