@@ -2,6 +2,7 @@ package me.xiaoeyun.createtransit.registry;
 
 import static me.xiaoeyun.createtransit.CreateTransit.registrate;
 
+import com.simibubi.create.content.logistics.packagerLink.LogisticallyLinkedBlockItem;
 import com.simibubi.create.foundation.data.SharedProperties;
 import com.tterrag.registrate.util.entry.BlockEntry;
 
@@ -24,14 +25,15 @@ public class CtBlocks {
     // is ignored and a glass panel comes out black. Each entry below therefore
     // mirrors the properties of the Create block it stands in for.
 
-    // No item: a proxyer only ever exists by converting a tuned Stock Ticker,
-    // and it impersonates one whenever an item form is asked for -- so it also
-    // has to mine, sound and render like one. Mirrors AllBlocks.STOCK_TICKER.
+    // Mirrors AllBlocks.STOCK_TICKER, LogisticallyLinkedBlockItem included, so
+    // the item tunes to a network exactly as a Stock Ticker's does.
     public static final BlockEntry<TransitTickerBlock> TRANSIT_TICKER = registrate()
         .block("transit_ticker", TransitTickerBlock::new)
         .initialProperties(SharedProperties::softMetal)
         .properties(p -> p.sound(SoundType.GLASS))
         .addLayer(() -> RenderType::cutoutMipped)
+        .item(LogisticallyLinkedBlockItem::new)
+        .build()
         .register();
 
     // Mirrors BuilderTransformers.packager(), which the Packager and the

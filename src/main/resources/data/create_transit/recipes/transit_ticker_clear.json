@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "create_transit:transit_ticker"
+    }
+  ],
+  "result": {
+    "item": "create_transit:transit_ticker"
+  }
+}

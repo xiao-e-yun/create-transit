@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "tag": "forge:glass"
+    },
+    "R": {
+      "item": "create:railway_casing"
+    },
+    "L": {
+      "item": "create_transit:transit_link"
+    },
+    "G": {
+      "tag": "forge:ingots/gold"
+    }
+  },
+  "pattern": [
+    " C ",
+    "RLR",
+    " G "
+  ],
+  "result": {
+    "item": "create_transit:transit_ticker"
+  },
+  "show_notification": true
+}

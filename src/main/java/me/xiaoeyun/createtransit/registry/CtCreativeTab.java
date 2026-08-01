@@ -5,6 +5,7 @@ import com.simibubi.create.AllCreativeModeTabs;
 import com.simibubi.create.content.logistics.box.PackageStyles;
 
 import net.minecraft.world.item.CreativeModeTab.TabVisibility;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -47,18 +48,25 @@ public final class CtCreativeTab {
         event.getEntries()
             .putAfter(AllBlocks.STOCK_LINK.asStack(), CtBlocks.TRANSIT_LINK.asStack(),
                 TabVisibility.PARENT_AND_SEARCH_TABS);
+        event.getEntries()
+            .putAfter(AllBlocks.STOCK_TICKER.asStack(), CtBlocks.TRANSIT_TICKER.asStack(),
+                TabVisibility.PARENT_AND_SEARCH_TABS);
 
         // The package rides with Create's own boxes, which sit in the tab in
         // registration order -- so "after the last style Create declares" is
         // the end of that run. Deriving the anchor from PackageStyles.STYLES
         // instead of hard-coding an id keeps it pointed there even if the
         // list changes shape upstream.
-        ItemStack lastBox = new ItemStack(ForgeRegistries.ITEMS.getValue(
-            PackageStyles.STYLES.get(PackageStyles.STYLES.size() - 1)
-                .getItemId()));
-        event.getEntries()
-            .putAfter(lastBox, CtItems.TRANSIT_PACKAGE.asStack(),
-                TabVisibility.PARENT_AND_SEARCH_TABS);
+        Item lastBox = ForgeRegistries.ITEMS.getValue(PackageStyles.STYLES.get(PackageStyles.STYLES.size() - 1)
+            .getItemId());
+        // A missing anchor is not the same as an absent one: putAfter appends
+        // only for a stack it cannot find, and a null item would be air.
+        if (lastBox == null)
+            event.accept(CtItems.TRANSIT_PACKAGE.asStack(), TabVisibility.PARENT_AND_SEARCH_TABS);
+        else
+            event.getEntries()
+                .putAfter(new ItemStack(lastBox), CtItems.TRANSIT_PACKAGE.asStack(),
+                    TabVisibility.PARENT_AND_SEARCH_TABS);
     }
 
 }
