@@ -7,7 +7,7 @@ Networks stay sovereign here, and freight moves between them the way it crosses 
 - **Minecraft**: 1.20.1 (Forge)
 - **Depends on**: Create 6.x (registered through CreateRegistrate)
 - **Mod id**: `create_transit`
-- **License**: All Rights Reserved
+- **License**: MIT
 - **Status**: in development, unreleased
 
 ## Upstream sources
