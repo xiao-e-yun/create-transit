@@ -30,8 +30,8 @@ import javax.annotation.Nullable;
  */
 public final class AddressLabels {
 
-    public static final String OPEN = "<[";
-    public static final String CLOSE = "]>";
+    private static final String OPEN = "<[";
+    private static final String CLOSE = "]>";
 
     /**
      * A label name meaning "any label", the way {@code *} means "any address"
