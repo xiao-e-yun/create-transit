@@ -28,4 +28,6 @@ jobs:
           github-tag: ${{ github.ref_name }}
           modrinth-id: TiQAYxVn
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: 1634308
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           files: build/libs/*.jar
