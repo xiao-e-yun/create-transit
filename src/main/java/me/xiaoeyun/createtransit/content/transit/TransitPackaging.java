@@ -1,9 +1,11 @@
 package me.xiaoeyun.createtransit.content.transit;
 
+import java.util.List;
+
 import com.simibubi.create.content.logistics.box.PackageItem;
 import com.simibubi.create.content.logistics.box.PackageStyles;
+import com.simibubi.create.content.logistics.box.PackageStyles.PackageStyle;
 
-import me.xiaoeyun.createtransit.registry.CtItems;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -38,16 +40,26 @@ public final class TransitPackaging {
         if (foreign == styled)
             return box;
 
-        // A box coming home takes a random Create style rather than a fixed
-        // one, because that is what Create does whenever it makes a box, and a
-        // route that always produced the same cardboard would read as a tell.
-        ItemStack out = foreign ? CtItems.TRANSIT_PACKAGE.asStack()
-            : PackageStyles.getRandomBox();
+        ItemStack out = sameSize(box, foreign ? TransitPackageItem.BOXES : PackageStyles.STANDARD_BOXES);
         out.setCount(box.getCount());
         if (box.hasTag())
             out.setTag(box.getTag()
                 .copy());
         return out;
+    }
+
+    /**
+     * The counterpart box of the same dimensions, so a shipment keeps its
+     * shape across a border. A rare box measures like a standard one and so
+     * maps like one; only a size nobody has a counterpart for falls back to
+     * Create's own random pick.
+     */
+    private static ItemStack sameSize(ItemStack box, List<? extends PackageItem> pool) {
+        PackageStyle style = ((PackageItem) box.getItem()).style;
+        for (PackageItem candidate : pool)
+            if (candidate.style.width() == style.width() && candidate.style.height() == style.height())
+                return new ItemStack(candidate);
+        return PackageStyles.getRandomBox();
     }
 
 }

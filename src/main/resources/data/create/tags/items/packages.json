@@ -1,6 +1,9 @@
 {
   "replace": false,
   "values": [
-    "create_transit:transit_package"
+    "create_transit:transit_package_12x12",
+    "create_transit:transit_package_10x12",
+    "create_transit:transit_package_10x8",
+    "create_transit:transit_package_12x10"
   ]
 }

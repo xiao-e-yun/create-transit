@@ -1,11 +1,15 @@
 package me.xiaoeyun.createtransit.content.transit;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.simibubi.create.content.logistics.box.PackageItem;
 import com.simibubi.create.content.logistics.box.PackageStyles;
 import com.simibubi.create.content.logistics.box.PackageStyles.PackageStyle;
 
 /**
- * The box a package wears while it is still foreign.
+ * The box a package wears while it is still foreign, in each of Create's four
+ * standard sizes.
  *
  * Create invites this: {@code PackageStyles.STYLES} says in as many words that
  * an addon should register its own {@link PackageItem} rather than insert into
@@ -19,15 +23,24 @@ import com.simibubi.create.content.logistics.box.PackageStyles.PackageStyle;
 public class TransitPackageItem extends PackageItem {
 
     /**
-     * Twelve by ten, which is what every one of Create's rare boxes is, so
-     * {@code create:item/package/custom_12x10} and its rigging model both fit
-     * without drawing any geometry of our own.
-     *
+     * Our counterpart to each of Create's standard styles, measurements and
+     * rigging offset included, so a size that changes upstream changes here.
      * The type name never reaches a resource location — {@code getItemId()} and
-     * {@code getRiggingModel()} both build paths in Create's namespace, so this
-     * style is only ever asked for its measurements.
+     * {@code getRiggingModel()} both build paths in Create's namespace, so a
+     * style is only ever asked for its numbers.
      */
-    public static final PackageStyle STYLE = new PackageStyle("transit", 12, 10, 21f, false);
+    public static final List<PackageStyle> STYLES = PackageStyles.STYLES.stream()
+        .filter(style -> !style.rare())
+        .map(style -> new PackageStyle("transit", style.width(), style.height(), style.riggingOffset(), false))
+        .toList();
+
+    /** Our own boxes, since the constructor takes them back out of Create's lists. */
+    public static final List<TransitPackageItem> BOXES = new ArrayList<>();
+
+    /** Mirrors Create's {@code package_WxH} naming, one id per size. */
+    public static String idOf(PackageStyle style) {
+        return "transit_package_" + style.width() + "x" + style.height();
+    }
 
     public TransitPackageItem(Properties properties, PackageStyle style) {
         super(properties, style);
@@ -41,11 +54,13 @@ public class TransitPackageItem extends PackageItem {
         PackageStyles.ALL_BOXES.remove(this);
         PackageStyles.STANDARD_BOXES.remove(this);
         PackageStyles.RARE_BOXES.remove(this);
+        BOXES.add(this);
     }
 
     /**
-     * Create's own description id is hard-coded to its namespace, so every
-     * package in the game — ours included — would otherwise be called Package.
+     * One name for every size, as Create names all four of its own
+     * {@code item.create.package}, and its own id is hard-coded to its
+     * namespace so ours would otherwise read "Cardboard Package".
      */
     @Override
     public String getDescriptionId() {

@@ -2,7 +2,7 @@
 # requires-python = ">=3.9"
 # dependencies = ["pillow", "coloraide"]
 # ///
-"""Build the transit package's texture from Create's cardboard.
+"""Build the transit packages' texture from Create's cardboard.
 
 Same discipline as repalette.py, and for the same reason: the source is the
 pixels inside Create's jar rather than the file on disk, so a rebuild always
@@ -13,22 +13,26 @@ builds against.
     uv run scripts/transit_package.py            # rebuild
     uv run scripts/transit_package.py --check    # report only, touch nothing
     uv run scripts/transit_package.py --verify   # assert the rebuild matches HEAD
+    uv run scripts/transit_package.py --preview  # magnified grids for review
 
 What it makes
 -------------
 
-A transit package is Create's 12x10 cardboard box, moved into the layout
-`create:item/package/custom_12x10` expects -- the parent model the ten rare
-boxes share -- then recoloured, with a waybill printed on the lid.
+One 64x64 atlas, the transit counterpart of `create:item/package/cardboard`.
+Create packs all four standard boxes into that single texture, one size per
+column, and every `cardboard_WxH` model reads it -- so our four item models
+parent Create's own models and override the texture, and no geometry, no UVs
+and no rigging art are ours to maintain.
 
-Create's own grammar for a different package is "same box, print something on
-it": rare_simi.png is cardboard.png's palette exactly, plus the colours of the
-design over it, and nine of the ten rare boxes keep the cardboard entirely. The
-lid is kept clear in six of them and never carries a bordered shape. This
-texture breaks both of those on purpose. A rare box is a prize and only has to
-look good; this one has to be identifiable at a glance, from any angle, at
-inventory-icon size, because it is how a player sees that goods are still
-foreign. The reasoning is in issue #3.
+The atlas is recoloured whole, then a waybill is printed on each of the four
+lids. Create's own grammar for a different package is "same box, print
+something on it": rare_simi.png is cardboard.png's palette exactly, plus the
+colours of the design over it, and nine of the ten rare boxes keep the
+cardboard entirely. The lid is kept clear in six of them and never carries a
+bordered shape. This texture breaks both of those on purpose. A rare box is a
+prize and only has to look good; this one has to be identifiable at a glance,
+from any angle, at inventory-icon size, because it is how a player sees that
+goods are still foreign. The reasoning is in issue #3.
 
 Colour
 ------
@@ -40,6 +44,14 @@ looking like a sticker: picked by eye, its paper had landed at L 0.946, and
 Create paints packages between L 0.575 and 0.795 with nothing above 0.86. Paper
 now sits exactly on that ceiling -- the lightest thing on the box, and no
 lighter than anything the game already puts on a package.
+
+The waybill
+-----------
+
+A lid is as wide as the box's footprint, so the four sizes give two lids: 12x12
+px on the 12-wide boxes and 10x10 on the 10-wide ones. The 12-wide bill is the
+approved artwork unchanged, down to its off-centre seat; the 10-wide one is the
+same design one size down, dropping the second ruled line that no longer fits.
 """
 import argparse
 import colorsys
@@ -51,7 +63,7 @@ import subprocess
 import sys
 
 from coloraide import Color
-from PIL import Image
+from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -59,10 +71,12 @@ from repalette import create_jar                                  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REL = 'src/main/resources/assets/create_transit/textures/item/package'
-NAME = 'transit'
+NAME = 'transit_cardboard'
+PREVIEW = 'build/texture-preview'
 
-# Create's model this is drawn for, and the one its pixels come from.
-LAYOUT, SOURCE = 'custom_12x10', 'cardboard_12x10'
+# Create's shared cardboard atlas, and the models that carve it up.
+SOURCE = 'item/package/cardboard'
+SIZES = ((12, 12), (10, 12), (10, 8), (12, 10))
 
 BODY_HUE, BODY_SAT, BODY_VAL = 118.0, 1.00, 0.82
 GREY_FLOOR = 0.18            # below this a pixel has no hue worth rotating
@@ -75,7 +89,10 @@ SEAL_L, SEAL_SPREAD, SEAL_C, SEAL_H = 0.520, 0.025, 0.135, 30.0
 WEAR_AMOUNT, WEAR_STRENGTH = 0.15, 0.5
 SEED = 20260731              # a fixed build is a comparable build
 
-W, H, AT = 9, 7, (2, 3)      # the label, and where it sits on the lid
+# Label size and its seat on the lid, per lid width.
+BILL = {12: (9, 7, (2, 3)), 10: (7, 6, (2, 2))}
+
+MAG, GRID = 18, (0, 0, 0, 90)   # magnified preview: scale, gridline colour
 
 
 def ok(L, C, hue):
@@ -105,18 +122,11 @@ def faces(jar, model):
     return im, rects
 
 
-def base(jar):
-    """Create's 12x10 cardboard, rearranged into the layout model's UVs.
-
-    North and south share one rect in both models, and both mirror it the same
-    way, so copying the rect once serves both faces.
-    """
-    src, src_faces = faces(jar, SOURCE)
-    dst_im, dst_faces = faces(jar, LAYOUT)
-    canvas = Image.new('RGBA', dst_im.size, (0, 0, 0, 0))
-    for face in ('east', 'north', 'west', 'up', 'down'):
-        canvas.paste(src.crop(src_faces[face]), dst_faces[face][:2])
-    return canvas, dst_faces
+def atlas(jar):
+    """Create's cardboard atlas, as its own copy to draw on."""
+    im = Image.open(io.BytesIO(
+        jar.read('assets/create/textures/%s.png' % SOURCE))).convert('RGBA')
+    return im.copy()
 
 
 def recolour(canvas):
@@ -136,24 +146,29 @@ def recolour(canvas):
                         int(round(b * 255)), 255)
 
 
-def bill():
-    """The waybill as a grid: two ruled lines and a 3x2 seal on shaded paper.
+def bill(w, h):
+    """The waybill as a grid: ruled lines and a 3x2 seal on shaded paper.
 
     Built rather than typed out as rows of characters, because a row one
     character longer than its neighbours is a misprint nothing would catch. The
     paper is shaded along the diagonal, lightest at the corner the light comes
     from, so the sheet varies the way the cardboard around it does.
     """
-    grid = [[PAPER[min(3, (x + y) * 4 // (W + H - 2))] for x in range(W)]
-            for y in range(H)]
-    for x in range(1, 5):
-        grid[1][x] = INK[0]
-    for x in range(1, 4):
-        grid[3][x] = INK[1]
+    grid = [[PAPER[min(3, (x + y) * 4 // (w + h - 2))] for x in range(w)]
+            for y in range(h)]
+    seal_x, seal_y = w - 4, h - 3
+    if h >= 7:
+        for x in range(1, 5):
+            grid[1][x] = INK[0]
+        for x in range(1, 4):
+            grid[3][x] = INK[1]
+    else:
+        for x in range(1, 4):
+            grid[1][x] = INK[0]
     for dx, rung in enumerate((0, 0, 1)):
-        grid[4][5 + dx] = SEAL[rung]
+        grid[seal_y][seal_x + dx] = SEAL[rung]
     for dx, rung in enumerate((1, 2, 2)):
-        grid[5][5 + dx] = SEAL[rung]
+        grid[seal_y + 1][seal_x + dx] = SEAL[rung]
     return grid
 
 
@@ -167,11 +182,12 @@ def wear(grid):
     """
     rng = random.Random(SEED)
     tones = set(PAPER)
-    for y in range(H):
-        for x in range(W):
+    h, w = len(grid), len(grid[0])
+    for y in range(h):
+        for x in range(w):
             if grid[y][x] not in tones:
                 continue
-            edge = x in (0, W - 1) or y in (0, H - 1)
+            edge = x in (0, w - 1) or y in (0, h - 1)
             if rng.random() > WEAR_AMOUNT * (2 if edge else 1):
                 continue
             c = Color('srgb', [v / 255 for v in grid[y][x][:3]]).convert('oklch')
@@ -181,16 +197,39 @@ def wear(grid):
     return grid
 
 
-def build():
-    jar = create_jar()
-    canvas, dst = base(jar)
+def build(jar=None):
+    jar = jar or create_jar()
+    canvas = atlas(jar)
     recolour(canvas)
     px = canvas.load()
-    x0, y0 = dst['up'][:2]
-    for dy, row in enumerate(wear(bill())):
-        for dx, colour in enumerate(row):
-            px[x0 + AT[0] + dx, y0 + AT[1] + dy] = colour
+    for w, h in SIZES:
+        x0, y0, x1, _ = faces(jar, 'cardboard_%dx%d' % (w, h))[1]['up']
+        bw, bh, at = BILL[x1 - x0]
+        for dy, row in enumerate(wear(bill(bw, bh))):
+            for dx, colour in enumerate(row):
+                px[x0 + at[0] + dx, y0 + at[1] + dy] = colour
     return canvas
+
+
+def columns(jar):
+    """The atlas rect each size occupies, so a preview can show one box."""
+    out = {}
+    for w, h in SIZES:
+        rects = faces(jar, 'cardboard_%dx%d' % (w, h))[1].values()
+        out[(w, h)] = (min(r[0] for r in rects), min(r[1] for r in rects),
+                       max(r[2] for r in rects), max(r[3] for r in rects))
+    return out
+
+
+def magnify(im):
+    """Nearest-neighbour blow-up with a gridline on every texel boundary."""
+    big = im.resize((im.width * MAG, im.height * MAG), Image.NEAREST)
+    draw = ImageDraw.Draw(big)
+    for x in range(0, im.width + 1):
+        draw.line([(x * MAG, 0), (x * MAG, big.height)], fill=GRID)
+    for y in range(0, im.height + 1):
+        draw.line([(0, y * MAG), (big.width, y * MAG)], fill=GRID)
+    return big
 
 
 def head_version():
@@ -205,9 +244,12 @@ def main():
                     help='report what would be built, write nothing')
     ap.add_argument('--verify', action='store_true',
                     help='fail if the rebuild differs from the committed texture')
+    ap.add_argument('--preview', action='store_true',
+                    help='write magnified grids of the atlas and each size')
     args = ap.parse_args()
 
-    im = build()
+    jar = create_jar()
+    im = build(jar)
 
     if args.verify:
         head = head_version()
@@ -218,10 +260,25 @@ def main():
         print('%s.png %s HEAD' % (NAME, 'matches' if same else 'DIFFERS from'))
         return 0 if same else 1
 
+    if args.preview:
+        out = os.path.join(REPO, *PREVIEW.split('/'))
+        os.makedirs(out, exist_ok=True)
+        magnify(im).save(os.path.join(out, '%s_atlas.png' % NAME))
+        print(os.path.join(PREVIEW, '%s_atlas.png' % NAME))
+        for (w, h), rect in columns(jar).items():
+            path = os.path.join(PREVIEW, '%s_%dx%d.png' % (NAME, w, h))
+            magnify(im.crop(rect)).save(os.path.join(REPO, *path.split('/')))
+            print(path)
+        return 0
+
     if args.check:
         opaque = [c for _, c in im.getcolors(maxcolors=1 << 16) if c[3]]
         print('%s.png %dx%d, %d colours'
               % (NAME, im.width, im.height, len(set(opaque))))
+        for (w, h), rect in columns(jar).items():
+            print('  %dx%d at %s, lid %d wide' % (w, h, rect,
+                  faces(jar, 'cardboard_%dx%d' % (w, h))[1]['up'][2]
+                  - faces(jar, 'cardboard_%dx%d' % (w, h))[1]['up'][0]))
         return 0
 
     out = os.path.join(REPO, *REL.split('/'))

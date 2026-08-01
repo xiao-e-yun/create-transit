@@ -3,7 +3,9 @@ package me.xiaoeyun.createtransit.registry;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.AllCreativeModeTabs;
 import com.simibubi.create.content.logistics.box.PackageStyles;
+import com.tterrag.registrate.util.entry.ItemEntry;
 
+import me.xiaoeyun.createtransit.content.transit.TransitPackageItem;
 import net.minecraft.world.item.CreativeModeTab.TabVisibility;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -52,7 +54,7 @@ public final class CtCreativeTab {
             .putAfter(AllBlocks.STOCK_TICKER.asStack(), CtBlocks.TRANSIT_TICKER.asStack(),
                 TabVisibility.PARENT_AND_SEARCH_TABS);
 
-        // The package rides with Create's own boxes, which sit in the tab in
+        // The packages ride with Create's own boxes, which sit in the tab in
         // registration order -- so "after the last style Create declares" is
         // the end of that run. Deriving the anchor from PackageStyles.STYLES
         // instead of hard-coding an id keeps it pointed there even if the
@@ -61,12 +63,17 @@ public final class CtCreativeTab {
             .getItemId());
         // A missing anchor is not the same as an absent one: putAfter appends
         // only for a stack it cannot find, and a null item would be air.
-        if (lastBox == null)
-            event.accept(CtItems.TRANSIT_PACKAGE.asStack(), TabVisibility.PARENT_AND_SEARCH_TABS);
-        else
-            event.getEntries()
-                .putAfter(new ItemStack(lastBox), CtItems.TRANSIT_PACKAGE.asStack(),
-                    TabVisibility.PARENT_AND_SEARCH_TABS);
+        // Each box anchors on the one before it, so the four keep their order.
+        ItemStack anchor = lastBox == null ? null : new ItemStack(lastBox);
+        for (ItemEntry<TransitPackageItem> entry : CtItems.TRANSIT_PACKAGES) {
+            ItemStack stack = entry.asStack();
+            if (anchor == null)
+                event.accept(stack, TabVisibility.PARENT_AND_SEARCH_TABS);
+            else
+                event.getEntries()
+                    .putAfter(anchor, stack, TabVisibility.PARENT_AND_SEARCH_TABS);
+            anchor = stack;
+        }
     }
 
 }

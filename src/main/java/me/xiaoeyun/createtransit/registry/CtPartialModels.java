@@ -1,10 +1,12 @@
 package me.xiaoeyun.createtransit.registry;
 
 import com.simibubi.create.AllPartialModels;
+import com.simibubi.create.content.logistics.box.PackageStyles.PackageStyle;
 
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 
 import me.xiaoeyun.createtransit.CreateTransit;
+import me.xiaoeyun.createtransit.content.transit.TransitPackageItem;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -50,20 +52,23 @@ public class CtPartialModels {
     }
 
     /**
-     * Enrols the transit package in the plain {@code HashMap} that dropped
+     * Enrols every transit package in the plain {@code HashMap} that dropped
      * packages, frogports and chain conveyors look a box's model up in, and
-     * which Create fills from its own styles alone.
+     * which Create fills from its own styles alone. The rigging is Create's own
+     * per size, so none of that art is ours to keep.
      */
-    private static void registerPackage() {
-        ResourceLocation id = CreateTransit.asResource("transit_package");
-        AllPartialModels.PACKAGES.put(id, PartialModel.of(CreateTransit.asResource("item/transit_package")));
-        AllPartialModels.PACKAGE_RIGGING.put(id,
-            PartialModel.of(new ResourceLocation("create", "item/package/rigging_12x10")));
+    private static void registerPackages() {
+        for (PackageStyle style : TransitPackageItem.STYLES) {
+            ResourceLocation id = CreateTransit.asResource(TransitPackageItem.idOf(style));
+            AllPartialModels.PACKAGES.put(id,
+                PartialModel.of(CreateTransit.asResource("item/" + TransitPackageItem.idOf(style))));
+            AllPartialModels.PACKAGE_RIGGING.put(id, PartialModel.of(style.getRiggingModel()));
+        }
     }
 
     /** Loading the class is the registration; this only makes that deliberate. */
     public static void init() {
-        registerPackage();
+        registerPackages();
     }
 
 }
