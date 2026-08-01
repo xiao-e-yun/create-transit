@@ -163,7 +163,7 @@ public final class AddressLabels {
      *
      * Returns null when neither side is labelled, leaving vanilla semantics
      * completely untouched. Otherwise the head label short-circuits everything:
-     * only an identical head label (or two identical addresses) matches, so
+     * only an identical head label matches, so
      * {@code *}, globs and blanks never catch a package in transit — and an
      * unstripped label shadows the path behind it, keeping foreign packages
      * invisible to local address hardware until a gate peels the layer off.
@@ -181,8 +181,6 @@ public final class AddressLabels {
         boolean addressLabelled = startsWithLabel(address);
         if (!boxLabelled && !addressLabelled)
             return null;
-        if (boxAddress.equals(address))
-            return true;
         if (!boxLabelled || !addressLabelled)
             return false;
         if (WILDCARD.equals(headLabelName(address)))
