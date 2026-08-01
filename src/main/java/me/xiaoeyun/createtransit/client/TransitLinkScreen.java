@@ -29,6 +29,13 @@ public class TransitLinkScreen extends AbstractSimiScreen {
 
     private static final AllGuiTextures BACKGROUND = AllGuiTextures.PACKAGE_FILTER;
 
+    /** Create's own placeholder grey for a light-on-dark field (StationScreen). */
+    private static final int HINT_COLOUR = 0xA6A6A6;
+
+    /** The footer: caption starts here, the trash button ends it. */
+    private static final int CAPTION_X = 12;
+    private static final int BUTTON_ROW_X = AllGuiTextures.PACKAGE_FILTER.getWidth() - 62;
+
     private final BlockPos pos;
     private final String initialLabel;
     private final ItemStack icon;
@@ -87,10 +94,19 @@ public class TransitLinkScreen extends AbstractSimiScreen {
         graphics.drawString(font, title,
             guiLeft + (BACKGROUND.getWidth() - 8) / 2 - font.width(title) / 2, guiTop + 4, 0x3D3C48, false);
 
+        // Drawn here rather than through EditBox#setHint, whose focus-dependent
+        // visibility would fight the box being focused on open.
+        if (labelBox.getValue()
+            .isEmpty())
+            graphics.drawString(font, Component.translatable("create_transit.transit_link.label_empty"),
+                labelBox.getX(), labelBox.getY(), HINT_COLOUR, false);
+
         PoseStack ms = graphics.pose();
         ms.pushPose();
         ms.translate(guiLeft + 16, guiTop + 23, 0);
-        GuiGameElement.of(CtItems.TRANSIT_PACKAGE.asStack())
+        // The first style, as Create's own getDefaultBox picks it.
+        GuiGameElement.of(CtItems.TRANSIT_PACKAGES.get(0)
+            .asStack())
             .render(graphics);
         ms.popPose();
 
@@ -99,6 +115,17 @@ public class TransitLinkScreen extends AbstractSimiScreen {
                 guiTop + BACKGROUND.getHeight() - 52, -200)
             .scale(4)
             .render(graphics);
+
+        // In the footer's empty half, shrunk to whatever room the buttons leave
+        // so a longer translation cannot run underneath them.
+        Component caption = Component.translatable("create_transit.transit_link.label_hint");
+        float scale = Math.min(1f, (BUTTON_ROW_X - CAPTION_X - 4) / (float) font.width(caption));
+        ms.pushPose();
+        ms.translate(guiLeft + CAPTION_X,
+            guiTop + BACKGROUND.getHeight() - 24 + (18 - 8 * scale) / 2f, 0);
+        ms.scale(scale, scale, 1);
+        graphics.drawString(font, caption, 0, 0, HINT_COLOUR, false);
+        ms.popPose();
     }
 
     @Override

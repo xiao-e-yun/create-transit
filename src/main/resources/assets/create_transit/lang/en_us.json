@@ -8,6 +8,8 @@
   "block.create_transit.transit_link.tooltip.summary": "Declares a _border_ on this network. Every shipment it forwards is stamped with its _transit label_.",
   "create_transit.transit_link.goggles.label": "Requests will transit through %s",
   "create_transit.transit_link.goggles.disabled": "Disabled: no transit label, so this link declares no border",
+  "create_transit.transit_link.label_empty": "(Disabled)",
+  "create_transit.transit_link.label_hint": "Names the border gate shipments clear at",
   "block.create_transit.transit_gate": "Transit Gate",
   "block.create_transit.transit_gate.tooltip.summary": "Handles _customs_ for arriving shipments, stripping _one transit label_ and merging a declared order back into a single delivery.",
   "create_transit.transit_gate.goggles.strips": "Strips the %s transit label from passing packages",
