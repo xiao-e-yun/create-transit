@@ -1,15 +1,19 @@
 package me.xiaoeyun.createtransit.client;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
 import me.xiaoeyun.createtransit.CreateTransit;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.DyeColor;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -34,13 +38,13 @@ public final class CtModelEvents {
     private static final String CREATE = "create";
     private static final String POSTBOX_SUFFIX = "_postbox";
 
-    private static final List<String> DYES = List.of(
-        "black", "blue", "brown", "cyan", "gray", "green", "light_blue", "light_gray",
-        "lime", "magenta", "orange", "pink", "purple", "red", "white", "yellow");
+    private static final List<String> DYES = Arrays.stream(DyeColor.values())
+        .map(DyeColor::getSerializedName)
+        .toList();
 
-    /** The turn Create's own block state applies for each facing. */
-    private static final Map<String, Integer> FACINGS =
-        Map.of("north", 0, "east", 90, "south", 180, "west", 270);
+    /** The turn Create's own block state applies for each facing; north is the authored front, so it is the zero. */
+    private static final Map<String, Integer> FACINGS = Direction.Plane.HORIZONTAL.stream()
+        .collect(Collectors.toMap(Direction::getSerializedName, d -> ((int) d.toYRot() + 180) % 360));
 
     private CtModelEvents() {}
 

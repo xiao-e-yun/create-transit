@@ -51,19 +51,11 @@ import me.xiaoeyun.createtransit.content.ticker.TransitTickerBlockEntity;
 public class LogisticsManagerMixin {
 
     /**
-     * Answers only where vanilla had nothing to say.
-     *
-     * Deciding this on the way out rather than on the way in is what keeps it
-     * free for everyone else: a link that reached a real inventory has already
-     * returned its identifier, and the check below never runs. Only the links
-     * vanilla gave up on pay for it — which is the tickers, plus the handful of
-     * links genuinely attached to nothing. That matters because the test is a
-     * {@code getBlockEntity}, and vanilla has just made the same one; at HEAD
-     * this would have doubled a block lookup for every link in the network,
-     * every time a summary is rebuilt.
+     * On the way out rather than the way in, so only the links vanilla gave up
+     * on pay for the second {@code getBlockEntity} this costs.
      */
     @ModifyReturnValue(method = "getInventoryIdentifierFromLink", at = @At("RETURN"))
-    private static InventoryIdentifier createNestNetwork$identifyMountingPoints(
+    private static InventoryIdentifier createTransit$identifyMountingPoints(
         @Nullable InventoryIdentifier identifier, LogisticallyLinkedBehaviour link) {
         if (identifier != null)
             return identifier;

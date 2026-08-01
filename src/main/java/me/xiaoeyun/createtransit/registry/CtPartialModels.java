@@ -26,20 +26,9 @@ public class CtPartialModels {
         PartialModel.of(CreateTransit.asResource("block/transit_postbox_flag"));
 
     /**
-     * A gate's mouth, in place of the packager's iris.
-     *
-     * A border post is a doorway rather than a shutter, so the gate hangs strip
-     * curtain over its opening — the same hinged-slat vocabulary Create's own
-     * funnels use, which reads as "traffic passes through here" without any
-     * explanation. Being the hatch rather than block geometry is what makes it
-     * work: the strips actually part for a package instead of being clipped
-     * through.
-     *
-     * The rail is what the gate hands back where a packager returns its iris,
-     * because the rail is the part that does not move. The strips are one model
-     * each and placed by {@link me.xiaoeyun.createtransit.client.TransitGateCurtain}
-     * — a matrix applies to a whole model, so a curtain in one model could only
-     * hold one pose.
+     * What the gate hands back where a packager returns its iris: the rail is
+     * the part of the curtain that does not move, and each strip is a model of
+     * its own because a matrix applies to a whole one.
      */
     public static final PartialModel TRANSIT_GATE_RAIL =
         PartialModel.of(CreateTransit.asResource("block/transit_gate/rail"));
@@ -61,20 +50,9 @@ public class CtPartialModels {
     }
 
     /**
-     * Enrols the transit package in the map Create's renderers look a box's
-     * model up in.
-     *
-     * Half of Create's package drawing never touches the item model: dropped
-     * package entities, frogports and chain conveyors all ask
-     * {@code AllPartialModels.PACKAGES} for a model keyed by item id, in both a
-     * block-entity renderer and a Flywheel visual. The map is a plain public
-     * {@code HashMap} that Create fills from its own styles, so an addon's box
-     * is simply absent — {@code PackageRenderer} would draw nothing and the
-     * frogport would hand null to a buffer.
-     *
-     * Putting the entry in is the whole fix, and no mixin is involved. The
-     * rigging is Create's own: a transit package is twelve by ten, the size
-     * every rare box is, so the rope model for that size already fits.
+     * Enrols the transit package in the plain {@code HashMap} that dropped
+     * packages, frogports and chain conveyors look a box's model up in, and
+     * which Create fills from its own styles alone.
      */
     private static void registerPackage() {
         ResourceLocation id = CreateTransit.asResource("transit_package");

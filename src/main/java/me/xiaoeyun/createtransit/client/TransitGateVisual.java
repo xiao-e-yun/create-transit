@@ -1,13 +1,8 @@
 package me.xiaoeyun.createtransit.client;
 
-import java.util.function.Consumer;
-
-import org.jetbrains.annotations.Nullable;
-
 import com.simibubi.create.content.logistics.packager.PackagerBlock;
 import com.simibubi.create.content.logistics.packager.PackagerVisual;
 
-import dev.engine_room.flywheel.api.instance.Instance;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import dev.engine_room.flywheel.lib.instance.InstanceTypes;
 import dev.engine_room.flywheel.lib.instance.TransformedInstance;
@@ -88,13 +83,6 @@ public class TransitGateVisual extends PackagerVisual<TransitGateBlockEntity> {
         super._delete();
         for (TransformedInstance strip : strips)
             strip.delete();
-    }
-
-    @Override
-    public void collectCrumblingInstances(Consumer<@Nullable Instance> consumer) {
-        super.collectCrumblingInstances(consumer);
-        for (TransformedInstance strip : strips)
-            consumer.accept(strip);
     }
 
 }

@@ -38,7 +38,7 @@ public class PackagerRendererMixin {
         method = "getHatchModel(Lcom/simibubi/create/content/logistics/packager/PackagerBlockEntity;)"
             + "Ldev/engine_room/flywheel/lib/model/baked/PartialModel;",
         at = @At("HEAD"), cancellable = true)
-    private static void createNestNetwork$curtainInsteadOfIris(PackagerBlockEntity packager,
+    private static void createTransit$curtainInsteadOfIris(PackagerBlockEntity packager,
         CallbackInfoReturnable<PartialModel> cir) {
         if (!(packager instanceof TransitGateBlockEntity))
             return;

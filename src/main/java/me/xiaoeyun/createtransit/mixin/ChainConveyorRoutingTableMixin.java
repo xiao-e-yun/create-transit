@@ -30,7 +30,7 @@ public class ChainConveyorRoutingTableMixin {
 
     @Redirect(method = "receivePortInfo(Ljava/lang/String;Lnet/minecraft/core/BlockPos;)V",
         at = @At(value = "INVOKE", target = "Ljava/lang/String;equals(Ljava/lang/Object;)Z"))
-    private boolean createNestNetwork$deprioritiseWildcardEndpoints(String wildcard, Object filter) {
+    private boolean createTransit$deprioritiseWildcardEndpoints(String wildcard, Object filter) {
         if (wildcard.equals(filter))
             return true;
         return filter instanceof String port

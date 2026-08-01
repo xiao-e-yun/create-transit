@@ -2,7 +2,6 @@ package me.xiaoeyun.createtransit.registry;
 
 import static me.xiaoeyun.createtransit.CreateTransit.registrate;
 
-import com.simibubi.create.content.logistics.box.PackageItem;
 import com.tterrag.registrate.util.entry.ItemEntry;
 
 import me.xiaoeyun.createtransit.content.transit.TransitPackageItem;
@@ -20,11 +19,6 @@ public class CtItems {
         .item("transit_package", p -> new TransitPackageItem(p, TransitPackageItem.STYLE))
         .properties(p -> p.stacksTo(1))
         .register();
-
-    /** True when this is the box a package wears while it is still foreign. */
-    public static boolean isTransit(PackageItem item) {
-        return item instanceof TransitPackageItem;
-    }
 
     public static void register() {}
 

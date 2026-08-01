@@ -37,7 +37,7 @@ import net.minecraft.world.item.ItemStack;
 public class PackageItemMixin {
 
     @Inject(method = "matchAddress(Ljava/lang/String;Ljava/lang/String;)Z", at = @At("HEAD"), cancellable = true)
-    private static void createNestNetwork$matchTransitLabels(String boxAddress, String address,
+    private static void createTransit$matchTransitLabels(String boxAddress, String address,
         CallbackInfoReturnable<Boolean> cir) {
         Boolean labelled = AddressLabels.match(boxAddress, address);
         if (labelled != null)
@@ -59,7 +59,7 @@ public class PackageItemMixin {
      */
     @Inject(method = "setOrder(Lnet/minecraft/world/item/ItemStack;IIZIZL"
         + "com/simibubi/create/content/logistics/stockTicker/PackageOrderWithCrafts;)V", at = @At("TAIL"))
-    private static void createNestNetwork$landCustomsDeclaration(ItemStack box, int orderId, int linkIndex,
+    private static void createTransit$landCustomsDeclaration(ItemStack box, int orderId, int linkIndex,
         boolean isFinalLink, int fragmentIndex, boolean isFinal, @Nullable PackageOrderWithCrafts orderContext,
         CallbackInfo ci) {
         TransitCustoms.stampOnto(box, orderId);
