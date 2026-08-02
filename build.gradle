@@ -103,8 +103,11 @@ tasks.named('processResources', ProcessResources).configure {
     // (it is ignored globally) but is not invisible to the jar.
     exclude '**/.omc/**'
 
+    // No [project: project] here: the metadata uses no ${project.*} keys, and
+    // handing the project object to an execution-time closure is exactly what
+    // Gradle 9's configuration cache forbids.
     filesMatching(['META-INF/neoforge.mods.toml']) {
-        expand replaceProperties + [project: project]
+        expand replaceProperties
     }
 }
 
