@@ -13,7 +13,9 @@ import me.xiaoeyun.createtransit.registry.CtItems;
 import me.xiaoeyun.createtransit.registry.CtCreativeTab;
 import me.xiaoeyun.createtransit.registry.CtPartialModels;
 import net.createmod.catnip.lang.FontHelper;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.CreativeModeTab;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -31,6 +33,11 @@ public class CreateTransit {
     // tooltip event serves whatever is in the registry; an item with no
     // ".tooltip.summary" key simply gets nothing.
     private static final CreateRegistrate REGISTRATE = CreateRegistrate.create(MOD_ID)
+        // Registrate 1.21 defaults every item into the SEARCH tab and inserts
+        // it itself; our curated CtCreativeTab insertion then collides with it
+        // when the search tab rebuilds. Null is Create's own answer upstream:
+        // it turns the automatic path off so exactly one inserter remains.
+        .defaultCreativeTab((ResourceKey<CreativeModeTab>) null)
         .setCreativeTab(AllCreativeModeTabs.BASE_CREATIVE_TAB)
         .setTooltipModifierFactory(item -> new ItemDescription.Modifier(item, FontHelper.Palette.STANDARD_CREATE));
 
