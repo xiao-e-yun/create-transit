@@ -7,7 +7,6 @@ import me.xiaoeyun.createtransit.registry.CtBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.SignalGetter;
 import net.minecraft.world.level.block.Block;
@@ -71,7 +70,7 @@ public class TransitGateBlock extends WrenchableDirectionalBlock implements IBE<
 
     /** As with the Packager this borrows its model from, mobs do not path through. */
     @Override
-    public boolean isPathfindable(BlockState state, BlockGetter level, BlockPos pos, PathComputationType type) {
+    protected boolean isPathfindable(BlockState state, PathComputationType type) {
         return false;
     }
 

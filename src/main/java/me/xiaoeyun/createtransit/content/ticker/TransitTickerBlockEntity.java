@@ -34,6 +34,7 @@ import net.createmod.catnip.data.Iterate;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
@@ -493,8 +494,8 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     // Serialization
 
     @Override
-    protected void read(CompoundTag tag, boolean clientPacket) {
-        super.read(tag, clientPacket);
+    protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+        super.read(tag, registries, clientPacket);
         Set<UUID> cycling = new HashSet<>();
         for (Tag entry : tag.getList("CyclingFrequencies", Tag.TAG_INT_ARRAY))
             cycling.add(NbtUtils.loadUUID(entry));
@@ -504,8 +505,8 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     }
 
     @Override
-    protected void write(CompoundTag tag, boolean clientPacket) {
-        super.write(tag, clientPacket);
+    protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+        super.write(tag, registries, clientPacket);
         // Derived state, recomputed on initialize; only the client needs it sent.
         if (!clientPacket)
             return;

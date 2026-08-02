@@ -8,17 +8,16 @@ import com.simibubi.create.foundation.item.ItemDescription;
 import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.registry.CtBlockEntities;
 import me.xiaoeyun.createtransit.registry.CtBlocks;
+import me.xiaoeyun.createtransit.registry.CtDataComponents;
 import me.xiaoeyun.createtransit.registry.CtItems;
 import me.xiaoeyun.createtransit.registry.CtCreativeTab;
 import me.xiaoeyun.createtransit.registry.CtPartialModels;
 import net.createmod.catnip.lang.FontHelper;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
 
 @Mod(CreateTransit.MOD_ID)
@@ -35,25 +34,24 @@ public class CreateTransit {
         .setCreativeTab(AllCreativeModeTabs.BASE_CREATIVE_TAB)
         .setTooltipModifierFactory(item -> new ItemDescription.Modifier(item, FontHelper.Palette.STANDARD_CREATE));
 
-    public CreateTransit(FMLJavaModLoadingContext context) {
-        IEventBus modEventBus = context.getModEventBus();
+    public CreateTransit(IEventBus modEventBus) {
         REGISTRATE.registerEventListeners(modEventBus);
 
+        CtDataComponents.register(modEventBus);
         CtBlocks.register();
         CtBlockEntities.register();
         CtItems.register();
         // Partial models must exist before the first model bake collects them,
         // which the constructor comfortably precedes and a setup event may not.
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> CtPartialModels::init);
+        // A plain dist check replaces DistExecutor: the class only loads when
+        // the branch actually runs, which is all the old dance guaranteed.
+        if (FMLEnvironment.dist == Dist.CLIENT)
+            CtPartialModels.init();
 
-        modEventBus.addListener(CreateTransit::commonSetup);
+        modEventBus.addListener(CtPackets::onRegisterPayloads);
         // Create's creative tab is filled from Create's own registrate, which
         // never sees an addon's entries, so our blocks have to add themselves.
         modEventBus.addListener(CtCreativeTab::onBuildContents);
-    }
-
-    private static void commonSetup(FMLCommonSetupEvent event) {
-        event.enqueueWork(CtPackets::register);
     }
 
     public static CreateRegistrate registrate() {

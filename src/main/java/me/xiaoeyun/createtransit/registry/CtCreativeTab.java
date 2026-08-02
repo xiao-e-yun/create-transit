@@ -6,11 +6,12 @@ import com.simibubi.create.content.logistics.box.PackageStyles;
 import com.tterrag.registrate.util.entry.ItemEntry;
 
 import me.xiaoeyun.createtransit.content.transit.TransitPackageItem;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.CreativeModeTab.TabVisibility;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 
 /**
  * Places this mod's items in Create's own creative tab.
@@ -32,7 +33,7 @@ public final class CtCreativeTab {
     private CtCreativeTab() {}
 
     /**
-     * Forge fires this after the tab's own generator has filled the map, so
+     * NeoForge fires this after the tab's own generator has filled the set, so
      * Create's entries are already in place to position ours against.
      */
     public static void onBuildContents(BuildCreativeModeTabContentsEvent event) {
@@ -42,38 +43,41 @@ public final class CtCreativeTab {
 
         // Beside the block each one stands in for, rather than trailing after
         // the whole of Create: a gate is a packager and a transit link is a
-        // stock link, and whoever wants one is already looking there. Missing
-        // anchors need no guard -- putAfter falls back to appending.
-        event.getEntries()
-            .putAfter(AllBlocks.PACKAGER.asStack(), CtBlocks.TRANSIT_GATE.asStack(),
-                TabVisibility.PARENT_AND_SEARCH_TABS);
-        event.getEntries()
-            .putAfter(AllBlocks.STOCK_LINK.asStack(), CtBlocks.TRANSIT_LINK.asStack(),
-                TabVisibility.PARENT_AND_SEARCH_TABS);
-        event.getEntries()
-            .putAfter(AllBlocks.STOCK_TICKER.asStack(), CtBlocks.TRANSIT_TICKER.asStack(),
-                TabVisibility.PARENT_AND_SEARCH_TABS);
+        // stock link, and whoever wants one is already looking there.
+        insertAfterOrAppend(event, AllBlocks.PACKAGER.asStack(), CtBlocks.TRANSIT_GATE.asStack());
+        insertAfterOrAppend(event, AllBlocks.STOCK_LINK.asStack(), CtBlocks.TRANSIT_LINK.asStack());
+        insertAfterOrAppend(event, AllBlocks.STOCK_TICKER.asStack(), CtBlocks.TRANSIT_TICKER.asStack());
 
         // The packages ride with Create's own boxes, which sit in the tab in
         // registration order -- so "after the last style Create declares" is
         // the end of that run. Deriving the anchor from PackageStyles.STYLES
         // instead of hard-coding an id keeps it pointed there even if the
         // list changes shape upstream.
-        Item lastBox = ForgeRegistries.ITEMS.getValue(PackageStyles.STYLES.get(PackageStyles.STYLES.size() - 1)
+        Item lastBox = BuiltInRegistries.ITEM.get(PackageStyles.STYLES.get(PackageStyles.STYLES.size() - 1)
             .getItemId());
-        // A missing anchor is not the same as an absent one: putAfter appends
-        // only for a stack it cannot find, and a null item would be air.
+        // A registry miss answers AIR, and an air anchor is no anchor at all.
         // Each box anchors on the one before it, so the four keep their order.
-        ItemStack anchor = lastBox == null ? null : new ItemStack(lastBox);
+        ItemStack anchor = lastBox == Items.AIR ? null : new ItemStack(lastBox);
         for (ItemEntry<TransitPackageItem> entry : CtItems.TRANSIT_PACKAGES) {
             ItemStack stack = entry.asStack();
-            if (anchor == null)
-                event.accept(stack, TabVisibility.PARENT_AND_SEARCH_TABS);
-            else
-                event.getEntries()
-                    .putAfter(anchor, stack, TabVisibility.PARENT_AND_SEARCH_TABS);
+            insertAfterOrAppend(event, anchor, stack);
             anchor = stack;
         }
+    }
+
+    /**
+     * Forge's putAfter appended when the anchor was missing; NeoForge's
+     * insertAfter throws instead, so the fallback moves out here. The parent
+     * list is checked for both tabs -- Create adds everything we anchor on to
+     * both, so the two sets cannot disagree about these stacks.
+     */
+    private static void insertAfterOrAppend(BuildCreativeModeTabContentsEvent event,
+        ItemStack anchor, ItemStack stack) {
+        if (anchor != null && event.getParentEntries()
+            .contains(anchor))
+            event.insertAfter(anchor, stack, TabVisibility.PARENT_AND_SEARCH_TABS);
+        else
+            event.accept(stack, TabVisibility.PARENT_AND_SEARCH_TABS);
     }
 
 }

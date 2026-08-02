@@ -1,24 +1,14 @@
 package me.xiaoeyun.createtransit.network;
 
-import me.xiaoeyun.createtransit.CreateTransit;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public class CtPackets {
 
-    private static final String VERSION = "1";
-
-    public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(CreateTransit.asResource("main"),
-        () -> VERSION, VERSION::equals, VERSION::equals);
-
-    public static void register() {
-        int id = 0;
-        CHANNEL.messageBuilder(TransitLinkLabelPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(TransitLinkLabelPacket::encode)
-            .decoder(TransitLinkLabelPacket::new)
-            .consumerMainThread(TransitLinkLabelPacket::handle)
-            .add();
+    public static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar("1");
+        registrar.playToServer(TransitLinkLabelPacket.TYPE, TransitLinkLabelPacket.STREAM_CODEC,
+            TransitLinkLabelPacket::handle);
     }
 
 }

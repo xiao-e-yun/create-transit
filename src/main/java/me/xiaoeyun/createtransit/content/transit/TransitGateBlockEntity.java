@@ -22,13 +22,14 @@ import net.createmod.catnip.animation.LerpedFloat.Chaser;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandler;
 
 /**
  * Transit on a domain boundary: packages passing through lose exactly one head
@@ -487,8 +488,8 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     // Serialization
 
     @Override
-    protected void write(CompoundTag tag, boolean clientPacket) {
-        super.write(tag, clientPacket);
+    protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+        super.write(tag, registries, clientPacket);
         // Derived from the sign, recomputed on initialize; only the client needs it sent.
         if (!clientPacket)
             return;
@@ -499,11 +500,12 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     }
 
     @Override
-    protected void read(CompoundTag tag, boolean clientPacket) {
-        super.read(tag, clientPacket);
+    protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+        super.read(tag, registries, clientPacket);
         ownLabel = tag.getString("OwnLabel");
         effectiveLabel = tag.getString("EffectiveLabel");
-        adoptedFrom = tag.contains("AdoptedFrom") ? NbtUtils.readBlockPos(tag.getCompound("AdoptedFrom")) : null;
+        adoptedFrom = NbtUtils.readBlockPos(tag, "AdoptedFrom")
+            .orElse(null);
     }
 
     // Goggles

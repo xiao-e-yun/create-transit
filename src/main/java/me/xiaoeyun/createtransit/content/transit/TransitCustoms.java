@@ -1,15 +1,15 @@
 package me.xiaoeyun.createtransit.content.transit;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+
+import me.xiaoeyun.createtransit.registry.CtDataComponents;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -31,8 +31,17 @@ import net.minecraft.world.item.ItemStack;
  */
 public record TransitCustoms(String label, int parentOrderId, int parentLinkIndex, boolean parentIsFinalLink) {
 
-    /** Root-level key. Never inside {@code Fragment}, which is vanilla's. */
-    private static final String KEY = "TransitCustoms";
+    /** The declaration itself; the stack on a box is this codec's list, held in {@code CtDataComponents.TRANSIT_CUSTOMS}. */
+    public static final Codec<TransitCustoms> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+        Codec.STRING.fieldOf("label")
+            .forGetter(TransitCustoms::label),
+        Codec.INT.fieldOf("order_id")
+            .forGetter(TransitCustoms::parentOrderId),
+        Codec.INT.fieldOf("link_index")
+            .forGetter(TransitCustoms::parentLinkIndex),
+        Codec.BOOL.fieldOf("is_final_link")
+            .forGetter(TransitCustoms::parentIsFinalLink))
+        .apply(instance, TransitCustoms::new));
 
     /** Declarations filed for a child order, by that order's id — global because {@code setOrder} knows only the id. */
     private static final Map<Integer, List<TransitCustoms>> FILED = new ConcurrentHashMap<>();
@@ -51,7 +60,7 @@ public record TransitCustoms(String label, int parentOrderId, int parentLinkInde
     /**
      * Puts whatever is filed for {@code orderId} onto a box being stamped with
      * it. Clears otherwise, because a packager reuses a package item it finds in
-     * the container, tag and all.
+     * the container, components and all.
      */
     public static void stampOnto(ItemStack box, int orderId) {
         List<TransitCustoms> declarations = FILED.get(orderId);
@@ -82,16 +91,7 @@ public record TransitCustoms(String label, int parentOrderId, int parentLinkInde
     // Package side
 
     public static List<TransitCustoms> on(ItemStack box) {
-        if (!box.hasTag())
-            return List.of();
-        List<TransitCustoms> declarations = new ArrayList<>();
-        for (Tag entryTag : box.getTag()
-            .getList(KEY, Tag.TAG_COMPOUND)) {
-            CompoundTag entry = (CompoundTag) entryTag;
-            declarations.add(new TransitCustoms(entry.getString("Label"), entry.getInt("OrderId"),
-                entry.getInt("LinkIndex"), entry.getBoolean("IsFinalLink")));
-        }
-        return declarations;
+        return box.getOrDefault(CtDataComponents.TRANSIT_CUSTOMS.get(), List.of());
     }
 
     /**
@@ -125,23 +125,13 @@ public record TransitCustoms(String label, int parentOrderId, int parentLinkInde
             clear(box);
             return;
         }
-        ListTag list = new ListTag();
-        for (TransitCustoms declaration : declarations) {
-            CompoundTag entry = new CompoundTag();
-            entry.putString("Label", declaration.label());
-            entry.putInt("OrderId", declaration.parentOrderId());
-            entry.putInt("LinkIndex", declaration.parentLinkIndex());
-            entry.putBoolean("IsFinalLink", declaration.parentIsFinalLink());
-            list.add(entry);
-        }
-        box.getOrCreateTag()
-            .put(KEY, list);
+        // Copied because a component value is shared the moment it is set, and
+        // callers hand in views like pop's subList.
+        box.set(CtDataComponents.TRANSIT_CUSTOMS.get(), List.copyOf(declarations));
     }
 
     private static void clear(ItemStack box) {
-        if (box.hasTag())
-            box.getTag()
-                .remove(KEY);
+        box.remove(CtDataComponents.TRANSIT_CUSTOMS.get());
     }
 
 }

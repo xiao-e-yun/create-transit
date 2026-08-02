@@ -40,12 +40,11 @@ public final class TransitPackaging {
         if (foreign == styled)
             return box;
 
-        ItemStack out = sameSize(box, foreign ? TransitPackageItem.BOXES : PackageStyles.STANDARD_BOXES);
-        out.setCount(box.getCount());
-        if (box.hasTag())
-            out.setTag(box.getTag()
-                .copy());
-        return out;
+        // transmuteCopy carries the whole component patch — address, contents,
+        // order data, customs — onto the new item, which is exactly the old
+        // "copy the tag" in 1.21 words.
+        return box.transmuteCopy(sameSize(box, foreign ? TransitPackageItem.BOXES : PackageStyles.STANDARD_BOXES)
+            .getItem(), box.getCount());
     }
 
     /**
