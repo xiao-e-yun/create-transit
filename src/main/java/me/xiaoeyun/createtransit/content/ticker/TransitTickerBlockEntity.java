@@ -110,6 +110,10 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         // themselves, so a summary here would count the warehouse twice.
         if (!collectAdjacentMountFrequencies().isEmpty())
             return InventorySummary.EMPTY;
+        // A disabled Transit Link declares no border, and the sending path
+        // honours that; showing stock a query can never order would lie.
+        if (collectAdjacentTransitLabels().isEmpty())
+            return InventorySummary.EMPTY;
 
         UUID childFreqId = childLink.freqId;
         Set<UUID> visited = VISITED_NETWORKS.get();
