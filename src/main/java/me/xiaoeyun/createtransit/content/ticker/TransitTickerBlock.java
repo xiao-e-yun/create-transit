@@ -1,5 +1,6 @@
 package me.xiaoeyun.createtransit.content.ticker;
 
+import com.mojang.serialization.MapCodec;
 import com.simibubi.create.AllShapes;
 import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.simibubi.create.foundation.block.IBE;
@@ -29,8 +30,16 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  */
 public class TransitTickerBlock extends HorizontalDirectionalBlock implements IBE<TransitTickerBlockEntity>, IWrenchable {
 
+    /** 1.21 asks every block for a dispatch codec; simpleCodec covers a plain (Properties) ctor. */
+    private static final MapCodec<TransitTickerBlock> CODEC = simpleCodec(TransitTickerBlock::new);
+
     public TransitTickerBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected MapCodec<TransitTickerBlock> codec() {
+        return CODEC;
     }
 
     @Override

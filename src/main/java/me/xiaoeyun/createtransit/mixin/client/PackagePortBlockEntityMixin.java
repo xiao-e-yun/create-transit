@@ -9,6 +9,7 @@ import com.simibubi.create.content.logistics.packagePort.PackagePortBlockEntity;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -22,8 +23,10 @@ public class PackagePortBlockEntityMixin {
      * editing an address rebuilds nothing on its own — so an address that
      * arrives from the server has to ask for one.
      */
-    @Inject(method = "read(Lnet/minecraft/nbt/CompoundTag;Z)V", at = @At("TAIL"))
-    private void createTransit$refreshLivery(CompoundTag tag, boolean clientPacket, CallbackInfo ci) {
+    @Inject(method = "read(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/core/HolderLookup$Provider;Z)V",
+        at = @At("TAIL"))
+    private void createTransit$refreshLivery(CompoundTag tag, HolderLookup.Provider registries,
+        boolean clientPacket, CallbackInfo ci) {
         if (!clientPacket)
             return;
         BlockEntity port = (BlockEntity) (Object) this;

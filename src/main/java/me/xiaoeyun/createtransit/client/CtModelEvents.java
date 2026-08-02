@@ -12,12 +12,11 @@ import me.xiaoeyun.createtransit.CreateTransit;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.DyeColor;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ModelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ModelEvent;
 
 /**
  * Puts the transit livery in front of the two ports' baked models.
@@ -31,8 +30,9 @@ import net.minecraftforge.fml.common.Mod;
  * second implementation: a base plate is part of the chunk mesh, which Flywheel
  * does not replace, so this one path covers both settings.
  */
-@Mod.EventBusSubscriber(modid = CreateTransit.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD,
-    value = Dist.CLIENT)
+// The bus is inferred per listener from the event type on NeoForge; both
+// events here are mod-bus events.
+@EventBusSubscriber(modid = CreateTransit.MOD_ID, value = Dist.CLIENT)
 public final class CtModelEvents {
 
     private static final String CREATE = "create";
@@ -48,33 +48,35 @@ public final class CtModelEvents {
 
     private CtModelEvents() {}
 
-    /** Nothing references these from a block state, so they need asking for. */
+    /** Nothing references these from a block state, so they need asking for. 1.21 files such models under a standalone variant. */
     @SubscribeEvent
     public static void registerLiveryModels(ModelEvent.RegisterAdditional event) {
-        event.register(CreateTransit.asResource("block/transit_frogport_base"));
+        event.register(standalone("block/transit_frogport_base"));
         for (String dye : DYES)
             for (String state : new String[] { "closed", "open" })
                 for (int facing : FACINGS.values())
-                    event.register(CreateTransit.asResource(
-                        "block/transit_" + dye + "_postbox_" + state + "_y" + facing));
+                    event.register(standalone("block/transit_" + dye + "_postbox_" + state + "_y" + facing));
+    }
+
+    private static ModelResourceLocation standalone(String path) {
+        return new ModelResourceLocation(CreateTransit.asResource(path),
+            ModelResourceLocation.STANDALONE_VARIANT);
     }
 
     @SubscribeEvent
     public static void wrapPortModels(ModelEvent.ModifyBakingResult event) {
-        Map<ResourceLocation, BakedModel> models = event.getModels();
-        for (ResourceLocation key : new ArrayList<>(models.keySet())) {
-            if (!(key instanceof ModelResourceLocation id))
-                continue;
-            ResourceLocation liveryId = liveryFor(id);
+        Map<ModelResourceLocation, BakedModel> models = event.getModels();
+        for (ModelResourceLocation id : new ArrayList<>(models.keySet())) {
+            ModelResourceLocation liveryId = liveryFor(id);
             if (liveryId == null)
                 continue;
-            BakedModel plain = models.get(key);
+            BakedModel plain = models.get(id);
             BakedModel livery = models.get(liveryId);
             // A missing livery is a broken build, not something to hide behind
             // a half-painted world: leave Create's model exactly as it was.
             if (plain == null || livery == null)
                 continue;
-            models.put(key, new TransitLiveryModel(plain, livery));
+            models.put(id, new TransitLiveryModel(plain, livery));
         }
     }
 
@@ -84,13 +86,15 @@ public final class CtModelEvents {
      * address yet, and an inventory model is never handed model data.
      */
     @Nullable
-    private static ResourceLocation liveryFor(ModelResourceLocation id) {
-        if (!CREATE.equals(id.getNamespace()) || "inventory".equals(id.getVariant()))
+    private static ModelResourceLocation liveryFor(ModelResourceLocation id) {
+        if (!CREATE.equals(id.id()
+            .getNamespace()) || "inventory".equals(id.variant()))
             return null;
 
-        String path = id.getPath();
+        String path = id.id()
+            .getPath();
         if ("package_frogport".equals(path))
-            return CreateTransit.asResource("block/transit_frogport_base");
+            return standalone("block/transit_frogport_base");
 
         if (!path.endsWith(POSTBOX_SUFFIX))
             return null;
@@ -98,12 +102,12 @@ public final class CtModelEvents {
         if (!DYES.contains(dye))
             return null;
 
-        String variant = id.getVariant();
+        String variant = id.variant();
         String state = variant.contains("open=true") ? "open" : "closed";
         Integer facing = facingOf(variant);
         if (facing == null)
             return null;
-        return CreateTransit.asResource("block/transit_" + dye + "_postbox_" + state + "_y" + facing);
+        return standalone("block/transit_" + dye + "_postbox_" + state + "_y" + facing);
     }
 
     /**

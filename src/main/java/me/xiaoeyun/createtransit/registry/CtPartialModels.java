@@ -8,8 +8,8 @@ import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 import me.xiaoeyun.createtransit.CreateTransit;
 import me.xiaoeyun.createtransit.content.transit.TransitPackageItem;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * Extra models baked alongside the block models, for renderers to swap in.

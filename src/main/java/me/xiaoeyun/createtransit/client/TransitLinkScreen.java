@@ -8,7 +8,6 @@ import com.simibubi.create.foundation.gui.widget.IconButton;
 
 import me.xiaoeyun.createtransit.content.transit.AddressLabels;
 import me.xiaoeyun.createtransit.content.transit.TransitLinkBlockEntity;
-import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.network.TransitLinkLabelPacket;
 import me.xiaoeyun.createtransit.registry.CtItems;
 import net.createmod.catnip.gui.AbstractSimiScreen;
@@ -18,6 +17,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * Single-field editor for a transit link's transit label, laid out as Create's
@@ -137,7 +137,7 @@ public class TransitLinkScreen extends AbstractSimiScreen {
         // * is the one thing a link cannot declare, so closing on it leaves the
         // link exactly as it was found.
         if (!AddressLabels.WILDCARD.equals(value.trim()))
-            CtPackets.CHANNEL.sendToServer(new TransitLinkLabelPacket(pos, value));
+            PacketDistributor.sendToServer(new TransitLinkLabelPacket(pos, value));
         super.removed();
     }
 

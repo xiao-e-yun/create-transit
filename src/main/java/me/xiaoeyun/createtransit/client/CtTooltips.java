@@ -8,10 +8,10 @@ import me.xiaoeyun.createtransit.CreateTransit;
 import me.xiaoeyun.createtransit.content.transit.AddressLabels;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
 /**
  * Spells out the address on a package in transit.
@@ -26,8 +26,7 @@ import net.minecraftforge.fml.common.Mod;
  * address it ends with also means the prefix stays whatever Create decided it
  * is, and a line some other mod has already rewritten is left alone.
  */
-@Mod.EventBusSubscriber(modid = CreateTransit.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE,
-    value = Dist.CLIENT)
+@EventBusSubscriber(modid = CreateTransit.MOD_ID, value = Dist.CLIENT)
 public final class CtTooltips {
 
     private CtTooltips() {}

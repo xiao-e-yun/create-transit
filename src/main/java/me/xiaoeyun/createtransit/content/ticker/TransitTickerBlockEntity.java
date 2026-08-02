@@ -103,7 +103,7 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     // Summary delegation
 
     @Override
-    public InventorySummary getAvailableItems(boolean scanInputSlots) {
+    public InventorySummary getAvailableItems() {
         if (level == null || level.isClientSide)
             return InventorySummary.EMPTY;
         // Under flattened mounting the child's links report into the parent
