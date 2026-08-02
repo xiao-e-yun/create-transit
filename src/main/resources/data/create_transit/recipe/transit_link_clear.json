@@ -3,7 +3,7 @@
   "category": "misc",
   "ingredients": [
     {
-      "id": "create_transit:transit_link"
+      "item": "create_transit:transit_link"
     }
   ],
   "result": {

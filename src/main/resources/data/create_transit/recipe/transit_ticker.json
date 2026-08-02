@@ -9,7 +9,7 @@
       "item": "create:railway_casing"
     },
     "L": {
-      "id": "create_transit:transit_link"
+      "item": "create_transit:transit_link"
     },
     "G": {
       "tag": "c:ingots/gold"
