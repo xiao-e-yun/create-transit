@@ -1,17 +1,8 @@
 modLoader="javafml" #mandatory
-# FML's major version, bumped by Forge every Minecraft version.
+# FML language loader version, versioned independently of NeoForge itself.
 loaderVersion="${loader_version_range}" #mandatory
 license="${mod_license}"
 issueTrackerURL="https://github.com/xiao-e-yun/create-transit/issues"
-
-# No access transformers; saying so explicitly skips the default
-# META-INF/accesstransformer.cfg lookup at load time.
-accessTransformers=[]
-
-# The mixin config is deliberately not declared here. A [[mixins]] table is
-# NeoForge 1.20.5+ syntax that this Forge never reads (ModFileParser on 1.20.1
-# has no notion of it); what actually loads create_transit.mixins.json is the
-# MixinConfigs attribute MixinGradle writes into the jar manifest.
 
 [[mods]] #mandatory
 modId="${mod_id}" #mandatory
@@ -22,25 +13,33 @@ logoFile="logo.png"
 authors="${mod_authors}"
 description='''${mod_description}'''
 
+# Unlike Forge 1.20.1, NeoForge reads the mixin config from here rather than
+# from a MixinGradle-written jar manifest attribute.
+[[mixins]]
+config="create_transit.mixins.json"
+
 [[dependencies.${mod_id}]]
-    modId="forge"
-    mandatory=true
-    versionRange="${forge_version_range}"
+    modId="neoforge"
+    type="required"
+    versionRange="${neo_version_range}"
     ordering="NONE"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
     modId="minecraft"
-    mandatory=true
+    type="required"
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
 
 # Flywheel and Ponder need no rows of their own: Create mandates both, so any
 # world where this loads already has them.
+#
+# The floor is the Create this branch is ported against; older 6.0.x on 1.21.1
+# have the same internal drift that made [6.0.0,) a false promise on 1.20.1.
 [[dependencies.${mod_id}]]
     modId="create"
-    mandatory=true
-    versionRange="[6.0.7,)"
+    type="required"
+    versionRange="[6.0.10,)"
     ordering="AFTER"
     side="BOTH"
