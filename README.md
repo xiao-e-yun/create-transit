@@ -28,9 +28,14 @@ This mod is built against these projects at these branches. See [CLAUDE.md](CLAU
 
 | Module | Repository | Branch | Version used here |
 | --- | --- | --- | --- |
-| Create | <https://github.com/Creators-of-Create/Create> | `mc1.20.1/dev` | `create_version=6.0.8-289` |
-| Flywheel | <https://github.com/Engine-Room/Flywheel> | `1.20.1/dev` | `flywheel_version=1.0.5` |
-| Minecraft Forge | <https://github.com/MinecraftForge/MinecraftForge> | `1.20.1` | `forge_version=47.4.22` |
+| Create | <https://github.com/Creators-of-Create/Create> | `mc1.21.1/dev` | `create_version=6.0.10-280` |
+| Flywheel | <https://github.com/Engine-Room/Flywheel> | `1.21.1/dev` | `flywheel_version=1.0.6` |
+| NeoForge | <https://github.com/neoforged/NeoForge> | `1.21.1` | `neo_version=21.1.235` |
+
+This is the NeoForge 1.21.1 port branch; `main` remains the Forge 1.20.1 line
+and the primary one. The offline-renderer tool chain (`scripts/mcrender`,
+`dumpTransforms`/`checkTransforms`) is not ported yet — pixel-art work still
+runs on `main`.
 
 ## Development
 

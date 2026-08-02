@@ -3,10 +3,10 @@
   "category": "misc",
   "ingredients": [
     {
-      "item": "create_transit:transit_link"
+      "id": "create_transit:transit_ticker"
     }
   ],
   "result": {
-    "item": "create_transit:transit_link"
+    "id": "create_transit:transit_ticker"
   }
 }

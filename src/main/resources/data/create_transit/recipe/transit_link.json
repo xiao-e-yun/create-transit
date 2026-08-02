@@ -20,7 +20,7 @@
     "LC"
   ],
   "result": {
-    "item": "create_transit:transit_link"
+    "id": "create_transit:transit_link"
   },
   "show_notification": true
 }

@@ -3,16 +3,16 @@
   "category": "misc",
   "key": {
     "C": {
-      "tag": "forge:glass"
+      "tag": "c:glass_blocks"
     },
     "R": {
       "item": "create:railway_casing"
     },
     "L": {
-      "item": "create_transit:transit_link"
+      "id": "create_transit:transit_link"
     },
     "G": {
-      "tag": "forge:ingots/gold"
+      "tag": "c:ingots/gold"
     }
   },
   "pattern": [
@@ -21,7 +21,7 @@
     " G "
   ],
   "result": {
-    "item": "create_transit:transit_ticker"
+    "id": "create_transit:transit_ticker"
   },
   "show_notification": true
 }

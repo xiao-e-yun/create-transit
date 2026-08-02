@@ -13,7 +13,7 @@
     "RPR"
   ],
   "result": {
-    "item": "create_transit:transit_gate"
+    "id": "create_transit:transit_gate"
   },
   "show_notification": true
 }
