@@ -1,7 +1,5 @@
 # create_transit
 
-Respond in 繁體中文 (zh-TW).
-
 ## Upstream source lookup
 
 Never guess Create / Flywheel / NeoForge APIs from memory — read the real source with `gh`.
