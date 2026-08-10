@@ -44,6 +44,5 @@ All resource JSONs (models, recipes, lang) are hand-authored under
 
 ## Credits
 
-Create is by simibubi and the Create Team; its art is by Create's artists, among
-them **Kryppers** and **oaklin**. This mod's artwork is derived from theirs —
-see [LICENSE](LICENSE).
+Original textures from the [Create Mod](https://www.curseforge.com/minecraft/mc-mods/create)
+— see [LICENSE](LICENSE) for how that art is licensed here.
