@@ -41,3 +41,9 @@ This mod is built against these projects at these branches. See [CLAUDE.md](CLAU
 
 All resource JSONs (models, recipes, lang) are hand-authored under
 `src/main/resources` — there is no datagen, so `runData` does nothing here.
+
+## Credits
+
+Create is by simibubi and the Create Team; its art is by Create's artists, among
+them **Kryppers** and **oaklin**. This mod's artwork is derived from theirs —
+see [LICENSE](LICENSE).
