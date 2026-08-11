@@ -5,15 +5,21 @@ import com.simibubi.create.AllCreativeModeTabs;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.foundation.item.ItemDescription;
 
+import me.xiaoeyun.createtransit.content.route.RouteEditSession;
+import me.xiaoeyun.createtransit.content.route.RouteStore;
 import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.registry.CtBlockEntities;
 import me.xiaoeyun.createtransit.registry.CtBlocks;
 import me.xiaoeyun.createtransit.registry.CtItems;
 import me.xiaoeyun.createtransit.registry.CtCreativeTab;
 import me.xiaoeyun.createtransit.registry.CtPartialModels;
+import me.xiaoeyun.createtransit.registry.CtSchedule;
 import net.createmod.catnip.lang.FontHelper;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -47,6 +53,8 @@ public class CreateTransit {
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> CtPartialModels::init);
 
         modEventBus.addListener(CreateTransit::commonSetup);
+        MinecraftForge.EVENT_BUS.addListener(CreateTransit::onPlayerJoin);
+        MinecraftForge.EVENT_BUS.addListener(CreateTransit::onPlayerLeave);
         // Create's creative tab is filled from Create's own registrate, which
         // never sees an addon's entries, so our blocks have to add themselves.
         modEventBus.addListener(CtCreativeTab::onBuildContents);
@@ -54,6 +62,25 @@ public class CreateTransit {
 
     private static void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(CtPackets::register);
+        // Schedule types are looked up by id when an entry is read back out of
+        // NBT, so they have to be in Create's table before any world loads.
+        event.enqueueWork(CtSchedule::register);
+    }
+
+    /** A joining client has no idea what routes exist until it is told. */
+    private static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player)
+            RouteStore.syncNamesTo(player);
+    }
+
+    /**
+     * A route editor is closed by the packet that saves it, so leaving without
+     * one would strand the session — and the next schedule that player edited
+     * would be taken for the route they had open when they quit.
+     */
+    private static void onPlayerLeave(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player)
+            RouteEditSession.forget(player);
     }
 
     public static CreateRegistrate registrate() {
