@@ -37,7 +37,9 @@ translation that expects more than it is given renders the surplus as literal
 
 Registry keys (`block.`, `item.`, `itemGroup.`) are looked for by their
 identifier as well as by the whole key, since the game builds those from the
-registry rather than from a literal in our source.
+registry rather than from a literal in our source. Schedule keys join them:
+Create names an instruction's dropdown entry by pasting its ResourceLocation
+together, so the only thing our source ever spells is the path.
 
 Exits non-zero when anything is reported, so it can gate a commit.
 """
@@ -52,7 +54,7 @@ import sys
 LANG_DIR = os.path.join("src", "main", "resources", "assets", "create_transit", "lang")
 BASE = "en_us"
 
-REGISTRY_PREFIXES = ("block.", "item.", "itemGroup.")
+REGISTRY_PREFIXES = ("block.", "item.", "itemGroup.", "create_transit.schedule.")
 
 # A translation key in a string literal: a dotted path naming the mod. Resource
 # locations do not match -- those carry a colon and slashes.
@@ -100,7 +102,10 @@ def read_sources() -> tuple[str, dict[str, set[str]]]:
 
 
 def is_mentioned(key: str, blob: str) -> bool:
-    if key in blob:
+    # Quoted, because a bare substring makes any key that is a prefix of another
+    # invisible: `...window.stop` was carried for free by `...window.stops` long
+    # after the only thing that used it was deleted.
+    if '"%s"' % key in blob:
         return True
     # The game derives a registry key from the registry, so the source may only
     # ever name the block or item itself.
