@@ -6,12 +6,15 @@
   "refmap": "create_transit.refmap.json",
   "mixins": [
     "ChainConveyorRoutingTableMixin",
+    "FetchPackagesInstructionMixin",
+    "GlobalStationMixin",
     "HeldItemGhostItemMenuMixin",
     "LogisticsManagerMixin",
     "PackageItemMixin",
     "PackageRepackageHelperMixin",
     "PackagerBlockEntityMixin",
     "ScheduleEditPacketMixin",
+    "ScheduleMixin",
     "ScheduleRuntimeMixin"
   ],
   "client": [
