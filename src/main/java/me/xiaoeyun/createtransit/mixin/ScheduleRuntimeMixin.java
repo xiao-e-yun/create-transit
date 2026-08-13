@@ -14,6 +14,7 @@ import com.simibubi.create.content.trains.schedule.Schedule;
 import com.simibubi.create.content.trains.schedule.ScheduleEntry;
 import com.simibubi.create.content.trains.schedule.ScheduleRuntime;
 
+import me.xiaoeyun.createtransit.content.freight.PackageRoundInstruction;
 import me.xiaoeyun.createtransit.content.route.FollowRouteInstruction;
 import me.xiaoeyun.createtransit.content.schedule.Repeats;
 import net.minecraft.world.item.ItemStack;
@@ -51,6 +52,8 @@ public class ScheduleRuntimeMixin {
         if (schedule == null)
             return;
         for (ScheduleEntry entry : schedule.entries) {
+            if (entry.instruction instanceof PackageRoundInstruction round)
+                round.clearRound();
             if (!(entry.instruction instanceof FollowRouteInstruction follow))
                 continue;
             follow.clearProgress();

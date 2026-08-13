@@ -103,7 +103,8 @@ public final class Itinerary {
         for (ScheduleEntry entry : entries) {
             ScheduleInstruction instruction = entry.instruction;
 
-            if (instruction instanceof DeliverPackagesInstruction)
+            if (instruction instanceof DeliverPackagesInstruction
+                || instruction instanceof PackageRoundInstruction)
                 return true;
 
             // Before the destination test: a follower is a DestinationInstruction
