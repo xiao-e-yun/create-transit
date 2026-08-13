@@ -18,11 +18,13 @@ import com.simibubi.create.content.trains.schedule.ScheduleEntry;
 import com.simibubi.create.content.trains.schedule.ScheduleRuntime;
 import com.simibubi.create.content.trains.schedule.ScheduleRuntime.State;
 import com.simibubi.create.content.trains.schedule.destination.DestinationInstruction;
+import com.simibubi.create.content.trains.station.GlobalStation;
 
 import me.xiaoeyun.createtransit.CreateTransit;
 import me.xiaoeyun.createtransit.client.RouteListScreen;
 import me.xiaoeyun.createtransit.client.RouteScreen;
 import me.xiaoeyun.createtransit.client.RouteTrail;
+import me.xiaoeyun.createtransit.content.schedule.Repeats;
 import me.xiaoeyun.createtransit.mixin.client.ModularGuiLineBuilderAccessor;
 import me.xiaoeyun.createtransit.mixin.client.ScheduleScreenAccessor;
 import me.xiaoeyun.createtransit.network.CtPackets;
@@ -65,7 +67,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * it is on and nowhere else. Those writes are transient — see the mixin that
  * strips them when a schedule is taken back out of a train.
  */
-public class FollowRouteInstruction extends DestinationInstruction {
+public class FollowRouteInstruction extends DestinationInstruction implements Repeats {
 
     /**
      * Inherited from {@code TextScheduleInstruction}; holds the route's name.
@@ -100,8 +102,25 @@ public class FollowRouteInstruction extends DestinationInstruction {
     public static final String NBT_REVERSED = "Reversed";
     public static final String NBT_SKIP_FIRST = "SkipFirst";
 
-    /** How far into the flattened route this train has got. Transient. */
+    /**
+     * Which stop of the flattened route this train is on. Transient.
+     *
+     * <p>The stop being travelled to, not the one after it. Nothing here counts
+     * a stop as done until the train is standing at the station it was sent to,
+     * because handing back a path is not the same as leaving: {@code tick} only
+     * takes the path if {@code startNavigation} accepts it, and when it does not
+     * the very same entry is asked again a tick later. Counting on dispatch made
+     * that second ask spend the next stop, so a route could be walked from end
+     * to end in a second without the train moving at all.
+     */
     public static final String NBT_PROGRESS = "Progress";
+
+    /**
+     * The station the train was last sent to, while it is still on its way
+     * there. Transient, and how arriving is noticed at all — there is no hook
+     * for it, so the next start looks at where the train is standing.
+     */
+    private static final String NBT_SENT = "Sent";
 
     /** The station the current stop resolved to, so displays have a name. Transient. */
     public static final String NBT_RESOLVED = "Resolved";
@@ -425,20 +444,76 @@ public class FollowRouteInstruction extends DestinationInstruction {
 
         List<ScheduleEntry> stops = route.flatten(store::get, reference.reversed(), reference.skipFirst());
         int progress = getData().getInt(NBT_PROGRESS);
-        if (stops.isEmpty() || progress >= stops.size())
-            return skip(runtime);
 
-        ScheduleEntry stop = stops.get(progress);
-        DiscoveredPath path = stop.instruction.start(runtime, level);
-        if (path == null)
-            return null;
+        // Already going somewhere, so this is not a departure — it is Create
+        // asking the same entry to think again. It does that twice: every
+        // hundred blocks or so of a journey, to take a better path if one has
+        // appeared, and the moment a station the train is heading for is put
+        // into assembly mode. Both assume the question is free to ask, and for
+        // every instruction Create ships it is: they re-pick the nearest station
+        // matching a filter and change nothing. Answered for the stop already
+        // under way, which is the same idempotent question Create thinks it is
+        // asking.
+        if (runtime.train.navigation.destination != null) {
+            if (progress >= stops.size())
+                return null;
+            int held = runtime.currentEntry;
+            DiscoveredPath again = stops.get(progress).instruction.start(runtime, level);
+            if (again == null)
+                runtime.currentEntry = held;
+            return again;
+        }
 
-        // Only now that a path exists is anything committed, so a stop that
-        // could not be reached is retried rather than silently passed over.
-        getData().putInt(NBT_PROGRESS, progress + 1);
-        getData().putString(NBT_RESOLVED, path.destination.name);
-        adopt(runtime, stop);
-        return path;
+        // Standing where it was sent means that stop is done. The only evidence
+        // there is: nothing calls back on arrival, and a path handed out is no
+        // promise that the train ever left.
+        String sent = getData().getString(NBT_SENT);
+        GlobalStation here = runtime.train.getCurrentStation();
+        if (!sent.isEmpty() && here != null && here.name.equals(sent)) {
+            progress++;
+            getData().putInt(NBT_PROGRESS, progress);
+            getData().remove(NBT_SENT);
+        }
+
+        while (progress < stops.size()) {
+            ScheduleEntry stop = stops.get(progress);
+
+            // Noted before the stop runs, because how an instruction reports
+            // "there is nothing here for me" is by moving the schedule on
+            // itself — Create's demand-driven pair and its title change all do
+            // it, and there is no return value that says so.
+            int before = runtime.currentEntry;
+            DiscoveredPath path = stop.instruction.start(runtime, level);
+
+            if (path != null) {
+                // The stop is not counted here, only sent for. Whether the train
+                // goes is the runtime's to decide, and it may well not.
+                getData().putInt(NBT_PROGRESS, progress);
+                getData().putString(NBT_SENT, path.destination.name);
+                getData().putString(NBT_RESOLVED, path.destination.name);
+                adopt(runtime, stop);
+                return path;
+            }
+
+            // Untouched means the stop wants another go — a station that is
+            // there but unreachable, or a delivery with nowhere to put its
+            // cargo yet. Retried rather than passed over, and the runtime's
+            // cooldown decides when.
+            if (runtime.currentEntry == before)
+                return null;
+
+            // Moved means it gave up. Left alone, that step would have been
+            // taken over this whole entry and the train would have left the
+            // route on the first empty stop it met. Taken back, it becomes what
+            // it was always meant to be: this stop is finished with, go to the
+            // next one. Which is also what makes a fetch, a delivery or a title
+            // change usable as a route stop at all.
+            runtime.currentEntry = before;
+            progress++;
+            getData().putInt(NBT_PROGRESS, progress);
+        }
+
+        return skip(runtime);
     }
 
     /**
@@ -452,13 +527,41 @@ public class FollowRouteInstruction extends DestinationInstruction {
     }
 
     /**
+     * A route is part way through, so the entry is not finished with.
+     *
+     * <p>Without this the runtime steps past the follower after every single
+     * stop, and a route only survives it because the entry it steps to is
+     * usually itself: one follower alone in a cyclic schedule wraps straight
+     * back round. Anything else came out wrong — two routes ran a stop each in
+     * turn, a stop written beside a route was visited between every one of its
+     * stations, and a route in a schedule that does not repeat ended the whole
+     * schedule after its first stop.
+     *
+     * <p>Read from the progress rather than by working out how many stops are
+     * left, because that would mean flattening the route again — for an answer
+     * that is only ever needed to decide whether to ask the question properly a
+     * moment later. Zero is both "not started" and "just finished", and both of
+     * those are the entry being genuinely done with.
+     */
+    @Override
+    public boolean again() {
+        return getData().getInt(NBT_PROGRESS) > 0 || getData().contains(NBT_SENT);
+    }
+
+    /**
      * Leaves the route and lets the schedule move on, which is also how a
      * completed route restarts: a cyclic schedule comes straight back round to
      * this entry with the progress already reset.
+     *
+     * <p>The advance here is our own and so is not the one {@link #again} holds
+     * back — that guards {@code tickConditions}, where the runtime moves on
+     * because a stop's conditions were met. This one runs because the route ran
+     * out, which is the one moment leaving is right.
      */
     @Nullable
     private DiscoveredPath skip(ScheduleRuntime runtime) {
         getData().putInt(NBT_PROGRESS, 0);
+        getData().remove(NBT_SENT);
         runtime.state = State.PRE_TRANSIT;
         runtime.currentEntry++;
         runtime.startCooldown();
@@ -468,6 +571,7 @@ public class FollowRouteInstruction extends DestinationInstruction {
     /** Drops what only makes sense while a particular train is running this route. */
     public void clearProgress() {
         getData().remove(NBT_PROGRESS);
+        getData().remove(NBT_SENT);
         getData().remove(NBT_RESOLVED);
     }
 
