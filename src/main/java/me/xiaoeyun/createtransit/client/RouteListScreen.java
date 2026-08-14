@@ -108,11 +108,11 @@ public class RouteListScreen extends Screen {
 
     /** The list area, in screen coordinates: where Create scissors its cards to. */
     private int listX() {
-        return left() + RouteTable.LIST_AT;
+        return left() + CtSkin.LIST_AT;
     }
 
     private int listY() {
-        return top() + RouteTable.LIST_AT;
+        return top() + CtSkin.LIST_AT;
     }
 
     @Override
@@ -125,7 +125,7 @@ public class RouteListScreen extends Screen {
             // is set, against whatever width it has at that moment — at zero the
             // inner width is negative, the whole name counts as scrolled past,
             // and the first name a player opens comes up blank.
-            field = new EditBox(font, 0, 0, RouteTable.LIST_WIDTH, 10, CommonComponents.EMPTY);
+            field = new EditBox(font, 0, 0, CtSkin.LIST_WIDTH, 10, CommonComponents.EMPTY);
             field.setBordered(false);
             field.setMaxLength(Route.MAX_NAME_LENGTH);
             field.setTextColor(CtSkin.FIELD_TEXT);
@@ -139,27 +139,9 @@ public class RouteListScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         renderBackground(graphics);
 
-        int x = left();
-        int y = top();
-        PANEL.render(graphics, x, y);
-        graphics.drawString(font, title, x + (PANEL.getWidth() - 8) / 2 - font.width(title) / 2, y + 4,
-            CtSkin.PLAQUE_TEXT, false);
+        CtSkin.schedulePanel(graphics, font, title, width, height, mouseX, mouseY);
 
-        // The socket at the far end of the footer holds Create's cyclic button,
-        // which a list of routes has no use for. It is painted on, so it has to
-        // be filled back in with the face around it.
-        graphics.fill(x + RouteTable.CYCLIC_X, y + RouteTable.CYCLIC_Y,
-            x + RouteTable.CYCLIC_X + RouteTable.BUTTON_SIZE,
-            y + RouteTable.CYCLIC_Y + RouteTable.BUTTON_SIZE, CtSkin.PLAQUE);
-
-        list(graphics, listX(), listY(), RouteTable.LIST_WIDTH, listY() + RouteTable.LIST_HEIGHT, mouseX,
-            mouseY);
-
-        // Over the tick the sheet already has painted on it. Painted, it could
-        // not light up under the cursor — and a button that never answers reads
-        // as decoration until it is tried.
-        Strip.plate(graphics, x + RouteTable.CONFIRM_X, y + RouteTable.CONFIRM_Y, AllIcons.I_CONFIRM,
-            over(mouseX, mouseY, x + RouteTable.CONFIRM_X, y + RouteTable.CONFIRM_Y));
+        list(graphics, listX(), listY(), CtSkin.LIST_WIDTH, listY() + CtSkin.LIST_HEIGHT, mouseX, mouseY);
 
         super.render(graphics, mouseX, mouseY, partialTicks);
 
@@ -282,11 +264,6 @@ public class RouteListScreen extends Screen {
         }
     }
 
-    /** Whether the cursor is on one of the sheet's painted button sockets. */
-    private static boolean over(double mouseX, double mouseY, int x, int y) {
-        return new Box(x, y, RouteTable.BUTTON_SIZE, RouteTable.BUTTON_SIZE).holds(mouseX, mouseY);
-    }
-
     /** Puts the field over the row it belongs to, which is the whole of its layout. */
     private void place(int x, int y, int width) {
         field.setX(x);
@@ -310,7 +287,8 @@ public class RouteListScreen extends Screen {
 
         // The tick is painted into the sheet, so only the target around it is
         // ours. Closing is all it does — nothing here is held until confirmed.
-        if (over(mouseX, mouseY, left() + RouteTable.CONFIRM_X, top() + RouteTable.CONFIRM_Y)) {
+        if (CtSkin.confirm(left(), top())
+            .holds(mouseX, mouseY)) {
             onClose();
             return true;
         }

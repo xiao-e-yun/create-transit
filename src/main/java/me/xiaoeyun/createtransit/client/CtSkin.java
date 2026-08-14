@@ -1,5 +1,8 @@
 package me.xiaoeyun.createtransit.client;
 
+import com.simibubi.create.foundation.gui.AllGuiTextures;
+import com.simibubi.create.foundation.gui.AllIcons;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -61,6 +64,29 @@ public class CtSkin {
 
     /** The first usable row inside a window whose frame starts at y. */
     public static final int BODY_TOP = PLAQUE_HEIGHT + 1;
+
+    /**
+     * Where things sit on {@code AllGuiTextures.SCHEDULE}, taken from
+     * {@code ScheduleScreen} rather than measured off the picture: the list area
+     * it scissors to, and where {@code init} puts the confirm and cyclic
+     * buttons.
+     */
+    static final int LIST_AT = 16;
+
+    static final int LIST_WIDTH = 220;
+
+    static final int LIST_HEIGHT = 173;
+
+    static final int CONFIRM_X = 214;
+
+    static final int CONFIRM_Y = 196;
+
+    static final int CYCLIC_X = 21;
+
+    static final int CYCLIC_Y = 196;
+
+    /** Both sockets are one IconButton square. */
+    static final int BUTTON_SIZE = 18;
 
     /** What a cut column ends with. One glyph, so it costs four pixels of the room. */
     private static final String ELLIPSIS = "…";
@@ -125,6 +151,43 @@ public class CtSkin {
             plate(graphics, x, fieldY + fieldHeight, width, footer);
 
         return new Box(x + RIM, fieldY + 1, width - RIM * 2, fieldHeight - 2);
+    }
+
+    /**
+     * Create's own schedule panel, whole, centred on a screen this size — with
+     * its title, its cyclic socket and its confirm button all done at once.
+     *
+     * <p>The route list and the conditions popup both draw this sheet, both
+     * centre a title in its plaque, both paint the cyclic socket back over (a
+     * route has no cyclic schedule of its own) and both lay a live plate over
+     * the tick the sheet already has painted on it — the sheet's own tick cannot
+     * light up under the cursor. That used to be four copies across two files;
+     * this is the one.
+     *
+     * @return the panel's own origin and size, for whatever else — a card, a
+     *         list — is drawn relative to it
+     */
+    public static Box schedulePanel(GuiGraphics graphics, Font font, Component title, int screenWidth,
+        int screenHeight, double mouseX, double mouseY) {
+        AllGuiTextures panel = AllGuiTextures.SCHEDULE;
+        int x = (screenWidth - panel.getWidth()) / 2;
+        int y = (screenHeight - panel.getHeight()) / 2;
+        panel.render(graphics, x, y);
+        graphics.drawString(font, title, x + (panel.getWidth() - 8) / 2 - font.width(title) / 2, y + 4,
+            PLAQUE_TEXT, false);
+
+        graphics.fill(x + CYCLIC_X, y + CYCLIC_Y, x + CYCLIC_X + BUTTON_SIZE, y + CYCLIC_Y + BUTTON_SIZE,
+            PLAQUE);
+
+        Box confirm = confirm(x, y);
+        Strip.plate(graphics, confirm.x(), confirm.y(), AllIcons.I_CONFIRM, confirm.holds(mouseX, mouseY));
+
+        return new Box(x, y, panel.getWidth(), panel.getHeight());
+    }
+
+    /** Where a panel's confirm button is, for a caller that wants its own hit test. */
+    public static Box confirm(int panelX, int panelY) {
+        return new Box(panelX + CONFIRM_X, panelY + CONFIRM_Y, BUTTON_SIZE, BUTTON_SIZE);
     }
 
     /**

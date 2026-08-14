@@ -115,29 +115,11 @@ public class RouteTable {
      */
     private static final int CARD_WIDTH = 195;
 
-    /**
-     * Where things sit on {@code AllGuiTextures.SCHEDULE}, taken from
-     * {@code ScheduleScreen} rather than measured off the picture: the list area
-     * it scissors to, the offset it draws a card at, the spine down the side,
-     * and where {@code init} puts the confirm button.
-     */
-    static final int LIST_AT = 16;
-
-    static final int LIST_WIDTH = 220;
-
-    static final int LIST_HEIGHT = 173;
-
+    /** Where a card sits on {@code AllGuiTextures.SCHEDULE}, taken from {@code ScheduleScreen}. */
     private static final int CARD_AT = 25;
 
+    /** Where the spine down its side sits, also taken from {@code ScheduleScreen}. */
     private static final int SPINE_AT = 33;
-
-    static final int CONFIRM_X = 214;
-
-    static final int CONFIRM_Y = 196;
-
-    static final int CYCLIC_X = 21;
-
-    static final int CYCLIC_Y = 196;
 
     /**
      * How many buttons a stop's row ends with: its conditions, a copy of it, and
@@ -145,9 +127,6 @@ public class RouteTable {
      * place that would have to hear about them.
      */
     public static final int SLOTS = 3;
-
-    /** Both sockets are one IconButton square. */
-    static final int BUTTON_SIZE = 18;
 
     /**
      * The edge fades, over the fields and under the tooltips. Relative, because
@@ -457,17 +436,8 @@ public class RouteTable {
         // The card starts nine pixels into that area, and the content is that
         // much again past its end — so scrolled all the way down the last row
         // clears the edge by the same margin it clears the top.
-        int inset = CARD_AT - LIST_AT;
-        int offset = down.at(inset + cardHeight + inset, LIST_HEIGHT);
-
-        // Create's own panel, whole. Everything the popup needs is painted into
-        // it already — the title plaque, the checkered field, the footer and the
-        // confirm plaque with its pointed tab — and every coordinate below is
-        // one ScheduleScreen already uses, because this is the picture those
-        // coordinates were measured against.
-        AllGuiTextures panel = AllGuiTextures.SCHEDULE;
-        int x = (screenWidth - panel.getWidth()) / 2;
-        int y = (screenHeight - panel.getHeight()) / 2;
+        int inset = CARD_AT - CtSkin.LIST_AT;
+        int offset = down.at(inset + cardHeight + inset, CtSkin.LIST_HEIGHT);
 
         PoseStack pose = graphics.pose();
         pose.pushPose();
@@ -477,17 +447,17 @@ public class RouteTable {
         // two read as the same kind of thing — and so nothing behind looks
         // available while it is not.
         graphics.fill(0, 0, screenWidth, screenHeight, 0xB0000000);
-        panel.render(graphics, x, y);
-
-        Component title = Component.translatable("create_transit.route.window.conditions");
-        graphics.drawString(font, title, x + (panel.getWidth() - 8) / 2 - font.width(title) / 2, y + 4,
-            CtSkin.PLAQUE_TEXT, false);
+        Box panel = CtSkin.schedulePanel(graphics, font,
+            Component.translatable("create_transit.route.window.conditions"), screenWidth, screenHeight,
+            mouseX, mouseY);
+        int x = panel.x();
+        int y = panel.y();
 
         int cardX = x + CARD_AT;
         int cardY = y + CARD_AT - offset;
 
-        graphics.enableScissor(x + LIST_AT, y + LIST_AT, x + LIST_AT + LIST_WIDTH,
-            y + LIST_AT + LIST_HEIGHT);
+        graphics.enableScissor(x + CtSkin.LIST_AT, y + CtSkin.LIST_AT, x + CtSkin.LIST_AT + CtSkin.LIST_WIDTH,
+            y + CtSkin.LIST_AT + CtSkin.LIST_HEIGHT);
         card(graphics, cardX, cardY, cardWidth, cardHeight);
 
         // After the plate, not before it. Create draws this inside
@@ -502,7 +472,7 @@ public class RouteTable {
         // And the darker one over the top of it, which is the second line in
         // Create's own: it runs the length of the list rather than of a card,
         // and it is drawn above them all.
-        UIRenderHelper.drawStretched(graphics, x + SPINE_AT, y + LIST_AT, 3, LIST_HEIGHT, FADE,
+        UIRenderHelper.drawStretched(graphics, x + SPINE_AT, y + CtSkin.LIST_AT, 3, CtSkin.LIST_HEIGHT, FADE,
             AllGuiTextures.SCHEDULE_STRIP_DARK);
 
         // What the stop does, in the header, drawn as its own field rather than
@@ -534,26 +504,17 @@ public class RouteTable {
         band(graphics, font, columns, of, cardX + CONTENT, cardY + 29, inner, cardHeight - 29, 0,
             new Arrows(clipped - 5 - ARROW_WIDTH, clipped + 3 + inner,
                 cardY + (HEADER + cardHeight - ARROW_HEIGHT) / 2),
-            new Box(x + LIST_AT, y + LIST_AT, LIST_WIDTH, LIST_HEIGHT), across, lines);
+            new Box(x + CtSkin.LIST_AT, y + CtSkin.LIST_AT, CtSkin.LIST_WIDTH, CtSkin.LIST_HEIGHT), across,
+            lines);
         fades(graphics, cardX + CONTENT, inner, cardY + HEADER + 2, cardY + cardHeight - 2, FADE_CARD,
             across);
 
         graphics.disableScissor();
 
-        // The sheet has a tick painted at 214,196 already. Ours goes over it so
-        // that it can light up under the cursor: painted, it was the one button
-        // on either screen that never answered being pointed at.
-        Box confirm = new Box(x + CONFIRM_X, y + CONFIRM_Y, BUTTON_SIZE, BUTTON_SIZE);
-        Strip.plate(graphics, confirm.x(), confirm.y(), AllIcons.I_CONFIRM,
-            confirm.holds(mouseX, mouseY));
-        lines.add(new Line(confirm, close));
-
-        // The socket at the other end holds Create's cyclic button, which a
-        // route has no use for: the schedule that references one decides
-        // whether it loops. Painted on, so hiding the button is not enough —
-        // the recess it sat in has to be filled back in with the face around it.
-        graphics.fill(x + CYCLIC_X, y + CYCLIC_Y, x + CYCLIC_X + BUTTON_SIZE, y + CYCLIC_Y + BUTTON_SIZE,
-            CtSkin.PLAQUE);
+        // The confirm plate is already drawn, over the sheet's own painted tick;
+        // this is only the hit target for it, which is the panel's to place and
+        // this method's own action to answer with.
+        lines.add(new Line(CtSkin.confirm(x, y), close));
 
         pose.popPose();
         return lines;
