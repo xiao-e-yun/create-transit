@@ -1,7 +1,6 @@
 package me.xiaoeyun.createtransit.content.route;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -94,13 +93,11 @@ public class Route {
             if (nested == null)
                 continue;
 
-            List<ScheduleEntry> leg = new ArrayList<>();
-            nested.collect(leg, lookup, reference.reversed(), visiting, depth + 1);
-            if (reference.skipTerminus() && !leg.isEmpty())
-                leg.remove(leg.size() - 1);
-            if (reversed)
-                Collections.reverse(leg);
-            out.addAll(leg);
+            int before = out.size();
+            nested.collect(out, lookup, reference.reversed() != reversed, visiting, depth + 1);
+            // The omitted terminus sits at the head of the contribution when the enclosing direction is reversed.
+            if (reference.skipTerminus() && out.size() > before)
+                out.remove(reversed ? before : out.size() - 1);
         }
 
         visiting.remove(id);
