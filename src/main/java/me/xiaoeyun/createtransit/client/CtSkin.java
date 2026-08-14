@@ -59,6 +59,9 @@ public class CtSkin {
 
     public static final int PLAQUE_HEIGHT = 13;
 
+    /** The first usable row inside a window whose frame starts at y. */
+    public static final int BODY_TOP = PLAQUE_HEIGHT + 1;
+
     /** What a cut column ends with. One glyph, so it costs four pixels of the room. */
     private static final String ELLIPSIS = "…";
 
@@ -89,14 +92,6 @@ public class CtSkin {
     private static final int CHECKER_SIZE = 128;
 
     private CtSkin() {}
-
-    /**
-     * The first usable row inside a window whose frame starts at {@code y}.
-     * Exposed so hit-testing measures a window the same way drawing it did.
-     */
-    public static int bodyTop(int y) {
-        return y + PLAQUE_HEIGHT + 1;
-    }
 
     /**
      * How tall a window has to be to give its content that much room — the

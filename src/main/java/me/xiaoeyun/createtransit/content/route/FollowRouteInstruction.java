@@ -144,9 +144,6 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
     /** How wide the route's name may be drawn, before its buttons. */
     private static final int PICKER = 81;
 
-    /** What a cut name ends with, the same mark the tables use. */
-    private static final String ELLIPSIS = "…";
-
     @Override
     public ResourceLocation getId() {
         return CreateTransit.asResource("follow_route");
@@ -247,8 +244,8 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         // into, which the screen is asked because only it knows which route that
         // is. A train's own schedule answers null and gets the lot.
         Screen open = Minecraft.getInstance().screen;
-        List<UUID> ids = new ArrayList<>(ClientRoutes
-            .referenceable(open instanceof RouteScreen route ? route.editingRoute() : null));
+        List<UUID> ids = ClientRoutes
+            .referenceable(open instanceof RouteScreen route ? route.editingRoute() : null);
         List<Component> names = new ArrayList<>(ids.size() + 1);
         for (UUID id : ids)
             names.add(Component.literal(ClientRoutes.nameOf(id)));
@@ -325,7 +322,7 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         String value = text.getString();
         if (font.width(value) <= width)
             return text;
-        return Component.literal(font.plainSubstrByWidth(value, width - font.width(ELLIPSIS)) + ELLIPSIS)
+        return Component.literal(font.plainSubstrByWidth(value, width - font.width("…")) + "…")
             .withStyle(text.getStyle());
     }
 

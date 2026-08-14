@@ -1,7 +1,5 @@
 package me.xiaoeyun.createtransit.client;
 
-import java.util.List;
-
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -25,6 +23,9 @@ public abstract class Node {
     /** Where placing put this. Meaningless until {@link #arrange} has run once. */
     protected Box box = new Box(0, 0, 0, 0);
 
+    /** Whoever answers for a point, or null if nobody here does. */
+    public abstract Action hit(double x, double y);
+
     /**
      * Place this in the room it is offered, and answer how much of it was taken.
      *
@@ -40,27 +41,6 @@ public abstract class Node {
     public Box box() {
         return box;
     }
-
-    /** What this node answers a click with, if it answers at all. */
-    protected Action action;
-
-    public Node on(Action action) {
-        this.action = action;
-        return this;
-    }
-
-    /**
-     * Whoever answers for a point, or null if nobody here does.
-     *
-     * <p>Asked of the tree rather than of a list built while drawing, so the
-     * two cannot disagree — they are the same boxes. A container that does not
-     * contain the point stops the walk, which is how a row scrolled out of its
-     * window stops being clickable without anyone writing that down.
-     */
-    public Action hit(double x, double y) {
-        return box.holds(x, y) ? action : null;
-    }
-
 
     /**
      * What a node does when it is reached.
@@ -95,12 +75,11 @@ public abstract class Node {
      * draws a stop's conditions took eleven arguments, and five of them were
      * this, handed down through three call sites that had no use for them.
      */
-    public record Paint(GuiGraphics graphics, Font font, double mouseX, double mouseY,
-        List<RouteTable.Line> lines, Box clip) {
+    public record Paint(GuiGraphics graphics, Font font, double mouseX, double mouseY, Box clip) {
 
         /** Everything a container has not cut away. */
         public Paint within(Box to) {
-            return new Paint(graphics, font, mouseX, mouseY, lines, to);
+            return new Paint(graphics, font, mouseX, mouseY, to);
         }
 
         /**

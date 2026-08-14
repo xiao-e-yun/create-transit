@@ -81,7 +81,7 @@ public class RouteManagePacket {
         switch (action) {
             case NEW -> {
                 String wanted = name.trim();
-                if (wanted.isEmpty() || wanted.length() > Route.MAX_NAME_LENGTH)
+                if (wanted.isEmpty())
                     return;
                 if (store.byName(wanted) != null) {
                     taken(sender, wanted);

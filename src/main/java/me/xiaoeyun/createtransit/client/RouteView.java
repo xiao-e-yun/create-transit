@@ -71,7 +71,7 @@ public class RouteView {
     private static final int ROWS = 11;
 
     /** Where a table's first row starts, below the plaque and the headings. */
-    private static final int LIST_AT = CtSkin.bodyTop(0) + RouteTable.HEADING;
+    private static final int LIST_AT = CtSkin.BODY_TOP + RouteTable.HEADING;
 
     /**
      * The two columns, sized to hold whole rows rather than cut to them.

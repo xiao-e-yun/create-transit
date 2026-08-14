@@ -53,17 +53,6 @@ public class RouteListScreen extends Screen {
      */
     private static final AllGuiTextures PANEL = AllGuiTextures.SCHEDULE;
 
-    /**
-     * All of it, sliced last row and all.
-     *
-     * <p>Whole rows only was the rule here until the area turned out to be nine
-     * rows and eleven pixels, and nine routes then filled it exactly — leaving
-     * the row that makes another below the edge, under a clean band that read as
-     * the end of the list. A row cut off says there is more; a tidy margin says
-     * there is not, and one of those was a lie.
-     */
-    private static final int SHOWN = RouteTable.LIST_HEIGHT;
-
     /** Stands for the empty row at the end, which belongs to no route yet. */
     private static final UUID NEW = new UUID(0, 0);
 
@@ -164,7 +153,8 @@ public class RouteListScreen extends Screen {
             x + RouteTable.CYCLIC_X + RouteTable.BUTTON_SIZE,
             y + RouteTable.CYCLIC_Y + RouteTable.BUTTON_SIZE, CtSkin.PLAQUE);
 
-        list(graphics, listX(), listY(), RouteTable.LIST_WIDTH, listY() + SHOWN, mouseX, mouseY);
+        list(graphics, listX(), listY(), RouteTable.LIST_WIDTH, listY() + RouteTable.LIST_HEIGHT, mouseX,
+            mouseY);
 
         // Over the tick the sheet already has painted on it. Painted, it could
         // not light up under the cursor — and a button that never answers reads
@@ -189,7 +179,7 @@ public class RouteListScreen extends Screen {
         table.rows(shown.size() + 1);
         Box within = new Box(x, y, width, bottom - y);
         list.arrange(within);
-        list.paint(new Node.Paint(graphics, font, mouseX, mouseY, null, within));
+        list.paint(new Node.Paint(graphics, font, mouseX, mouseY, within));
     }
 
     /** Which route a row stands for; the one past the end makes another. */
@@ -296,8 +286,7 @@ public class RouteListScreen extends Screen {
 
     /** Whether the cursor is on one of the sheet's painted button sockets. */
     private static boolean over(double mouseX, double mouseY, int x, int y) {
-        return mouseX >= x && mouseX < x + RouteTable.BUTTON_SIZE && mouseY >= y
-            && mouseY < y + RouteTable.BUTTON_SIZE;
+        return new Box(x, y, RouteTable.BUTTON_SIZE, RouteTable.BUTTON_SIZE).holds(mouseX, mouseY);
     }
 
     /** Puts the field over the row it belongs to, which is the whole of its layout. */

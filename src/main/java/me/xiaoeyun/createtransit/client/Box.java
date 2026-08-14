@@ -24,16 +24,6 @@ public record Box(int x, int y, int width, int height) {
         return y + height;
     }
 
-    /** The same box with every side pulled in, for a border or a margin. */
-    public Box inset(int by) {
-        return new Box(x + by, y + by, width - by * 2, height - by * 2);
-    }
-
-    /** The same box ending sooner, for content stopped above a footer. */
-    public Box above(int room) {
-        return new Box(x, y, width, height - room);
-    }
-
     /**
      * What is left of this inside another, or null when nothing is.
      *

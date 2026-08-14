@@ -22,7 +22,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -71,9 +70,6 @@ public class RouteTable {
     public static final int ICON_PAD = 2;
 
     public static final int ICON = ICON_PAD + 16 + 2;
-
-    /** One button's slot, sized to the 16-square icons rather than the 12-square glyphs. */
-    public static final int BUTTON = 16;
 
     /** One condition field and the gap under it, spaced the way Create spaces its own. */
     public static final int CONDITION_ROW = 18;
@@ -388,7 +384,7 @@ public class RouteTable {
         ScrollNode window = new ScrollNode(table, scroll);
         Box within = new Box(x, top, width, bottom - top);
         window.arrange(within);
-        window.paint(new Node.Paint(graphics, font, mouseX, mouseY, null, within));
+        window.paint(new Node.Paint(graphics, font, mouseX, mouseY, within));
         return window;
     }
 
@@ -863,7 +859,7 @@ public class RouteTable {
      * so the cut lands where the plate ends. And it cuts bare, where
      * {@link CtSkin#clipped} leaves a mark saying it did.
      */
-    public static int chip(GuiGraphics graphics, Font font, Pair<ItemStack, Component> summary, int x,
+    public static void chip(GuiGraphics graphics, Font font, Pair<ItemStack, Component> summary, int x,
         int y, boolean clean, int minSize, int maxSize) {
         ItemStack stack = summary.getFirst();
         Component text = summary.getSecond();
@@ -899,7 +895,6 @@ public class RouteTable {
             CtSkin.clipped(graphics, font, text, textX, 4, width - textX - 8, CHIP_TEXT);
 
         pose.popPose();
-        return width;
     }
 
     /**

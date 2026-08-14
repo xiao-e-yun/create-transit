@@ -20,12 +20,6 @@ import me.xiaoeyun.createtransit.network.RouteListPacket;
  * What the client knows about routes: which ones exist, what each is called,
  * and where each one goes.
  *
- * <p>Both directions of the name are needed because they are asked at different
- * moments. A player types a name into a reference, and that has to become the id
- * the reference actually stores — a name is a label, and the label is not what
- * anything points at. Going back the other way is how a reference already
- * authored says which route it means without asking the server.
- *
  * <p>Where a route goes is here for the routes this client is <em>not</em>
  * editing: the one on screen is read live from the editor, and a stop that
  * follows another route can only say what it means by asking this.
@@ -42,41 +36,26 @@ public class ClientRoutes {
 
     private static Map<UUID, RouteListPacket.Line> routes = Map.of();
 
-    /** The same thing with only the names, which is what most of this is asked for. */
-    private static Map<UUID, String> names = Map.of();
-
     /** {@link #reach} worked out, until the next time any of this changes. */
     private static final Map<UUID, Predicate<String>> reaching = new HashMap<>();
 
     public static void accept(Map<UUID, RouteListPacket.Line> incoming) {
-        // Copied into a map that keeps its order, so a list of routes reads the
-        // way the server sent it rather than the way a hash landed.
-        routes = new LinkedHashMap<>(incoming);
-        Map<UUID, String> labels = new LinkedHashMap<>(incoming.size());
-        routes.forEach((id, line) -> labels.put(id, line.name()));
-        names = labels;
+        routes = incoming;
         reaching.clear();
     }
 
     /** Every route, in the order the server holds them. */
     public static Map<UUID, String> all() {
-        return Collections.unmodifiableMap(names);
-    }
-
-    /** The route a typed name means, or null when nothing is called that. */
-    @Nullable
-    public static UUID idOf(String name) {
-        for (Map.Entry<UUID, String> route : names.entrySet())
-            if (route.getValue()
-                .equals(name))
-                return route.getKey();
-        return null;
+        Map<UUID, String> labels = new LinkedHashMap<>(routes.size());
+        routes.forEach((id, line) -> labels.put(id, line.name()));
+        return Collections.unmodifiableMap(labels);
     }
 
     /** What a route is currently called, or null when it is gone. */
     @Nullable
     public static String nameOf(UUID id) {
-        return names.get(id);
+        RouteListPacket.Line line = routes.get(id);
+        return line == null ? null : line.name();
     }
 
     /**
@@ -90,7 +69,7 @@ public class ClientRoutes {
      * <p>Null means a train's own schedule, which nothing can lead back to.
      */
     public static List<UUID> referenceable(@Nullable UUID editing) {
-        return names.keySet()
+        return routes.keySet()
             .stream()
             .filter(id -> editing == null || !reaches(id, editing))
             .toList();
@@ -139,7 +118,7 @@ public class ClientRoutes {
      * <p>A route reaching itself counts, because the shortest cycle there is is
      * a route that follows itself.
      */
-    public static boolean reaches(UUID candidate, UUID target) {
+    private static boolean reaches(UUID candidate, UUID target) {
         return candidate.equals(target) || leadsTo(candidate, target, new HashSet<>());
     }
 

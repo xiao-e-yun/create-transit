@@ -323,8 +323,7 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
     private DiscoveredPath done(ScheduleRuntime runtime) {
         // Cleared before the entry moves on, so {@link #again} reads false and
         // the runtime is free to leave. The order matters.
-        getData().remove(NBT_VISITED);
-        getData().remove(NBT_SENT);
+        clearRound();
         runtime.state = State.PRE_TRANSIT;
         runtime.currentEntry++;
         runtime.startCooldown();

@@ -83,11 +83,6 @@ public class Strip {
         return new Strip(graphics, right - width(slots), y);
     }
 
-    /** Where the strip starts, which is where whatever precedes it has to stop. */
-    public int left() {
-        return left;
-    }
-
     /**
      * One button, its glyph centred at whatever size the sheet says it is.
      *

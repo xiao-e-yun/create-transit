@@ -43,15 +43,6 @@ public class TableNode extends Node {
     private int rows;
 
     /**
-     * Which row counts as the first for banding.
-     *
-     * <p>A list with something above it in the same column carries on that
-     * column's stripe rather than starting its own, and the two tables here
-     * happen to disagree about which one that is.
-     */
-    private int phase;
-
-    /**
      * Which rows are lit by something that is not the cursor, or null for none.
      *
      * <p>The map lights the stops that mean the station under it, and the same
@@ -69,11 +60,6 @@ public class TableNode extends Node {
     /** How many rows there are this frame, which the data decides. */
     public TableNode rows(int rows) {
         this.rows = rows;
-        return this;
-    }
-
-    public TableNode phase(int phase) {
-        this.phase = phase;
         return this;
     }
 
@@ -121,7 +107,7 @@ public class TableNode extends Node {
             // row does when it is touched is not something the map may set off
             // from across the screen.
             boolean hovered = paint.over(at);
-            CtSkin.row(paint.graphics(), at.x(), at.y(), at.width(), at.height(), i + phase,
+            CtSkin.row(paint.graphics(), at.x(), at.y(), at.width(), at.height(), i,
                 hovered || (lit != null && lit.test(i)));
             row.paint(paint, i, at, hovered);
         }

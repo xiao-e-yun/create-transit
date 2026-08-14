@@ -58,12 +58,7 @@ public class Scroll {
 
     /** Whether the wheel was used here, so the caller knows to consume it. */
     public boolean wheel(double delta) {
-        return nudge(-(int) Math.signum(delta) * STEP);
-    }
-
-    /** Moves by a given amount, for a button that knows its own step. */
-    public boolean nudge(int by) {
-        return to(offset + by);
+        return to(offset - (int) Math.signum(delta) * STEP);
     }
 
     /**

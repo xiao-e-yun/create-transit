@@ -197,19 +197,10 @@ public class Route {
     public boolean containsCycle(Function<UUID, Route> lookup) {
         for (ScheduleEntry entry : entries) {
             RouteReference reference = RouteReference.of(entry.instruction);
-            if (reference != null && reachedBy(lookup, reference.route()))
+            if (reference != null && reaches(lookup, reference.route(), new HashSet<>()))
                 return true;
         }
         return false;
-    }
-
-    /**
-     * True when {@code candidate} already reaches this route, which would make
-     * a reference to it a cycle. Checked when a reference is authored, so the
-     * player is told at the moment they cause it rather than when a train hangs.
-     */
-    public boolean reachedBy(Function<UUID, Route> lookup, UUID candidate) {
-        return reaches(lookup, candidate, new HashSet<>());
     }
 
     private boolean reaches(Function<UUID, Route> lookup, UUID candidate, Set<UUID> seen) {

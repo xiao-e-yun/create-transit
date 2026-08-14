@@ -20,7 +20,6 @@ import me.xiaoeyun.createtransit.content.route.FollowRouteInstruction;
 import me.xiaoeyun.createtransit.content.route.RouteEditSession;
 import me.xiaoeyun.createtransit.registry.CtItems;
 import net.createmod.catnip.gui.element.ScreenElement;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
@@ -121,13 +120,7 @@ public abstract class ScheduleScreenMixin extends AbstractSimiContainerScreen<Sc
         // "still abroad".
         ItemStack box = CtItems.TRANSIT_PACKAGES.get(0)
             .asStack();
-        ScreenElement icon = new ScreenElement() {
-
-            @Override
-            public void render(GuiGraphics graphics, int x, int y) {
-                graphics.renderItem(box, x, y);
-            }
-        };
+        ScreenElement icon = (g, x, y) -> g.renderItem(box, x, y);
 
         createTransit$transitTrain =
             new IconButton(leftPos + CREATE_TRANSIT$BUTTON_X, topPos + CREATE_TRANSIT$BUTTON_Y, icon);
