@@ -55,7 +55,7 @@ import zipfile
 from PIL import Image
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REL = 'src/main/resources/assets/create_transit/textures/block'
+REL = 'transit/src/main/resources/assets/create_transit/textures/block'
 OUT = os.path.join(REPO, *REL.split('/'))
 
 

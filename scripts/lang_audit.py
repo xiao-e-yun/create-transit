@@ -51,14 +51,20 @@ import os
 import re
 import sys
 
-LANG_DIR = os.path.join("src", "main", "resources", "assets", "create_transit", "lang")
+# This repo is two mods sharing one build: each has its own module directory,
+# its own lang directory, and its own key prefix.
+MODULES = {
+    "create_transit": os.path.join("transit", "src", "main", "resources", "assets", "create_transit", "lang"),
+    "create_routes": os.path.join("route", "src", "main", "resources", "assets", "create_routes", "lang"),
+}
+SRC_ROOTS = ("route/src", "transit/src")
 BASE = "en_us"
 
-REGISTRY_PREFIXES = ("block.", "item.", "itemGroup.", "create_transit.schedule.")
+REGISTRY_PREFIXES = ("block.", "item.", "itemGroup.")
 
-# A translation key in a string literal: a dotted path naming the mod. Resource
-# locations do not match -- those carry a colon and slashes.
-KEY_LITERAL = re.compile(r'"((?:[a-z_]+\.)*create_transit\.[A-Za-z0-9_.]+)"')
+# A translation key in a string literal: a dotted path naming one of this
+# repo's mods. Resource locations do not match -- those carry a colon and slashes.
+KEY_LITERAL = re.compile(r'"((?:[a-z_]+\.)*(?:%s)\.[A-Za-z0-9_.]+)"' % "|".join(MODULES))
 
 # %s and its indexed form, which Minecraft accepts interchangeably.
 FORMAT_ARG = re.compile(r"%(?:\d+\$)?s")
@@ -67,70 +73,74 @@ FORMAT_ARG = re.compile(r"%(?:\d+\$)?s")
 NOT_A_KEY = (".json", ".png", ".mixins", ".refmap")
 
 
-def load_langs() -> dict[str, dict[str, str]]:
+def load_langs(lang_dir: str) -> dict[str, dict[str, str]]:
     langs = {}
-    for name in sorted(os.listdir(LANG_DIR)):
+    for name in sorted(os.listdir(lang_dir)):
         if not name.endswith(".json"):
             continue
-        with open(os.path.join(LANG_DIR, name), encoding="utf-8") as f:
+        with open(os.path.join(lang_dir, name), encoding="utf-8") as f:
             langs[name[:-5]] = json.load(f)
     return langs
 
 
 def read_sources() -> tuple[str, dict[str, set[str]]]:
-    """Everything outside the lang directory, plus where each key literal was seen."""
+    """Everything in either module outside its lang directory, plus where each key literal was seen."""
     blob = []
     referenced: dict[str, set[str]] = {}
-    for root, _, names in os.walk("src"):
-        if "lang" in root.replace(os.sep, "/").split("/"):
-            continue
-        for name in names:
-            if not name.endswith((".java", ".json", ".mcmeta")):
+    for src_root in SRC_ROOTS:
+        for root, _, names in os.walk(src_root):
+            if "lang" in root.replace(os.sep, "/").split("/"):
                 continue
-            path = os.path.join(root, name)
-            with open(path, encoding="utf-8", errors="ignore") as f:
-                text = f.read()
-            blob.append(text)
-            if not name.endswith(".java"):
-                continue
-            for match in KEY_LITERAL.finditer(text):
-                key = match.group(1)
-                if key.endswith(NOT_A_KEY):
+            for name in names:
+                if not name.endswith((".java", ".json", ".mcmeta")):
                     continue
-                referenced.setdefault(key, set()).add(path.replace(os.sep, "/"))
+                path = os.path.join(root, name)
+                with open(path, encoding="utf-8", errors="ignore") as f:
+                    text = f.read()
+                blob.append(text)
+                if not name.endswith(".java"):
+                    continue
+                for match in KEY_LITERAL.finditer(text):
+                    key = match.group(1)
+                    if key.endswith(NOT_A_KEY):
+                        continue
+                    referenced.setdefault(key, set()).add(path.replace(os.sep, "/"))
     return "\n".join(blob), referenced
 
 
-def is_mentioned(key: str, blob: str) -> bool:
+def is_mentioned(key: str, blob: str, mod_id: str) -> bool:
     # Quoted, because a bare substring makes any key that is a prefix of another
     # invisible: `...window.stop` was carried for free by `...window.stops` long
     # after the only thing that used it was deleted.
     if '"%s"' % key in blob:
         return True
     # The game derives a registry key from the registry, so the source may only
-    # ever name the block or item itself.
-    if key.startswith(REGISTRY_PREFIXES):
+    # ever name the block or item itself. Schedule keys join them: Create names
+    # an instruction's dropdown entry by pasting its ResourceLocation together,
+    # so the only thing our source ever spells is the path.
+    if key.startswith(REGISTRY_PREFIXES) or key.startswith(f"{mod_id}.schedule."):
         return key.rsplit(".", 1)[-1] in blob
     return False
 
 
-def main() -> int:
-    langs = load_langs()
+def audit(mod_id: str, lang_dir: str, blob: str, referenced: dict[str, set[str]]) -> int:
+    langs = load_langs(lang_dir)
     if BASE not in langs:
-        print(f"no {BASE}.json in {LANG_DIR}")
+        print(f"no {BASE}.json in {lang_dir}")
         return 1
-    blob, referenced = read_sources()
     base_keys = langs[BASE]
+    # Only this module's own keys -- the other module's are somebody else's audit.
+    mod_referenced = {k: v for k, v in referenced.items() if k.startswith(f"{mod_id}.")}
     findings = 0
 
-    print("languages: " + ", ".join(f"{name} ({len(keys)})" for name, keys in langs.items()))
+    print(f"{mod_id}: " + ", ".join(f"{name} ({len(keys)})" for name, keys in langs.items()))
 
     for key in base_keys:
-        if not is_mentioned(key, blob):
+        if not is_mentioned(key, blob, mod_id):
             print(f"  dead     {key}")
             findings += 1
 
-    for key, where in sorted(referenced.items()):
+    for key, where in sorted(mod_referenced.items()):
         if key in base_keys:
             continue
         print(f"  missing  {key}")
@@ -156,6 +166,15 @@ def main() -> int:
             spread = ", ".join(f"{name}={n}" for name, n in sorted(counts.items()))
             print(f"  format   {key} takes a different count per language: {spread}")
             findings += 1
+
+    return findings
+
+
+def main() -> int:
+    blob, referenced = read_sources()
+    findings = 0
+    for mod_id, lang_dir in MODULES.items():
+        findings += audit(mod_id, lang_dir, blob, referenced)
 
     print(f"{findings} finding(s)" if findings else "clean")
     return 1 if findings else 0

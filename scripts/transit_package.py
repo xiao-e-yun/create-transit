@@ -70,7 +70,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from repalette import create_jar                                  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REL = 'src/main/resources/assets/create_transit/textures/item/package'
+REL = 'transit/src/main/resources/assets/create_transit/textures/item/package'
 NAME = 'transit_cardboard'
 PREVIEW = 'build/texture-preview'
 

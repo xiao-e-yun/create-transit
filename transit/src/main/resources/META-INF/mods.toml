@@ -1,0 +1,56 @@
+modLoader="javafml" #mandatory
+# FML's major version, bumped by Forge every Minecraft version.
+loaderVersion="${loader_version_range}" #mandatory
+license="${mod_license}"
+issueTrackerURL="https://github.com/xiao-e-yun/create-transit/issues"
+
+# No access transformers; saying so explicitly skips the default
+# META-INF/accesstransformer.cfg lookup at load time.
+accessTransformers=[]
+
+# The mixin config is deliberately not declared here. A [[mixins]] table is
+# NeoForge 1.20.5+ syntax that this Forge never reads (ModFileParser on 1.20.1
+# has no notion of it); what actually loads create_transit.mixins.json is the
+# MixinConfigs attribute MixinGradle writes into the jar manifest.
+
+[[mods]] #mandatory
+modId="${mod_id}" #mandatory
+version="${mod_version}" #mandatory
+displayName="${mod_name}" #mandatory
+displayURL="https://github.com/xiao-e-yun/create-transit"
+logoFile="logo.png"
+authors="${mod_authors}"
+description='''${mod_description}'''
+
+[[dependencies.${mod_id}]]
+    modId="forge"
+    mandatory=true
+    versionRange="${forge_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+# Flywheel and Ponder need no rows of their own: Create mandates both, so any
+# world where this loads already has them.
+[[dependencies.${mod_id}]]
+    modId="create"
+    mandatory=true
+    versionRange="[6.0.7,)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Route, schedule and network glue that this mod's Itinerary and schedule UI
+# build on directly; not jar-in-jar'd, since almost every player wanting
+# transit already wants routes, and the launcher installs it automatically.
+[[dependencies.${mod_id}]]
+    modId="create_routes"
+    mandatory=true
+    versionRange="[0.1.0,)"
+    ordering="AFTER"
+    side="BOTH"

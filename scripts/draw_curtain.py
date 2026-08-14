@@ -50,7 +50,7 @@ import os
 from PIL import Image
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ASSETS = os.path.join(REPO, 'src', 'main', 'resources', 'assets',
+ASSETS = os.path.join(REPO, 'transit', 'src', 'main', 'resources', 'assets',
                       'create_transit')
 TEX_DIR = os.path.join(ASSETS, 'textures', 'block')
 MODEL_DIR = os.path.join(ASSETS, 'models', 'block', 'transit_gate')

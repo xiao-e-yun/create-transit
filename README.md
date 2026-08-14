@@ -1,4 +1,4 @@
-<img src="src/main/resources/logo.png" alt="Create: Transit" width="180" align="right">
+<img src="transit/src/main/resources/logo.png" alt="Create: Transit" width="180" align="right">
 
 # Create: Transit
 
@@ -40,4 +40,4 @@ This mod is built against these projects at these branches. See [CLAUDE.md](CLAU
 ```
 
 All resource JSONs (models, recipes, lang) are hand-authored under
-`src/main/resources` — there is no datagen, so `runData` does nothing here.
+`*/src/main/resources` — there is no datagen, so `runData` does nothing here.
