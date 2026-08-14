@@ -11,19 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
-/**
- * Which routes exist, changed from the route list.
- *
- * <p>One message for the three, because they are one thing: the set of routes.
- * Each of them ends in the same resync, and splitting them would be three
- * packets that differ only in a word.
- *
- * <p>No permission gate. Routes are shared world data in the same way a
- * station's name is, and Create lets any player who can reach a station rename
- * it; a route reached from a schedule a player is already holding is no
- * different. Gating it on op would lock the feature out of an ordinary
- * singleplayer world, where nobody is one.
- */
+/** Creates, renames, or deletes a route; no permission gate, on purpose — the same trust Create gives a station rename. */
 public class RouteManagePacket {
 
     public enum Action {
@@ -90,9 +78,7 @@ public class RouteManagePacket {
                 store.put(new Route(wanted));
                 store.syncNames();
             }
-            // Refused rather than quietly kept, because the name is still how a
-            // reference is authored: two routes called the same thing would make
-            // typing one ambiguous.
+            // Refused rather than quietly kept: two routes with the same name would make typing one ambiguous.
             case RENAME -> {
                 if (!store.rename(route, name.trim()))
                     taken(sender, name.trim());

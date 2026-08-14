@@ -37,24 +37,7 @@ import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.simple.SimpleChannel;
 
-/**
- * Hangs the route layout on Create's schedule screen.
- *
- * <p>Nothing here decides anything. Every injection is the same two lines —
- * if this screen is a route, hand the call to {@link RouteView} and consume it —
- * and the shadows below exist only to satisfy {@link RouteHost}. The layout, the
- * hit testing and the map all live in ordinary classes that know nothing about
- * mixin, so a Create update is read against this file and no other.
- *
- * <p>Only for a route. A schedule a player wrote keeps the screen they know —
- * this is an addon, and silently redesigning the core interface of the mod it
- * extends is not ours to do. The view is null for an ordinary schedule, and that
- * one null is the whole of the gate.
- *
- * <p>Everything below {@code renderBg}'s early return is Create's instruction
- * editor and is deliberately untouched — it is where every addon's configuration
- * button lives, and those only work because this is really Create's screen.
- */
+/** Hangs the route layout on Create's schedule screen; every injection defers to {@link RouteView} when this is a route and otherwise leaves Create's screen untouched. */
 // remap = false: a Create class, so its names are never obfuscated.
 @Mixin(value = ScheduleScreen.class, remap = false)
 public abstract class ScheduleScreenTableMixin implements RouteScreen {
@@ -94,17 +77,7 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     @Unique
     private RouteView createTransit$view;
 
-    /**
-     * The stack this screen was opened on, if it is one of ours — empty if this
-     * is a schedule a player wrote.
-     *
-     * <p>Asked of {@code containerMenu} rather than the screen's own {@code menu}
-     * field because that field is protected on a vanilla class in another
-     * package; the open menu is the same object either way.
-     *
-     * <p>The stack rather than a yes or no, because it is also where the route's
-     * name and default conditions came in.
-     */
+    /** The stack this screen was opened on, if it's one of ours, else empty; read off {@code containerMenu} since {@code menu} is protected on a vanilla class in another package. */
     @Unique
     private static ItemStack createTransit$editorStack() {
         Minecraft minecraft = Minecraft.getInstance();
@@ -114,13 +87,7 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
         return ItemStack.EMPTY;
     }
 
-    /**
-     * The only place Create's private state is handed over.
-     *
-     * <p>Anonymous rather than implemented by the mixin itself, so that none of
-     * these seven methods end up on {@code ScheduleScreen} where every other mod
-     * would see them.
-     */
+    /** The only place Create's private state is handed over; anonymous so these methods don't land on {@code ScheduleScreen} itself. */
     @Unique
     private RouteHost createTransit$host() {
         return new RouteHost() {
@@ -171,27 +138,14 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
             texture.render(graphics, x, y);
     }
 
-    /**
-     * The schedule item drawn three times life size beside the panel.
-     *
-     * <p>It is a picture of what is being edited, and for a route that is a
-     * stack made for the trip which the player does not have and will never see
-     * anywhere else. An empty stack renders nothing, which is the whole
-     * suppression — the call still happens, it just has nothing to draw.
-     */
+    /** The schedule item drawn beside the panel; an empty stack renders nothing, which is the whole suppression. */
     @Redirect(method = "renderForeground", at = @At(value = "INVOKE",
         target = "Lnet/createmod/catnip/gui/element/GuiGameElement;of(Lnet/minecraft/world/item/ItemStack;)Lnet/createmod/catnip/gui/element/GuiGameElement$GuiRenderBuilder;"))
     private GuiGameElement.GuiRenderBuilder createTransit$hideHeldSchedule(ItemStack stack) {
         return GuiGameElement.of(createTransit$view == null ? stack : ItemStack.EMPTY);
     }
 
-    /**
-     * The card list, replaced by the whole layout.
-     *
-     * <p>Drawn here rather than where the panel was, because this is the call
-     * that is handed the cursor and the frame fraction — and the map wants both.
-     * The z-order is the same either way; they are two consecutive statements.
-     */
+    /** The card list, replaced by the whole layout; drawn here since this is the call handed the cursor and frame fraction the map needs. */
     @Inject(method = "renderSchedule", at = @At("HEAD"), cancellable = true)
     private void createTransit$list(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks,
         CallbackInfo ci) {
@@ -229,12 +183,7 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
             cir.setReturnValue(true);
     }
 
-    /**
-     * Create's own {@code removed()} always sends {@code ScheduleEditPacket},
-     * which would write the route's stops into whatever the player happens to
-     * be holding. For a route this redirects that send into our own self-naming
-     * save instead; an ordinary schedule's screen is untouched.
-     */
+    /** Create's own {@code removed()} always sends {@code ScheduleEditPacket}, which would write the route's stops into whatever the player is holding; redirected to our own save for a route. */
     @Redirect(method = "removed", at = @At(value = "INVOKE",
         target = "Lnet/minecraftforge/network/simple/SimpleChannel;sendToServer(Ljava/lang/Object;)V"))
     private void createTransit$saveRoute(SimpleChannel channel, Object message) {
@@ -256,32 +205,9 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     }
 
     /**
-     * Keeps a route follower's borrowed conditions out of the schedule editor.
-     *
-     * <p>A follower has to write the current stop's conditions onto its own
-     * entry, because the runtime waits on the conditions of the entry it is
-     * sitting on and nowhere else. Those conditions belong to the route, not
-     * to this piece of paper: the player never set them, editing them
-     * achieves nothing, and the next stop overwrites whatever they typed. An
-     * editable control that silently reverts is worse than no control.
-     *
-     * <p>{@code supportsConditions} is the single fact the whole card is laid
-     * out from — its height, its header texture, which strip icon it wears,
-     * whether the wait row is drawn, and the height the click test walks
-     * past. Answering it once, here, turns a follower into an action card
-     * exactly like a throttle change, with every one of those consequences
-     * following on their own.
-     *
-     * <p>Only the screen is redirected. The instruction still reports true to
-     * everything else, because there the answer is genuinely yes — it does
-     * wait, and its conditions must still be written to disk.
-     *
-     * <p>There was a second injection here once, replacing Create's station
-     * autocomplete with a list of routes. It never ran: those suggestions are
-     * attached to an {@code EditBox} found among the editor's sub-widgets,
-     * and a follower builds a picker and a button instead — the route is
-     * chosen, not typed. Which routes may be chosen is decided where that
-     * picker is built.
+     * Keeps a route follower's borrowed conditions out of the schedule editor by answering {@code supportsConditions}
+     * false only here — the whole card layout is driven by that one flag — while the instruction itself still
+     * reports true, since it does wait and its conditions must still be written to disk.
      */
     @Redirect(method = { "renderSchedule", "renderScheduleEntry", "action" },
         at = @At(value = "INVOKE",
@@ -290,24 +216,15 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
         return instruction.supportsConditions() && !(instruction instanceof FollowRouteInstruction);
     }
 
-    /**
-     * Drops the buttons that only mean something to a train's own schedule.
-     *
-     * <p>A route is not cyclic — the schedule referencing it is — and progress
-     * belongs to each train following it, not to the route. The confirm goes too,
-     * though closing still saves: the layout draws its own on the footer beside
-     * the way back, so that the two exits are one pair rather than a widget and
-     * a glyph that happen to be adjacent.
-     */
+    /** Drops the buttons that only mean something to a train's own schedule — a route is not cyclic, and progress belongs to each train following it. */
     @Inject(method = "init", at = @At("TAIL"))
     private void createTransit$dropScheduleControls(CallbackInfo ci) {
         ItemStack stack = createTransit$editorStack();
         if (stack.isEmpty())
             return;
 
-        // Kept across re-inits rather than rebuilt with them: this runs again on
-        // a resize and after every stop added or deleted, and a fresh view would
-        // send the map back to the player and forget the chosen row each time.
+        // Kept across re-inits — this runs again on resize and every stop change, and a fresh view would
+        // reset the map and forget the chosen row.
         if (createTransit$view == null)
             createTransit$view = new RouteView(createTransit$host(), stack);
 

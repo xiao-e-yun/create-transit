@@ -14,31 +14,13 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
-/**
- * Which routes exist, what each is called, and where each one goes.
- *
- * <p>The names are what a client turns a typed reference into and back again.
- * The rest is what the map needs to draw a route it is not editing: a stop that
- * follows another route is a run of stations somewhere else, and without them
- * that leg of the line is a gap. Cycle checking falls out of the same data —
- * the server refuses one on save, and this is what lets the editor stop
- * offering the route that would cause it.
- *
- * <p>Filters rather than stops: a name and its wildcards is all either use
- * needs, so an instruction's own contents — items, conditions, everything a
- * player actually typed — never leave the server. That also keeps this small
- * enough to resend whole whenever any route changes, rather than tracking
- * deltas.
- */
+/** Which routes exist, what each is called, and where each one goes — filters rather than stops, so a player's own typed contents never leave the server. */
 public class RouteListPacket {
 
     /** What one route is, as far as any client needs to know. */
     public record Line(String name, List<String> filters, List<UUID> references) {}
 
-    /**
-     * A station filter, already in the form a pattern is compiled from. The
-     * conversion is the instruction's own and the server has the instruction.
-     */
+    /** A station filter, already in the form a pattern is compiled from. */
     private static final int MAX_FILTER_LENGTH = 256;
 
     private final Map<UUID, Line> routes;

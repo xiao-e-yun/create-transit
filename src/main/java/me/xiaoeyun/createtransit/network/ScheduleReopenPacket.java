@@ -10,21 +10,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkHooks;
 
-/**
- * Puts the player back on the schedule they were holding.
- *
- * <p>A route may be opened from a train's schedule, and finishing with it used
- * to close everything — so the way back to the schedule was to right-click the
- * item again, having lost the row that led in. This is the last step out of a
- * trip that began there.
- *
- * <p>Empty, and it names nothing. What it opens is the schedule in the player's
- * main hand, which is the only one Create ever opens: {@code ScheduleItem} is
- * its own {@code MenuProvider} and this is the same call its right-click makes.
- * Nothing to open — the item was put away or handed to a train while the route
- * was being edited — is not a failure. The editor simply closes, which is what
- * it did before there was anywhere to go back to.
- */
+/** Puts the player back on the schedule they were holding, by reopening whatever {@code ScheduleItem} is in their main hand; closes quietly if there is none. */
 public class ScheduleReopenPacket {
 
     public ScheduleReopenPacket() {}

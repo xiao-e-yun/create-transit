@@ -14,15 +14,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
-/**
- * A route editor's whole close, in one message.
- *
- * <p>Everything a route's screen holds: the stops, in the same NBT shape
- * {@code ScheduleEditPacket} would have carried them in; and the name and
- * default conditions a {@code Schedule} has no field for. It names its own
- * route rather than relying on the server to remember, because the server
- * keeps no record of who is editing what.
- */
+/** A route editor's whole close, in one message; self-names its route since the server keeps no record of who is editing what. */
 public class RouteSavePacket {
 
     /** One key, because a buffer writes a compound and the payload is a list. */

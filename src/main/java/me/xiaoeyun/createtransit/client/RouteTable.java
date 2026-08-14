@@ -25,48 +25,16 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/**
- * A schedule's stops as one line each, in place of Create's cards.
- *
- * <p>A card is {@code CARD_HEADER + 24 + maxRows * 18} tall and carries ten more
- * pixels of gap, so a stop that waits on one condition costs 74 — five of them
- * overflow the 173 pixels the list is scissored to. The conditions are what
- * makes it that tall, and they are also the part a player reads least often:
- * which stops exist, and in what order, is the question the list is open for.
- * With them behind a button a stop is a 16 pixel line, and that is the whole of
- * the density fix; nothing here is a cleverer layout.
- *
- * <p>Every line and button is recorded as it is drawn and handed back, so hit
- * testing is a scan of what is actually on screen. There is no second copy of
- * the arithmetic to keep in agreement with the first.
- *
- * <p>Drawn only for a route, never for a schedule a player wrote. See the mixin
- * that gates it.
- */
+/** A schedule's stops as one line each, in place of Create's cards. */
 public class RouteTable {
 
     /** Heading text, a clear pixel, then the rule under it. */
     public static final int HEADING = 13;
 
-    /**
-     * The gap between a row's text and the buttons that act on it, which is also
-     * where the override star stands.
-     *
-     * <p>A row keeps nothing at its own two ends. The window's rim is the margin
-     * — putting another one inside it spends the width twice and leaves the name
-     * clipped that much sooner, and a name is the one thing here that runs out
-     * of room.
-     */
+    /** The gap between a row's text and the buttons that act on it, which is also where the override star stands. */
     public static final int MARK = 8;
 
-    /**
-     * A row's icon column: a pixel of relief, the 16 square icon, and the gap
-     * before the text.
-     *
-     * <p>The relief is not the row's margin — the row has none, and the window's
-     * rim is what holds it off the edge. It is the icon's own: a stack drawn
-     * hard against a dark border reads as having been cut off by it.
-     */
+    /** A row's icon column: a pixel of relief, the 16 square icon, and the gap before the text. */
     public static final int ICON_PAD = 2;
 
     public static final int ICON = ICON_PAD + 16 + 2;
@@ -85,12 +53,7 @@ public class RouteTable {
     /** What Create writes on one, which is not quite white. */
     private static final int CHIP_TEXT = 0xFFF2F2EE;
 
-    /**
-     * Above the schedule's item icons, which are drawn at z 150, and below the
-     * tooltips at 400. Without this the popup's plate covers the table's text
-     * and its items still come through — they are batched by render type, so a
-     * later fill does not beat an earlier item.
-     */
+    /** Above the schedule's item icons at z 150 and below tooltips at z 400; items are batched by render type, so a later fill would not otherwise beat an earlier one. */
     private static final int OVER = 200;
 
     /** Create's card header, which holds what the stop does. */
@@ -102,17 +65,7 @@ public class RouteTable {
     /** Where that spine is, measured from the card's left edge. */
     private static final int SPINE = 8;
 
-    /**
-     * Create's own card width, and with it Create's own answer to how many
-     * alternatives are on screen: one, with the rest scrolled in from the side.
-     *
-     * <p>Sizing the card to its contents instead is what kept going wrong. Three
-     * columns of 150 come to 549 pixels; at GUI scale 4 the whole screen is 480,
-     * so the card ran off both edges and took its arrows with it. Create picked
-     * 195 once and every measurement in {@code ScheduleScreen} is relative to
-     * it, so taking the number outright is both smaller and more correct than
-     * any rule of our own for arriving at one.
-     */
+    /** Create's own card width — every measurement in {@code ScheduleScreen} is relative to it, and sizing to content instead overflows the 480px screen at GUI scale 4. */
     private static final int CARD_WIDTH = 195;
 
     /** Where a card sits on {@code AllGuiTextures.SCHEDULE}, taken from {@code ScheduleScreen}. */
@@ -121,11 +74,7 @@ public class RouteTable {
     /** Where the spine down its side sits, also taken from {@code ScheduleScreen}. */
     private static final int SPINE_AT = 33;
 
-    /**
-     * How many buttons a stop's row ends with: its conditions, a copy of it, and
-     * its removal. Moving one up or down would be two more, and this is the only
-     * place that would have to hear about them.
-     */
+    /** How many buttons a stop's row ends with: its conditions, a copy of it, and its removal. */
     public static final int SLOTS = 3;
 
     /**
@@ -137,19 +86,10 @@ public class RouteTable {
     /** Create's own shading, for the card, whose arrows stand clear of it. */
     private static final int FADE_CARD = 0x44000000;
 
-    /**
-     * And the route window's, which is darker. Its band has no gutter, so its
-     * arrows lie on the fields themselves — at Create's weight a four pixel glyph
-     * on a lit plate is not something anyone finds.
-     */
+    /** And the route window's, which is darker — its band has no gutter, so its arrows lie on the fields themselves. */
     private static final int FADE_BAND = 0x88000000;
 
-    /**
-     * How far the route window holds its content off its own edges: the name
-     * chip either side, and the band's content at both ends of what it scrolls
-     * through. Small enough that the band gives up almost nothing, and the same
-     * number in both places so the first alternative starts under the name.
-     */
+    /** How far the route window holds its content off its own edges: the name chip either side, and the band's content at both ends. */
     private static final int INSET = 4;
 
     /** Create's scroll arrows, 4 by 8. */
@@ -157,11 +97,7 @@ public class RouteTable {
 
     private static final int ARROW_HEIGHT = 8;
 
-    /**
-     * One more condition this column must also wait for, and one more column.
-     * Their sizes are written out because {@code AllGuiTextures} keeps its own
-     * private; these are the numbers its table declares them with.
-     */
+    /** One more condition this column must also wait for, and one more column — their sizes are written out because {@code AllGuiTextures} keeps its own private. */
     private static final AllGuiTextures APPEND = AllGuiTextures.SCHEDULE_CONDITION_APPEND;
 
     private static final int APPEND_WIDTH = 10;
@@ -179,28 +115,13 @@ public class RouteTable {
     /** A stop answering for its own conditions instead of taking the route's. */
     private static final String OVERRIDDEN = "*";
 
-    /**
-     * Stands where a stop's index would, for the conditions that belong to the
-     * route rather than to any one stop. Negative because every real index is
-     * not, and -1 already means "none".
-     */
+    /** Stands where a stop's index would, for the route's own conditions — negative because -1 already means "none". */
     public static final int DEFAULTS = -2;
 
     /** What the route's own card carries instead of an instruction. */
     private static final ItemStack ROUTE_ICON = AllItems.SCHEDULE.asStack();
 
-    /** What clicking a drawn thing does. */
-    /**
-     * What a click on a band of conditions means, which belongs to whoever owns
-     * the conditions rather than to whoever drew them.
-     *
-     * <p>The band is drawn twice at two widths — over the screen for a stop, and
-     * inside its window for the route's own — and the two differ only in which
-     * list they are editing and which scroll the arrows move. That difference is
-     * everything this hands over, and it used to be an integer stop number
-     * carried through four layers so that one {@code == DEFAULTS} at the far end
-     * could ask it.
-     */
+    /** What a click on a band of conditions means, which belongs to whoever owns the conditions rather than to whoever drew them. */
     public interface Conditions {
 
         Action condition(int column, int row);
@@ -215,24 +136,12 @@ public class RouteTable {
         Action scroll(int target);
     }
 
-    /**
-     * Where a band's two scroll arrows sit, and how far down.
-     *
-     * <p>Handed in whole rather than as three loose numbers. None of them means
-     * anything without the other two, and all three are the caller's to decide:
-     * they depend on what it has around its band, which the band cannot see.
-     * Create's card has a 26 pixel gutter and centres them down the whole card;
-     * a window that gives its whole width to the conditions has neither.
-     */
+    /** Where a band's two scroll arrows sit, and how far down. */
     private record Arrows(int left, int right, int y) {}
 
     /**
      * What a click on a row of stops means, which belongs to whoever owns the
      * data rather than to whoever drew it.
-     *
-     * <p>This table knows which row was hit and which of its buttons. It does
-     * not know what removing a stop is — and the enum it used to hand back was
-     * exactly that knowledge, written in a form that let it pretend otherwise.
      *
      * @param slot which of the row's buttons, or -1 for the row itself
      */
@@ -240,25 +149,10 @@ public class RouteTable {
 
         Action at(int index, int slot);
 
-        /**
-         * A press on the row's icon, which is what carries it somewhere else.
-         *
-         * <p>The icon column and nothing more. A row that could be dragged from
-         * anywhere would have to decide afterwards whether a press was a drag or
-         * a click, and the click is the thing a player does most — deferring it
-         * to the release to find out changes how the common case feels for the
-         * sake of the rare one.
-         */
+        /** A press on the row's icon, which is what carries it somewhere else. */
         Action grip(int index, ScrollTable rows);
 
-        /**
-         * Said as a row is drawn under the cursor, so that the map can mark the
-         * stations it means.
-         *
-         * <p>Told rather than asked because the table is the one that knows: the
-         * row a point falls in is arithmetic the table already does, and a
-         * second copy of it outside would be a second copy to keep in step.
-         */
+        /** Said as a row is drawn under the cursor, so that the map can mark the stations it means. */
         default void over(int index) {}
 
         /** Whether the map's cursor is on a station this stop means. */
@@ -267,15 +161,7 @@ public class RouteTable {
         }
     }
 
-    /**
-     * One drawn rectangle and what answers for it.
-     *
-     * <p>For the parts that are not tables: a band's columns are each their own
-     * width and a card's buttons are wherever the sheet painted them, so there
-     * is no arithmetic that finds them again afterwards. Recording them as they
-     * are drawn is the next cheapest thing, and it cannot fall out of step with
-     * the drawing because it is the drawing.
-     */
+    /** One drawn rectangle and what answers for it. */
     public record Line(Box at, Action action) {
 
         Line(int x, int y, int width, int height, Action action) {
@@ -285,20 +171,10 @@ public class RouteTable {
 
     private RouteTable() {}
 
-    /**
-     * Draws the table and returns every rectangle that can be clicked.
-     *
-     * <p>The row under the cursor is lit as it is drawn rather than being
-     * remembered. Choosing a stop used to be a state of its own, from when
-     * clicking one twice was how its conditions opened; the conditions have
-     * their own button now, so nothing was left for a chosen row to mean. The
-     * band alone says which row it is — a marker beside it would be a second
-     * way of saying the same thing.
-     */
+    /** Draws the table and returns every rectangle that can be clicked. */
     public static ScrollTable render(GuiGraphics graphics, Font font, List<ScheduleEntry> entries, int x,
         int y, int width, int bottom, double mouseX, double mouseY, Scroll scroll, Stops stops) {
-        // Where the text of a row may run: from past the icon to short of the
-        // buttons, and short again of the mark that sits beside them.
+        // Where the text of a row may run: past the icon, short of the buttons and their mark.
         int textX = x + ICON;
         int textEnd = x + width - Strip.width(SLOTS) - MARK;
         int actions = actionColumn(font, entries, textEnd - textX);
@@ -309,19 +185,12 @@ public class RouteTable {
             CtSkin.FIELD_TEXT, false);
         CtSkin.rule(graphics, x, y + HEADING - 1, width);
 
-        // The headings stay put; only what is under them moves. One row past the
-        // stops for the line that adds another.
-        //
-        // Whole rows only. The window is not a multiple of a row at any row
-        // height, and a row sliced off by the bottom edge reads as a drawing
-        // mistake; the remainder is better spent as margin under the last one.
+        // The headings stay put; only what is under them moves. Whole rows only;
+        // the remainder becomes margin under the last row.
         int top = y + HEADING;
         int buttons = textEnd + MARK;
 
-        // One row past the stops for the line that adds another. It carries the
-        // same band and the same lighting: it is one more row of the same list,
-        // reached down the same column, and a row that alone stays dark reads as
-        // disabled.
+        // One row past the stops for the line that adds another.
         ScrollTable window = new ScrollTable(CtSkin.ROW_HEIGHT, new ScrollTable.Row() {
 
             @Override
@@ -363,27 +232,13 @@ public class RouteTable {
         return window;
     }
 
-    /**
-     * The three things a row can have done to it.
-     *
-     * <p>Create's own card glyphs, because these are Create's own operations —
-     * a player who has used a schedule already knows what they mean, and two
-     * pictures for one action is one picture too many.
-     */
+    /** The three things a row can have done to it, drawn as Create's own card glyphs since these are Create's own operations. */
     private static void buttons(GuiGraphics graphics, Font font, ScheduleEntry entry, int x, int y) {
         Strip strip = Strip.endingAt(graphics, x + Strip.width(SLOTS), y, SLOTS);
 
-        // A nested route has no conditions of its own — its stops each answer
-        // for themselves — so the slot it would have spent on them opens it
-        // instead, which is the only other thing a row can lead into. Nor has an
-        // instruction that never waits any conditions: Create draws no condition
-        // area for one, and a button onto an editor for something the train
-        // passes straight through is a button onto nothing. The slot is still
-        // spent either way, so the two that follow do not shuffle along.
-        // Two different doors, so two different pictures. I_VIEW_SCHEDULE is a
-        // list of lines — a schedule, which is what a route is — and it means
-        // the same thing on every screen here. The chevron stays with the
-        // conditions, where it has always been.
+        // A nested route has no conditions of its own, so its slot opens the
+        // route instead; an instruction with none leaves the slot blank so the
+        // buttons after it do not shuffle.
         boolean nested = RouteReference.of(entry.instruction) != null;
         if (nested)
             strip.button(AllIcons.I_VIEW_SCHEDULE);
@@ -394,27 +249,17 @@ public class RouteTable {
         } else
             strip.blank();
 
-        // Icons, not Create's card glyphs. Those are 12 square where an icon is
-        // 16 and painted for a light plate, so beside the conditions icon they
-        // came out smaller and darker — and on an unbanded row the remove cross
-        // is #393939 on #393939, which is to say absent.
-        //
-        // Both of these are picked for their picture and not for their name,
-        // which is worth saying out loud so that nobody corrects them back:
-        // I_FX_BLEND_OFF is two sheets with the front one whole, and I_DISABLE
-        // is a clean cross. The atlas has no copy and no delete of its own, and
-        // the near misses are worse — I_OPEN_FOLDER is drawn hollow, and
-        // I_MTD_CLOSE has grey at the ends of its strokes.
+        // I_FX_BLEND_OFF and I_DISABLE stand in for copy/delete: the atlas has
+        // no icon for either, and the near misses (I_OPEN_FOLDER, I_MTD_CLOSE)
+        // read worse.
         strip.button(AllIcons.I_FX_BLEND_OFF);
         strip.button(AllIcons.I_DISABLE);
     }
 
     /**
-     * One stop's wait conditions, over everything else.
-     *
-     * <p>Columns are alternatives — any one of them satisfied lets the train go
-     * — and within a column every condition must hold. That is Create's
-     * structure, kept; only its shape on screen is ours.
+     * One stop's wait conditions, over everything else — columns are
+     * alternatives (any one satisfied lets the train go) and within a column
+     * every condition must hold.
      */
     public static List<Line> conditions(GuiGraphics graphics, Font font, ScheduleEntry entry,
         Conditions of, Action close, int screenWidth, int screenHeight, double mouseX,
@@ -422,20 +267,12 @@ public class RouteTable {
         List<List<ScheduleWaitCondition>> columns = entry.conditions;
 
         int cardWidth = CARD_WIDTH;
-        // Create's own, with a floor it never needs. Its card is one of a list
-        // with ten pixels of gap under it, so a stop with no conditions at all
-        // leaves its lone "new alternative" plate a pixel off the bottom edge and
-        // reads as merely tight. Alone on a panel there is nothing under it for
-        // the eye to carry on to, and the same pixel reads as an overflow. Eight
-        // more gives it the nine every other row already gets.
+        // A floor Create's own card never needs — alone on a panel a lone row
+        // reads as cramped without the ten pixel gap a list gives it.
         int cardHeight = Math.max(HEADER + 32, HEADER + 24 + rowsIn(columns) * CONDITION_ROW);
-        // Create's list area, which is what the card scrolls inside. A condition
-        // drawn past the bottom is one the train still waits for and the player
-        // cannot see.
-        //
-        // The card starts nine pixels into that area, and the content is that
-        // much again past its end — so scrolled all the way down the last row
-        // clears the edge by the same margin it clears the top.
+        // Create's list area is what the card scrolls inside; the card starts
+        // nine pixels into it and the content extends that much past its end, so
+        // the last row clears the bottom by the same margin it clears the top.
         int inset = CARD_AT - CtSkin.LIST_AT;
         int offset = down.at(inset + cardHeight + inset, CtSkin.LIST_HEIGHT);
 
@@ -444,8 +281,7 @@ public class RouteTable {
         pose.translate(0, 0, OVER);
 
         // Dimmed the way Create dims the screen behind its own editor, so the
-        // two read as the same kind of thing — and so nothing behind looks
-        // available while it is not.
+        // two read as the same kind of thing.
         graphics.fill(0, 0, screenWidth, screenHeight, 0xB0000000);
         Box panel = CtSkin.schedulePanel(graphics, font,
             Component.translatable("create_transit.route.window.conditions"), screenWidth, screenHeight,
@@ -460,45 +296,30 @@ public class RouteTable {
             y + CtSkin.LIST_AT + CtSkin.LIST_HEIGHT);
         card(graphics, cardX, cardY, cardWidth, cardHeight);
 
-        // After the plate, not before it. Create draws this inside
-        // renderScheduleEntry once the four fills are down, so the strip lies on
-        // the card; drawing it first buries everything the card covers and
-        // leaves only the ends showing, which reads as a broken line.
+        // Drawn after the plate, not before — Create draws this inside
+        // {@code renderScheduleEntry} once the plate's fills are down, and
+        // drawing it first would bury it under the card.
         UIRenderHelper.drawStretched(graphics, cardX + SPINE, cardY, 3, cardHeight + 10, 0,
             AllGuiTextures.SCHEDULE_STRIP_LIGHT);
         AllGuiTextures.SCHEDULE_STRIP_TRAVEL.render(graphics, cardX + 4, cardY + 6);
         AllGuiTextures.SCHEDULE_STRIP_WAIT.render(graphics, cardX + 4, cardY + 28);
 
-        // And the darker one over the top of it, which is the second line in
-        // Create's own: it runs the length of the list rather than of a card,
-        // and it is drawn above them all.
+        // The darker second line runs the length of the list rather than of a
+        // card, and is drawn above them all.
         UIRenderHelper.drawStretched(graphics, x + SPINE_AT, y + CtSkin.LIST_AT, 3, CtSkin.LIST_HEIGHT, FADE,
             AllGuiTextures.SCHEDULE_STRIP_DARK);
 
-        // What the stop does, in the header, drawn as its own field rather than
-        // as a title — this is the same summary the table row shows, and the
-        // card is where a player has seen it before.
-        // 100, which is Create's own minimum for this field. Asking for the
-        // card's whole width instead pinned it at the plate's 150 cap every
-        // time, so a two word instruction got the same plate as a sentence.
+        // 100 is Create's own minimum for this field; the card's whole width
+        // instead pinned every summary at the 150 cap.
         chip(graphics, font, entry.instruction.getSummary(), cardX + CONTENT, cardY + 5, false, 100,
             CHIP_MAX);
         entry.instruction.renderSpecialIcon(graphics, cardX + CONTENT + 4, cardY + 5);
 
         List<Line> lines = new ArrayList<>();
-        // The fade and the arrows are Create's own numbers: the fade runs the
-        // card's field, header to foot, and the arrows are centred down that same
-        // field rather than down the conditions in it. Centring on the conditions
-        // is what a tall column scrolls out of view.
-        //
-        // Both stand outside the area the conditions are clipped to, which starts
-        // three pixels before the fields for the plate's notch. Five clear of it
-        // on the left, where Create's card has 26 pixels of gutter — the notch is
-        // what the eye reads as the edge, so an arrow measured off the fields
-        // instead lands a pixel inside it. Flush on the right, where the 16
-        // pixels there are shared with the card's own buttons; Create seats that
-        // one a pixel inside as well and settles the overlap the way we do, by
-        // checking the arrows before the columns.
+        // The fade and arrows are centred on the card's field rather than the
+        // conditions in it, so a tall column scrolling does not carry them out
+        // of view; hit-testing checks the arrows before the columns to match
+        // Create's own overlap handling.
         int inner = cardWidth - CONTENT - 16;
         int clipped = cardX + CONTENT - 3;
         band(graphics, font, columns, of, cardX + CONTENT, cardY + 29, inner, cardHeight - 29, 0,
@@ -511,9 +332,8 @@ public class RouteTable {
 
         graphics.disableScissor();
 
-        // The confirm plate is already drawn, over the sheet's own painted tick;
-        // this is only the hit target for it, which is the panel's to place and
-        // this method's own action to answer with.
+        // The confirm plate is already painted into the sheet; this only adds
+        // the hit target for it.
         lines.add(new Line(CtSkin.confirm(x, y), close));
 
         pose.popPose();
@@ -521,17 +341,8 @@ public class RouteTable {
     }
 
     /**
-     * The route's own conditions, in its window instead of over the screen.
-     *
-     * <p>The same card the popup draws, at the window's width rather than
-     * Create's 195 — this one is not competing with anything for the screen, so
-     * it may as well use what it is given. Where a stop's card names its
-     * instruction, this one names the route: these are the conditions every stop
-     * that declares none of its own will be waiting on, and the header says
-     * whose they are.
-     *
-     * <p>No panel and no dimming. The window it is drawn in already has a frame
-     * and a title, and there is nothing behind it to hide.
+     * The route's own conditions, in its window instead of over the screen —
+     * the conditions every stop that declares none of its own falls back to.
      */
     public static List<Line> defaults(GuiGraphics graphics, Font font, String name,
         List<List<ScheduleWaitCondition>> columns, Conditions of, int x, int y, int width, int bottom,
@@ -541,53 +352,24 @@ public class RouteTable {
         int tall = (rowsIn(columns) + 1) * CONDITION_ROW;
         int top = y - down.at(CONDITION_ROW + 4 + tall, bottom - y);
 
-        // The whole width, minus the three pixels a plate hangs its
-        // notch into. No gutter for the arrows: they lie on the fields, over the
-        // fades that already say there is more that way, and a strip of empty
-        // kept beside them would cost eight pixels of the narrowest band on the
-        // screen to buy back four.
-        //
-        // Four, because an arrow's target is padded outwards only: what it can
-        // still take is the glyph's own footprint, one pixel at the left where
-        // the notch strip absorbs the rest and four at the right where there is
-        // nothing to absorb it. Both land on the column that is cut off at that
-        // edge — one press away from the middle — and Create's card gives up the
-        // same two pixels in the same place.
+        // The whole width minus the three pixels a plate hangs its notch into;
+        // no gutter for the arrows, which lie on the fields over the fades instead.
         int bandX = x + 3;
         int band = width - 3;
 
         graphics.enableScissor(x, y, x + width, bottom);
 
-        // The name has the row to itself and four pixels either side of it. It is
-        // the one thing here that does not scroll, so it is also the one thing
-        // that has pixels to give: the band below is spending all of its own to
-        // fit an alternative and a half, and a header run flush into two corners
-        // reads as having overflowed rather than as filling the row.
-        //
-        // Four each way, counted from the notch a plate hangs at x - 3 rather
-        // than from the plate, because the notch is the edge that shows.
-        //
-        // A plate treats a width as a floor and not a ceiling — a field grows
-        // to fit its text — so anything beside it is something a long enough name
-        // ends up underneath.
-        // Floor and ceiling both, so the name fills its row exactly. Create's
-        // plates grow to fit and stop at 150, which is wider than this band —
-        // left to that, a long name ran off the edge and took its own ellipsis
-        // with it, drawn where nobody could read it.
+        // Floor and ceiling are the same width here, unlike Create's plates
+        // which grow to fit and cap at 150 — wider than this band, which let a
+        // long name run off the edge with its ellipsis unreadable.
         chip(graphics, font, Pair.of(ROUTE_ICON, Component.literal(name)), bandX + INSET, top + 2,
             false, band - INSET * 2, band - INSET * 2);
 
         List<Line> lines = new ArrayList<>();
 
-        // The fade and the arrows are measured off the panel, not off the content
-        // that scrolls inside it — the panel is a fixed size and the content is
-        // whatever the route has. Create's card is cut to its content, so there
-        // the two are the same number and it never had to choose.
-        //
-        // Both are the panel's whole height, name row included. That row is
-        // content here rather than chrome, and it scrolls with the rest, so a
-        // fade that started under it would leave the top of the edge bare as soon
-        // as anything moved.
+        // The fade and arrows are measured off the panel's whole height, name
+        // row included, since that row is content here (not chrome) and scrolls
+        // with the rest.
         int rowTop = top + CONDITION_ROW + 4;
         band(graphics, font, columns, of, bandX, rowTop, band, tall, INSET,
             new Arrows(x, x + width - ARROW_WIDTH, (y + bottom - ARROW_HEIGHT) / 2),
@@ -606,22 +388,12 @@ public class RouteTable {
         return rows;
     }
 
-    /**
-     * Every alternative on a card, the buttons that add one, and the arrows that
-     * reach the ones off the edge.
-     *
-     * <p>All of it measured from the card, so the popup and the route's own
-     * window get the same thing at two widths. Everything that differs between
-     * them — the panel, the dimming, the header, the footer — is the caller's.
-     */
+    /** Every alternative on a card, the buttons that add one, and the arrows that reach the ones off the edge. */
     private static void band(GuiGraphics graphics, Font font, List<List<ScheduleWaitCondition>> columns,
         Conditions of, int bandX, int rowTop, int band, int tall, int pad, Arrows arrows, Box view,
         Scroll across, List<Line> lines) {
-        // What is drawn is cut twice — once by the caller's window and once by
-        // the band's own scissor — so what is recorded is cut by both as well.
-        // Only the first of those was ever accounted for, and then only
-        // sideways: a column taller than the band answered for every row it had,
-        // including the ones scrolled under the footer.
+        // What is drawn is cut twice — by the caller's window and by the band's
+        // own scissor — so what is recorded must be cut by both.
         Box cut = new Box(bandX - 3, rowTop, band + 3, tall).within(view);
 
         // The last slot is the button that starts another column, laid out as if
@@ -642,18 +414,15 @@ public class RouteTable {
             spread += wide + COLUMN_GAP;
         }
 
-        // Inside the scrolling, not around it: added to what there is to scroll
-        // rather than taken off what there is room for, so the band keeps its
-        // whole width and the margin is something that scrolls away. The starts
-        // above are untouched — each is still the offset that brings its column
-        // to the same place the first one sits at rest.
+        // Inside the scrolling, not around it — added to what there is to
+        // scroll rather than taken off the room, so the band keeps its whole
+        // width.
         spread += pad * 2;
 
         int sideways = across.at(spread, band);
 
-        // Three pixels of slack on the left, because a plate hangs the
-        // plate's notch at x - 3 and a scissor starting at x would shave it off
-        // the first column while leaving it on every other.
+        // Three pixels of slack on the left, because a plate hangs its notch at
+        // x - 3 and a scissor starting at x would shave it off only the first column.
         graphics.enableScissor(bandX - 3, rowTop, bandX + band, rowTop + tall);
         int columnX = bandX + pad - sideways;
         for (int column = 0; column < slots; column++) {
@@ -692,11 +461,9 @@ public class RouteTable {
         }
         graphics.disableScissor();
 
-        // Above the fades, not merely after them: a fade is a fill at z FADE and
-        // a glyph is a blit at z 0, so drawn in either order the arrow would end
-        // up beneath the shading. On Create's card that only dims it, because it
-        // sits in the dark gutter beside the fields; lying on a field it
-        // disappears altogether.
+        // Above the fades in z, not merely after them in draw order — a fade
+        // fills at z FADE and a glyph blits at z 0, so either draw order would
+        // otherwise bury the arrow beneath the shading.
         PoseStack pose = graphics.pose();
         pose.pushPose();
         pose.translate(0, 0, FADE + 1);
@@ -709,15 +476,7 @@ public class RouteTable {
         pose.popPose();
     }
 
-    /**
-     * One condition-sized rectangle, cut to what is on screen, or nothing at all
-     * where none of it is.
-     *
-     * <p>A column halfway off the edge is drawn halfway and answers for halfway.
-     * Recorded whole it would put a hit target under the scroll arrow beside it,
-     * and the arrow — added to the front of the list — would never be the one
-     * found.
-     */
+    /** One condition-sized rectangle, cut to what is on screen — recorded whole it would sit under the scroll arrow beside it, and the arrow (first in the list) would never be found. */
     private static void record(List<Line> lines, Box cut, int x, int y, int width,
         Action action) {
         if (cut == null)
@@ -730,17 +489,8 @@ public class RouteTable {
     /**
      * The shading down either edge of a band, saying which way there is more.
      *
-     * <p>Drawn sideways, because {@code fillGradient} only interpolates down the
-     * screen: the pose is turned a quarter turn and the gradient runs along what
-     * is now its vertical. Per side rather than both at once, so an edge with
-     * nothing past it stays clear.
-     *
-     * <p>The caller's, not the band's: it is given a top, a bottom and a shade
-     * rather than working any of them out. Those are only the band's own numbers
-     * on Create's card, which is cut to its content and has a gutter for its
-     * arrows; a window is a fixed size and has neither. Drawn after the columns
-     * and before the arrows only in reading order — the arrow sits at
-     * {@code FADE + 1} and wins on depth whichever went down first.
+     * <p>Drawn sideways because {@code fillGradient} only interpolates down the
+     * screen, so the pose is turned a quarter turn first.
      */
     private static void fades(GuiGraphics graphics, int bandX, int band, int top, int bottom, int shade,
         Scroll across) {
@@ -762,16 +512,11 @@ public class RouteTable {
 
     /**
      * Create's card plate, which is four stretched bands and no texture of its
-     * own.
+     * own, copied out of {@code renderScheduleEntry} rather than borrowed since
+     * that method draws a whole card around these few lines.
      *
-     * <p>Copied out of {@code renderScheduleEntry} rather than borrowed, because
-     * that method draws a whole card — its remove and duplicate buttons, its
-     * move arrows, its destination field — around these few lines, and those
-     * belong to the row this was opened from.
-     *
-     * <p>The spine down the left edge is not drawn here either. It runs the
-     * length of the window rather than of the card, the way it runs the length
-     * of Create's list, so the caller lays it under this.
+     * <p>The spine down the left edge is not drawn here; it runs the length of
+     * the window rather than of the card, so the caller lays it under this.
      */
     private static void card(GuiGraphics graphics, int x, int y, int width, int height) {
         AllGuiTextures light = AllGuiTextures.SCHEDULE_CARD_LIGHT;
@@ -787,10 +532,8 @@ public class RouteTable {
     /**
      * How wide {@link #chip} will draw a summary, between a floor and a ceiling.
      *
-     * <p>Create's {@code getFieldSize} says the same thing — the text, a slot's
-     * width if there is an item, and the plate's two caps — but says it
-     * privately, which is why this was ever a copy. It is not one any more: this
-     * is what decides the width, and {@link #chip} is what draws it.
+     * <p>Create's {@code getFieldSize} does the same sum but keeps it private,
+     * which is why this exists rather than a copy of it.
      */
     private static int fieldWidth(Font font, Pair<ItemStack, Component> summary, int minSize,
         int maxSize) {
@@ -801,20 +544,12 @@ public class RouteTable {
     }
 
     /**
-     * One of Create's condition plates, drawn here rather than borrowed.
+     * One of Create's condition plates, drawn here rather than borrowed, since
+     * {@code getFieldSize} is private and the measuring had to be copied anyway.
      *
-     * <p>{@code ScheduleScreen.renderInput} draws exactly this and is protected,
-     * so a mixin could hand it over — and did. What it could not hand over was
-     * the measuring: {@code getFieldSize} is private, so the arithmetic above had
-     * to be copied anyway, and a plate whose width we work out but do not draw is
-     * the same knowledge kept in two places on purpose. Six calls is the whole of
-     * what was being borrowed for it.
-     *
-     * <p>Two differences from Create's, both in the text. It cuts at a flat 120
-     * pixels, which is six short of the room a plate without an item has and six
-     * past what one with an item has; here the room is worked out from the plate,
-     * so the cut lands where the plate ends. And it cuts bare, where
-     * {@link CtSkin#clipped} leaves a mark saying it did.
+     * <p>Two differences from Create's own: it cuts to the plate's actual width
+     * rather than a flat 120 pixels, and it cuts with {@link CtSkin#clipped}'s
+     * mark rather than bare.
      */
     public static void chip(GuiGraphics graphics, Font font, Pair<ItemStack, Component> summary, int x,
         int y, boolean clean, int minSize, int maxSize) {
@@ -855,24 +590,16 @@ public class RouteTable {
     }
 
     /**
-     * A scroll arrow and the target around it.
-     *
-     * <p>The glyph is four pixels wide, which is a four pixel miss. Create pads
-     * its own the same way — the arrow is drawn at 15 and answers from 12 to 19.
-     *
-     * <p>Outwards only, though, where Create pads both ways. The three pixels on
-     * the inside are the ones that reach into the conditions, and they are the
-     * three the gutter then has to be made wider to hold — paid for twice, in a
-     * window whose whole band is a hundred pixels. Away from the band there is
-     * nothing to take them from.
+     * A scroll arrow and the target around it. Create pads its own both ways —
+     * drawn at 15, it answers from 12 to 19 — but this pads outwards only, since
+     * there are no pixels to spare on the inside of the band.
      */
     private static void arrow(GuiGraphics graphics, List<Line> lines, boolean back, Action action,
         AllGuiTextures glyph, int x, int y) {
         glyph.render(graphics, x, y);
-        // First in the list, because the target may still overlap the last pixel
-        // or two of the condition area and whoever is found first wins. Create
-        // settles the same overlap the same way: in its own hit test the arrows
-        // are checked before the columns.
+        // First in the list: the target may overlap the last pixel or two of
+        // the condition area, and Create settles the same overlap by checking
+        // its own arrows before the columns.
         int pad = 3;
         int from = back ? x - pad : x;
         lines.add(0, new Line(from, y - 4, ARROW_WIDTH + pad, ARROW_HEIGHT + 8, action));
@@ -908,17 +635,9 @@ public class RouteTable {
      * How wide the action column has to be: the widest of them, so the stop
      * names line up instead of each starting wherever its verb ended.
      *
-     * <p>Half the room at the most. The widest action is not bounded by
-     * anything — "Update schedule title" is a hundred pixels on its own, and at
-     * 320 the table is 182 wide with 54 of that spent on buttons, so left to
-     * itself the action column takes the whole line and the stop column, which
-     * is the one a player is actually reading down, gets nothing. Both halves
-     * cut rather than one of them vanishing.
-     *
-     * <p>Its own heading is the floor. A route with no stops yet has no widest
-     * action either, and a column of nothing wide put the second heading on top
-     * of the first — a heading is content of the column it names, and measuring
-     * the column without it was the whole of that bug.
+     * <p>Capped at half the room, since an unbounded action name would otherwise
+     * take the whole line and leave nothing for the stop column; its own heading
+     * floors the width, so a route with no stops yet still has somewhere to start.
      */
     private static int actionColumn(Font font, List<ScheduleEntry> entries, int room) {
         int widest = font.width(heading("create_transit.route.column.action"));
@@ -930,12 +649,9 @@ public class RouteTable {
     /**
      * What the stop does, named the way the editor's type dropdown names it.
      *
-     * <p>Built from the instruction's id rather than asked of the instruction,
-     * because {@code getTitleAs} is the tooltip's wording and an instruction may
-     * override it into a whole sentence — ours says "follow a shared route"
-     * where the dropdown says "Follow Route". This is the key
-     * {@code Schedule.getTypeOptions} assembles, so a column of these reads as
-     * the same words the player picked from.
+     * <p>Built from the instruction's id rather than {@code getTitleAs} (the
+     * tooltip's wording, which an instruction may override into a whole
+     * sentence), so it reads as the same words the dropdown offered.
      */
     public static Component action(ScheduleEntry entry) {
         ResourceLocation id = entry.instruction.getId();
@@ -943,9 +659,9 @@ public class RouteTable {
     }
 
     /**
-     * Takes a whole key rather than a column name. Building one from a prefix
-     * hides it from scripts/lang_audit.py, which then reports the key as unused
-     * and the assembled one as missing — both of which it has already done once.
+     * Takes a whole key rather than a column name — building one from a prefix
+     * hides it from {@code scripts/lang_audit.py}, which then reports the key
+     * unused and the assembled one missing.
      */
     private static Component heading(String key) {
         return Component.translatable(key)

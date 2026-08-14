@@ -49,68 +49,16 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.items.IItemHandlerModifiable;
 
-/**
- * One entry that works a whole round of stations instead of one journey.
- *
- * <p>Create's {@code package_retrieval} goes to the nearest station holding a
- * matching package, and {@code package_delivery} to the nearest station that
- * can take one off the train; either way the entry is then over. That is the
- * right shape when a station's freight is worth a trip of its own, and the
- * wrong one for what this exists for — a dozen small producers feeding one
- * warehouse, where the honest answer is one trip collecting a dozen and
- * Create's answer is a dozen round trips. Writing out a dozen entries is not
- * the fix either: the number is however many stations happen to have something
- * today.
- *
- * <p>So the round is the entry. It resolves one station at a time, exactly as
- * the vanilla instructions do, and asks through {@link Repeats} to be run again
- * until no station is left where anything would change hands. Collecting and
- * delivering are the same question — {@code GlobalStation.runMailTransfer}
- * loads and unloads at every stop regardless of why the train came — so they
- * are one instruction rather than two: a round can pick up at one station, drop
- * off at the next, and pick up again at the one after.
- *
- * <p>The filter is Create's, unchanged: the label is an <em>address</em>
- * pattern, so what is written is a flow rather than a place. {@code *warehouse*}
- * means "everything bound for the warehouse" and the stations follow from that,
- * which is why a new producer needs an address and no edit here. It only
- * governs what is picked up — where a package is dropped is decided by the
- * package's own address, as it is in vanilla.
- */
+/** One entry that works a whole round of stations instead of one, asking via {@link Repeats} to run again until nothing more would change hands. */
 public class PackageRoundInstruction extends TextScheduleInstruction implements Repeats {
 
-    /**
-     * Stations already called at on this round. Transient, and the whole of the
-     * round's state: present means a round is running, absent means the next
-     * start begins one.
-     *
-     * <p>It bars collection and nothing else. A producer that refills while the
-     * round is still running would otherwise be picked again and again — often
-     * the station the train is standing on, which resolves to a path of no
-     * length, reaches {@code destinationReached} at once, and never lets the
-     * round reach its second station. Delivery is deliberately left free of it:
-     * a round that collects at A, unloads at the warehouse and collects at B
-     * has to be able to go back to the warehouse.
-     */
+    /** Stations already called at this round; bars re-collection only, so a round can still return to unload. */
     private static final String NBT_VISITED = "Visited";
 
-    /**
-     * The station the train was last sent to, while it is still on its way
-     * there. Transient, and how arriving is noticed at all — nothing calls back
-     * on arrival, so the next start looks at where the train is standing.
-     *
-     * <p>A station joins {@link #NBT_VISITED} only once that has happened.
-     * Handing back a path is not the same as leaving: {@code tick} takes it only
-     * if {@code startNavigation} accepts it, and when it does not the very same
-     * entry is asked again a tick later. Recording on dispatch made that second
-     * ask strike the station off and set out for another, so a round could walk
-     * itself to the end in a second with the train standing still.
-     */
+    /** Station last sent to while still travelling; joins {@link #NBT_VISITED} only once standing there — no arrival hook exists. */
     private static final String NBT_SENT = "Sent";
 
-    // Spelled out rather than built from a prefix so scripts/lang_audit.py can
-    // see them. A key assembled at runtime is invisible to it, which turns the
-    // one check that catches an unused or misspelt translation into a liar.
+    // Spelled out, not built from a prefix, so scripts/lang_audit.py can see these keys.
     /** The name in the type dropdown, which is also what the card wears. */
     private static final String LANG_NAME = "create_transit.schedule.instruction.package_round";
     private static final String LANG_SUMMARY =
@@ -141,27 +89,13 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
         return PackageStyles.getDefaultBox();
     }
 
-    /**
-     * Named rather than labelled, because the label here is a filter and a card
-     * showing {@code *warehouse*} says less than one saying what it does.
-     *
-     * <p>Its plain name, and the same one the type dropdown offered — which is
-     * what {@code FetchPackagesInstruction} puts here too. A card face is a
-     * label on a stack of cards; the sentence explaining the instruction belongs
-     * in the tooltip, where Create also keeps its own.
-     */
+    /** Named rather than labelled, since the label here is a filter and a card showing {@code *warehouse*} says less than its plain name. */
     @Override
     public Pair<ItemStack, Component> getSummary() {
         return Pair.of(getSecondLineIcon(), Component.translatable(LANG_NAME));
     }
 
-    /**
-     * Overridden because the inherited one asks Create's language file for a key
-     * under Create's namespace, which will never hold ours.
-     *
-     * <p>Create's own four-line shape, kept: a gold line that runs into the
-     * quoted field, then the explanation over two short grey ones.
-     */
+    /** Overridden because the inherited one looks up a key under Create's own namespace, not ours. */
     @Override
     public List<Component> getTitleAs(String type) {
         return ImmutableList.of(Component.translatable(LANG_SUMMARY)
@@ -185,8 +119,7 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
     @Override
     @OnlyIn(Dist.CLIENT)
     protected void modifyEditBox(EditBox box) {
-        // Create's own limit on its own filter syntax, kept so a pattern written
-        // here means what it means in the vanilla instruction beside it.
+        // Create's own limit, kept so a pattern here means what it means in the vanilla instruction beside it.
         box.setFilter(s -> StringUtils.countMatches(s, '*') <= 3);
     }
 
@@ -196,23 +129,7 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
         return Glob.toRegexPattern(filter.isBlank() ? "*" : filter, "");
     }
 
-    /**
-     * What the same field means on a transit train: the name of a border gate,
-     * not an address.
-     *
-     * <p>A package in transit is addressed to a gate rather than to a place —
-     * that is the whole of what a transit label is — so an address pattern has
-     * nothing to bite on. The player types the gate's name, the same name they
-     * gave it on the transit link, and the delimiters that make it a label never
-     * appear on screen. Blank takes any gate, which is what blank means in
-     * Create's own retrieval filter.
-     *
-     * <p>Matched with {@code PackageItem.matchAddress} rather than a pattern,
-     * because label matching is already defined — outermost label only, exact,
-     * with {@code *} as the one filter that takes any — and a glob cannot even
-     * be built for it: {@code Glob.toRegexPattern} would hand the brackets
-     * straight to the regex engine as a character class.
-     */
+    /** What the same field means on a transit train: a border gate's name, matched via {@code PackageItem.matchAddress} since a gate label can't be expressed as a glob pattern. */
     private String gate() {
         String name = getLabelText()
             .trim();
@@ -224,17 +141,8 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
     public DiscoveredPath start(ScheduleRuntime runtime, Level level) {
         Train train = runtime.train;
 
-        // Already going somewhere, so this is not a departure — it is Create
-        // asking the same entry to think again, which it does every hundred
-        // blocks or so of a journey and again when a station the train is
-        // heading for enters assembly mode. Every instruction Create ships
-        // answers that for free by re-picking the nearest match; this one would
-        // write down another station called at and set off for a different one.
-        //
-        // Nothing said is the honest answer to "have you thought of anything
-        // better": carry on. If the station really has become unreachable the
-        // journey is cancelled anyway, and the next start is a fresh one that
-        // finds this station already called at and moves the round along.
+        // Create re-runs the live entry mid-journey and on assembly; answered with null so the round doesn't
+        // abandon its current station for another mid-trip.
         if (train.navigation.destination != null)
             return null;
 
@@ -248,17 +156,11 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
             return null;
         }
 
-        // Where the train stands is barred from delivery and nowhere else. It is
-        // the only way a round can stall: a postbox too full to take what the
-        // train brought would otherwise be the nearest station that can take it,
-        // for ever. Every other station stays open to a second visit, because
-        // coming back to unload is the point — a round that collects at A,
-        // unloads at the warehouse, collects at B and cannot return has left B's
-        // freight on the train for no reason.
+        // The standing station is barred from delivery only — otherwise a full postbox there would be the
+        // nearest deliverable stop forever.
         GlobalStation here = train.getCurrentStation();
 
-        // Standing where it was sent means that station has now been called at.
-        // The only evidence there is, and the only moment it is true.
+        // Standing at the sent station is the only evidence it was reached.
         String sent = getData().getString(NBT_SENT);
         if (!sent.isEmpty() && here != null && here.name.equals(sent)) {
             ListTag been = getData().getList(NBT_VISITED, Tag.TAG_STRING);
@@ -269,10 +171,7 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
 
         Set<String> called = called();
         Set<GlobalStation> taken = spokenFor(train);
-        // Which post this train runs is the schedule's to say, not this entry's.
-        // Asked here so the round never sets out for a station whose only
-        // freight is in the other lane and would be refused on arrival — and
-        // because it also decides what the one text field means.
+        // Read here so the round never sets out for freight in the other lane, which would be refused on arrival.
         boolean transit = TransitTrain.of(runtime.schedule);
         String wanted = transit ? gate() : addresses();
         boolean room = hasRoom(train);
@@ -297,33 +196,21 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
 
         DiscoveredPath best = train.navigation.findPathTo(exchanging, Double.MAX_VALUE);
         if (best == null) {
-            // Unreachable rather than absent: something is there and this train
-            // cannot get to it. Said as such and retried rather than given up
-            // on, because a signal or a switch may free it.
+            // Unreachable, not absent — retried rather than abandoned since a signal or switch may free it.
             train.status.failedNavigation();
             runtime.startCooldown();
             return null;
         }
 
-        // Sent for, not called at. Which side chose it does not matter once the
-        // train gets there — runMailTransfer loads everything waiting and does
-        // not care why it came — but whether it gets there does.
+        // Sent for, not called at — runMailTransfer loads and unloads at every stop regardless of why the train came.
         getData().putString(NBT_SENT, best.destination.name);
         return best;
     }
 
-    /**
-     * Nothing left to exchange: end the round and let the schedule move on.
-     *
-     * <p>Which is also how a train carrying something undeliverable gets free.
-     * Create's delivery instruction cools down and retries forever in that case,
-     * so one package addressed to a station that no longer exists parks the
-     * train for good; here it simply stops being a reason to go anywhere.
-     */
+    /** Nothing left to exchange: ends the round; also how a train carrying an undeliverable package gets free instead of retrying forever. */
     @Nullable
     private DiscoveredPath done(ScheduleRuntime runtime) {
-        // Cleared before the entry moves on, so {@link #again} reads false and
-        // the runtime is free to leave. The order matters.
+        // Cleared before advancing, so {@link #again} reads false and the runtime is free to leave.
         clearRound();
         runtime.state = State.PRE_TRANSIT;
         runtime.currentEntry++;
@@ -331,14 +218,7 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
         return null;
     }
 
-    /**
-     * A round is running, so the entry is not finished with.
-     *
-     * <p>Answered from the list of stations called at rather than by looking
-     * again: what is left can only be known by scanning, and scanning is what
-     * {@link #start} does. So a round always ends with one extra start that
-     * finds nothing — the price of not asking the same expensive question twice.
-     */
+    /** True while a round is running; a round always ends with one extra start that finds nothing, the price of not scanning twice. */
     @Override
     public boolean again() {
         return getData().contains(NBT_VISITED) || getData().contains(NBT_SENT);
@@ -362,21 +242,7 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
         clearRound();
     }
 
-    /**
-     * Stations another train is already on its way to.
-     *
-     * <p>This is the whole of the scheduling. There is no claim table and
-     * nothing to expire, because a train's claim on a station is something the
-     * world already holds: where it is going. Nor need the other train be
-     * carrying freight — {@code runMailTransfer} loads whatever is waiting into
-     * whoever turns up, so any train heading somewhere is a train that will
-     * empty it.
-     *
-     * <p>The race that remains is a station a train has already reached, which
-     * is nobody's destination while it stands there. It costs at most one wasted
-     * journey and settles itself: the packages are gone by the time the second
-     * train picks its next move.
-     */
+    /** Stations another train is already heading to; a train's own destination is its claim, so no separate claim table is needed. */
     private static Set<GlobalStation> spokenFor(Train self) {
         Set<GlobalStation> taken = new HashSet<>();
         for (Train other : Create.RAILWAYS.trains.values()) {
@@ -401,9 +267,7 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
     /**
      * Whether anything here is waiting to be taken, and is wanted.
      *
-     * @param wanted a border gate's label on a transit train, an address pattern
-     *               otherwise — the two lanes address packages differently, so
-     *               the one field is read differently
+     * @param wanted a border gate's label on a transit train, an address pattern otherwise
      */
     private static boolean collects(GlobalStation station, MinecraftServer server, String wanted,
         boolean transit) {
@@ -425,14 +289,10 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
                 ItemStack stack = inventory.getStackInSlot(slot);
                 if (!PackageItem.isPackage(stack))
                     continue;
-                // The same equality the station mixin refuses by, so the round
-                // only ever sets out for something it will be handed.
+                // Same equality the station mixin refuses by, so the round only sets out for what it will be handed.
                 if (stack.getItem() instanceof TransitPackageItem != transit)
                     continue;
-                // Create's own test: a package addressed to the port it sits in
-                // has arrived rather than departed, and is not freight at all.
-                // On the transit side that reads as "this is the gate it was
-                // bound for", which is the same sentence one layer up.
+                // Create's own test: a package addressed to the port it sits in has arrived, not departed, and isn't freight.
                 if (PackageItem.matchAddress(stack, port.address))
                     continue;
 
@@ -447,8 +307,7 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
                         .matches(wanted))
                         return true;
                 } catch (PatternSyntaxException malformed) {
-                    // A filter the player is halfway through typing. Not thrown,
-                    // because this runs while a train is deciding where to go.
+                    // Half-typed filter; not thrown, since this runs while a train is deciding where to go.
                     return false;
                 }
             }
@@ -472,11 +331,7 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
         return packages;
     }
 
-    /**
-     * Whether anything more could be loaded. An empty slot, because no two
-     * packages ever stack — each carries its own address and order — so a
-     * partly filled one is no room at all.
-     */
+    /** Whether anything more could be loaded; an empty slot, since no two packages ever stack. */
     private static boolean hasRoom(Train train) {
         for (Carriage carriage : train.carriages) {
             IItemHandlerModifiable inventory = carriage.storage.getAllItems();

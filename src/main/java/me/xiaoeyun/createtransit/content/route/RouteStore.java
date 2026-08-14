@@ -22,18 +22,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraftforge.network.PacketDistributor;
 
-/**
- * Every route in the world, in one place.
- *
- * <p>Routes are shared by definition — a train references one, it does not
- * carry a copy — so they cannot live in an item or a block. They live with the
- * overworld's save data because a rail network spans dimensions and a route
- * named in the Nether has to mean the same thing as the one named on the
- * surface.
- *
- * <p>Insertion order is kept so a list of routes reads the way the player built
- * it rather than the way a hash landed.
- */
+/** Every route in the world, in one place — the overworld's save data, since a route named in one dimension means the same everywhere. */
 public class RouteStore extends SavedData {
 
     private static final String ID = "create_transit_routes";
@@ -52,13 +41,7 @@ public class RouteStore extends SavedData {
         return routes.get(id);
     }
 
-    /**
-     * The route a player means when they type a name.
-     *
-     * <p>A scan rather than a second index: names change and ids do not, so a
-     * map keyed by name is one more thing to keep in agreement for a lookup that
-     * happens when somebody types, over a list that is tens long.
-     */
+    /** The route a player means when they type a name; a scan, not a second index, since ids don't change but names do. */
     @Nullable
     public Route byName(String name) {
         for (Route route : routes.values())
@@ -76,13 +59,7 @@ public class RouteStore extends SavedData {
         setDirty();
     }
 
-    /**
-     * Tells every client which routes exist and where they go.
-     *
-     * <p>Called after anything that changes either, rather than hooked onto
-     * {@link #setDirty}: the same call now covers a rename and a re-ordered set
-     * of stops, because a client draws the second one on its map.
-     */
+    /** Tells every client which routes exist and where they go. */
     public void syncNames() {
         CtPackets.CHANNEL.send(PacketDistributor.ALL.noArg(), lines());
     }
@@ -91,11 +68,7 @@ public class RouteStore extends SavedData {
         CtPackets.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), get(player.server).lines());
     }
 
-    /**
-     * Every route as a name, the stations it stops at, and the routes it
-     * follows. An instruction that is neither — a wait, a throttle — is nowhere,
-     * so it contributes nothing to a map and nothing to a cycle.
-     */
+    /** Every route as a name, the stations it stops at, and the routes it follows. */
     private RouteListPacket lines() {
         Map<UUID, RouteListPacket.Line> lines = new LinkedHashMap<>();
         for (Route route : routes.values()) {
@@ -120,15 +93,7 @@ public class RouteStore extends SavedData {
         return true;
     }
 
-    /**
-     * Renames a route, which is one field: references point at the id, so there
-     * is nothing else that knows the old name.
-     *
-     * <p>Names still have to be unique, because typing one is how a reference is
-     * authored and two routes called the same thing would make that ambiguous.
-     * That is a rule about the editor rather than about routes, and it goes when
-     * a route is picked from a list instead of typed.
-     */
+    /** Renames a route; names must stay unique since typing one is how a reference is authored. */
     public boolean rename(UUID id, String to) {
         Route route = routes.get(id);
         if (route == null || to.isBlank() || to.length() > Route.MAX_NAME_LENGTH)

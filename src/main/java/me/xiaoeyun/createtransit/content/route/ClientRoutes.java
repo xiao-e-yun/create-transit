@@ -16,22 +16,7 @@ import javax.annotation.Nullable;
 
 import me.xiaoeyun.createtransit.network.RouteListPacket;
 
-/**
- * What the client knows about routes: which ones exist, what each is called,
- * and where each one goes.
- *
- * <p>Where a route goes is here for the routes this client is <em>not</em>
- * editing: the one on screen is read live from the editor, and a stop that
- * follows another route can only say what it means by asking this.
- *
- * <p>The server stays the authority. Nothing here is trusted; a reference to a
- * route that has since been deleted simply fails to resolve when a train reaches
- * it, and a cycle is refused where the route is saved rather than here.
- *
- * <p>Deliberately not cleared on disconnect: a stale list costs a wrong
- * suggestion, while clearing it would need a hook on every way a session can
- * end. The next join replaces it wholesale.
- */
+/** What the client knows about routes; the route currently open in the editor is read live from there instead. */
 public class ClientRoutes {
 
     private static Map<UUID, RouteListPacket.Line> routes = Map.of();
@@ -58,16 +43,7 @@ public class ClientRoutes {
         return line == null ? null : line.name();
     }
 
-    /**
-     * The routes a reference inside {@code editing} may point at, in order.
-     *
-     * <p>Everything, minus the ones that lead back to where the reference is
-     * being written. The server refuses a cycle when the route is saved, and
-     * being offered a name that will be refused — after the screen it was chosen
-     * on has closed — is a choice that only wastes the trip.
-     *
-     * <p>Null means a train's own schedule, which nothing can lead back to.
-     */
+    /** Every route except those that would cycle back to {@code editing}; a cycle is refused only where the route is saved. */
     public static List<UUID> referenceable(@Nullable UUID editing) {
         return routes.keySet()
             .stream()
@@ -75,20 +51,7 @@ public class ClientRoutes {
             .toList();
     }
 
-    /**
-     * Every station a route stops at, to whatever depth it nests.
-     *
-     * <p>One predicate for the whole closure rather than a list per level: what
-     * asks is a stop on a map, and a stop that follows a route means all of
-     * where that route goes — including the routes it follows in turn.
-     *
-     * <p>Kept, because the asking is once a frame for every row that follows a
-     * route and the answer is a compiled pattern. There is exactly one moment it
-     * could go stale — {@link #accept}, which is the only thing that changes
-     * what any of this says — so that is where it is dropped. The route being
-     * edited is not in here at all: its stops are read live from the editor,
-     * because they are not the server's yet.
-     */
+    /** Every station reachable by following this route to any depth, cached until {@link #accept} changes what routes exist. */
     public static Predicate<String> reach(UUID id) {
         return reaching.computeIfAbsent(id, route -> {
             List<Pattern> patterns = new ArrayList<>();
@@ -111,13 +74,7 @@ public class ClientRoutes {
             gather(nested, into, seen);
     }
 
-    /**
-     * Whether following {@code candidate} comes back to {@code target}, which is
-     * what makes a reference to it a cycle.
-     *
-     * <p>A route reaching itself counts, because the shortest cycle there is is
-     * a route that follows itself.
-     */
+    /** Whether following {@code candidate} eventually reaches {@code target}, counting self-reference as a cycle. */
     private static boolean reaches(UUID candidate, UUID target) {
         return candidate.equals(target) || leadsTo(candidate, target, new HashSet<>());
     }

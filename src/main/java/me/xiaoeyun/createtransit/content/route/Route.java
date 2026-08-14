@@ -18,33 +18,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 
-/**
- * A named run of stops that many trains can share.
- *
- * <p>A route is a schedule with a name. Its stops are ordinary
- * {@link ScheduleEntry ScheduleEntries}, which is not a convenience but the
- * whole design: every instruction and condition Create or another addon ever
- * registers is usable inside a route without us knowing it exists, and a stop
- * can be edited with the widgets that stop already carries.
- *
- * <p>Stops with no conditions of their own borrow the route's
- * {@link #defaults}. That single rule is the entire default/override system —
- * an empty condition list already means "nothing special here", so inheriting
- * needs no flag to mark it.
- *
- * <p>A route may reference another route, and the reference may run it
- * backwards. That is how a there-and-back service is written once instead of
- * twice: one route holds the stops, and the round trip references it forwards
- * and then reversed. {@link #flatten} resolves all of that into a plain list of
- * stops, so nothing downstream has to know a route was nested at all.
- *
- * <p>The {@link #id} is the identity and the {@link #name} is a label. Renaming
- * is then one field write: nothing points at the name, so nothing has to be
- * found and repointed, and a train part way through a route cannot be stranded
- * by someone editing the name it went in under. The name is still what a player
- * types and reads — {@code FollowRouteInstruction} keeps it beside the id it
- * resolved to, so a reference says which route it means without a lookup.
- */
+/** A named run of stops, made of ordinary {@link ScheduleEntry ScheduleEntries} so any Create or addon instruction works inside it. */
 public class Route {
 
     public static final int MAX_NAME_LENGTH = 32;
@@ -52,11 +26,7 @@ public class Route {
     /** Never changes, and is what every reference actually points at. */
     public final UUID id;
 
-    /**
-     * How deep references may nest. Cycles are refused when authored, so this
-     * is the backstop for a save edited outside the game rather than the real
-     * defence.
-     */
+    /** How deep references may nest; a backstop for a save edited outside the game, since cycles are refused when authored. */
     private static final int MAX_DEPTH = 8;
 
     private static final String NBT_ID = "Id";
@@ -71,17 +41,7 @@ public class Route {
     /** The stops, in the order a train following this route forwards visits them. */
     public List<ScheduleEntry> entries;
 
-    /**
-     * Conditions lent to any stop that declares none. Same shape as
-     * {@link ScheduleEntry#conditions}, and never empty.
-     *
-     * <p>Never empty is the invariant the whole default/override system rests
-     * on. A stop declares nothing to mean "the usual", so there has to be a
-     * usual — and Create's runtime never leaves a stop whose condition list is
-     * empty, so "the usual" being nothing would be a train that never departs.
-     * The editor refuses to remove the last one for that reason, and a route
-     * arriving from anywhere else is given one here.
-     */
+    /** Conditions lent to any stop that declares none; never empty, since Create's runtime never advances past an empty condition list. */
     public List<List<ScheduleWaitCondition>> defaults;
 
     public Route(String name) {
@@ -96,7 +56,6 @@ public class Route {
         this.defaults = seed();
     }
 
-    /** The one condition a route cannot be without: a wait the player can set. */
     private static List<List<ScheduleWaitCondition>> seed() {
         List<List<ScheduleWaitCondition>> columns = new ArrayList<>(1);
         columns.add(new ArrayList<>(List.of(new ScheduledDelay())));
@@ -104,21 +63,9 @@ public class Route {
     }
 
     /**
-     * The stops this route contributes, with nested references resolved and
-     * borrowed conditions already filled in.
+     * The stops this route contributes, with nested references resolved and borrowed conditions filled in.
      *
-     * <p>Flattening rather than walking a stack of positions is what keeps a
-     * follower's progress a single index: the shape of the route is decided
-     * here, once, and the follower only counts. It also makes reversal and a
-     * dropped leading stop structural — the list simply does not contain what
-     * was dropped, so no later code has to remember why.
-     *
-     * @param lookup    resolves a referenced route's name; may answer null for a
-     *                  route that has been deleted, which contributes nothing
-     * @param reversed  visit the stops back to front
-     * @param skipFirst drop the leading stop, which is how a reversal joins the
-     *                  pass before it without stopping twice at the station they
-     *                  share
+     * @param lookup resolves a referenced route; null for a deleted route, which contributes nothing
      */
     public List<ScheduleEntry> flatten(Function<UUID, Route> lookup, boolean reversed, boolean skipFirst) {
         List<ScheduleEntry> out = new ArrayList<>();
@@ -146,9 +93,6 @@ public class Route {
             if (nested == null)
                 continue;
 
-            // Reversing the outer route has to reverse what its references do
-            // too, or a round trip read backwards would still run each leg
-            // forwards and reach that leg's stops in the wrong order.
             int before = out.size();
             nested.collect(out, lookup, reference.reversed() != reversed, visiting, depth + 1);
             if (reference.skipFirst() && out.size() > before)
@@ -158,17 +102,7 @@ public class Route {
         visiting.remove(id);
     }
 
-    /**
-     * The stop as it will actually be waited on. A stop that declares no
-     * conditions is given the route's, deeply, because the result is about to
-     * be written into a running train's schedule and must not alias anything
-     * the route still holds.
-     *
-     * <p>And never nothing, because {@link #defaults} is never nothing. That is
-     * what the invariant is for: {@code ScheduleRuntime.tickConditions} loops
-     * over the columns and moves on inside the loop, so an entry with none is
-     * one it never advances past — the train sits at the platform for good.
-     */
+    /** Deep-copies inherited conditions, since the result is written into a running train's schedule and must not alias the route's own. */
     private ScheduleEntry withInheritedConditions(ScheduleEntry entry) {
         ScheduleEntry copy = entry.clone();
         if (copy.conditions.isEmpty())
@@ -187,13 +121,7 @@ public class Route {
         return out;
     }
 
-    /**
-     * True when any reference this route holds leads back to it.
-     *
-     * <p>Checked on the way in from an editor, where stops arrive as a set
-     * rather than one at a time and so cannot each be refused as they are
-     * authored.
-     */
+    /** True when any reference this route holds leads back to it. */
     public boolean containsCycle(Function<UUID, Route> lookup) {
         for (ScheduleEntry entry : entries) {
             RouteReference reference = RouteReference.of(entry.instruction);
@@ -219,12 +147,7 @@ public class Route {
         return false;
     }
 
-    /**
-     * A list of alternatives, in NBT. The same shape Create gives
-     * {@link ScheduleEntry#conditions}, and public because the defaults travel
-     * to the editor and back on their own — a {@code Schedule} has nowhere to
-     * carry them.
-     */
+    /** A list of alternatives, in NBT — public because the defaults travel to the editor and back on their own; {@code Schedule} has nowhere to carry them. */
     public static ListTag writeConditions(List<List<ScheduleWaitCondition>> columns) {
         ListTag out = new ListTag();
         for (List<ScheduleWaitCondition> column : columns)
@@ -255,15 +178,11 @@ public class Route {
         String name = tag.getString(NBT_NAME);
         if (name.isBlank())
             return null;
-        // A hand-written route is allowed to leave the id out; it gets one here
-        // and keeps it from the next save on. Nothing can be pointing at a route
-        // that was not in the file a moment ago, so there is nothing to break.
+        // A hand-written route may leave the id out; it gets one here and keeps it from the next save on.
         Route route = tag.hasUUID(NBT_ID) ? new Route(tag.getUUID(NBT_ID), name) : new Route(name);
         route.color = tag.getInt(NBT_COLOR);
         route.entries = NBTHelper.readCompoundList(tag.getList(NBT_ENTRIES, Tag.TAG_COMPOUND), ScheduleEntry::fromTag);
-        // Read, then held to the invariant: a file written by hand, or by a
-        // version of this that let the last one go, must not come back as a
-        // route whose trains never leave a platform.
+        // Held to the invariant here too: defaults must never end up empty, or these trains never leave the platform.
         List<List<ScheduleWaitCondition>> defaults = readConditions(tag.getList(NBT_DEFAULTS, Tag.TAG_LIST));
         if (!defaults.isEmpty())
             route.defaults = defaults;

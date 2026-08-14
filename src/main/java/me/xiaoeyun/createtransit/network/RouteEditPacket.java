@@ -12,14 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
-/**
- * Asks to edit a route.
- *
- * <p>Opening has to happen on the server because what opens is a menu, and a
- * menu is the server's to hand out. That is also why the route's contents never
- * travel separately: they ride in the stack the menu is opened on, and Create's
- * own screen parses them out of it.
- */
+/** Asks to edit a route; opening happens on the server since what opens is a menu, and the route's stops ride in on that menu's stack. */
 public class RouteEditPacket {
 
     private final UUID route;
@@ -45,8 +38,6 @@ public class RouteEditPacket {
         Route found = RouteStore.get(sender.server)
             .get(route);
         if (found == null) {
-            // The same complaint the runtime makes when a train reaches a
-            // reference to a route nobody kept.
             sender.displayClientMessage(Component.translatable("create_transit.route.save.missing")
                 .withStyle(ChatFormatting.RED), false);
             return;

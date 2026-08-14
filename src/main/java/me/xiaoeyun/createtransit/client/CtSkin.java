@@ -11,29 +11,9 @@ import net.minecraft.resources.ResourceLocation;
 /**
  * The schedule window's chrome, at whatever size it is asked for.
  *
- * <p>Create ships that background as one 256x226 image with its title plaque,
- * checkered field and footer baked in, so it cannot be resized and slicing it
- * apart leaves visible seams. Every band of it is a solid colour though, so
- * measuring them and drawing them back is both exact and free of texture
- * bookkeeping. Only the checker is still a texture, because a one-pixel pattern
- * is cheaper to tile than to fill.
- *
- * <p>Uniform along its width it is <em>not</em> — that was written here once and
- * it was wrong, and the window was flat for as long as it stood. The panel in
- * {@code create:textures/gui/schedule.png} runs x13..238, and a plaque row of it
- * reads black, two of white, the face, two of #555555, black: a plate lit from
- * the top left, not a stack of bands. The field below is the same idea inverted,
- * #787878 along its top and bottom and the lighter #B8B8B8 down its sides.
- *
- * <p>Vertically, column 40: black at y0, white at y1, the face to y12, its
- * shadow at y13, black at y14, the field's border at y15 and the checker from
- * y16. The plate here is two rows shorter in the face so that the outline costs
- * the window nothing — the title bar is the same 13 it always was.
- *
- * <p>Tables are the exception: they are not Create's, they are the departure
- * board's. Nothing is drawn for a table but a rule under its headings and a
- * translucent band on every other row, so the field shows through and the list
- * stays as tall as its text. Those two are the whole style.
+ * <p>Create ships its own background as one fixed 256x226 image, so this
+ * redraws it as flat colour fills measured off {@code schedule.png} instead of
+ * slicing the picture apart.
  */
 public class CtSkin {
 
@@ -60,17 +40,16 @@ public class CtSkin {
     private static final int ROW_BAND = 0x33FFFFFF;
     private static final int ROW_SELECTED = 0x66FFFFFF;
 
+    /**
+     * Measured down column 40 of schedule.png: black y0, white y1, the face to
+     * y12, its shadow y13, black y14, the field border y15, checker from y16.
+     */
     public static final int PLAQUE_HEIGHT = 13;
 
     /** The first usable row inside a window whose frame starts at y. */
     public static final int BODY_TOP = PLAQUE_HEIGHT + 1;
 
-    /**
-     * Where things sit on {@code AllGuiTextures.SCHEDULE}, taken from
-     * {@code ScheduleScreen} rather than measured off the picture: the list area
-     * it scissors to, and where {@code init} puts the confirm and cyclic
-     * buttons.
-     */
+    /** Where things sit on {@code AllGuiTextures.SCHEDULE} — Create's numbers, taken from {@code ScheduleScreen}, not measured off the picture. */
     static final int LIST_AT = 16;
 
     static final int LIST_WIDTH = 220;
@@ -88,20 +67,10 @@ public class CtSkin {
     /** Both sockets are one IconButton square. */
     static final int BUTTON_SIZE = 18;
 
-    /** What a cut column ends with. One glyph, so it costs four pixels of the room. */
+    /** What a cut column ends with — one glyph, costing four pixels of the room. */
     private static final String ELLIPSIS = "…";
 
-    /**
-     * A table row's height, which an item icon decides: a stack renders 16 wide
-     * and 16 tall and does not scale without going soft. Text is centred in it
-     * rather than the row being shrunk to the text.
-     *
-     * <p>The icon and one clear pixel either side of it. The icon itself stays
-     * 16, because the GUI scale is always a whole number and 1:1 is the only
-     * ratio that is sharp at every one of them — three quarters of 16 lands on
-     * half a physical pixel at scale 2 and a quarter of one at scale 3. So the
-     * gap comes out of the row, never out of the icon.
-     */
+    /** A table row's height, sized around a 16px item icon that is only sharp at 1:1 on an integer GUI scale. */
     public static final int ROW_HEIGHT = 18;
 
     /** Dark on the plaque, light on the field — the two places text can land. */
@@ -119,23 +88,14 @@ public class CtSkin {
 
     private CtSkin() {}
 
-    /**
-     * How tall a window has to be to give its content that much room — the
-     * inverse of what {@link #frame} returns, for a layout that has to size
-     * itself before anything is drawn.
-     */
+    /** How tall a window has to be to give its content that much room — the inverse of what {@link #frame} returns. */
     public static int windowHeight(int content) {
         return PLAQUE_HEIGHT + content + 2;
     }
 
     /**
-     * A titled window, optionally standing its buttons on a footer. Returns the
+     * A titled window, optionally standing its buttons on a footer; returns the
      * area inside it that content may use.
-     *
-     * <p>A box rather than a y, because the rim is two pixels now and was one
-     * before. Every caller that answered that question for itself had to be
-     * found and changed when it moved; the ones that ask get it right by not
-     * knowing.
      *
      * @param footer how tall a strip to reserve at the foot, or zero for none
      */
@@ -157,12 +117,10 @@ public class CtSkin {
      * Create's own schedule panel, whole, centred on a screen this size — with
      * its title, its cyclic socket and its confirm button all done at once.
      *
-     * <p>The route list and the conditions popup both draw this sheet, both
-     * centre a title in its plaque, both paint the cyclic socket back over (a
-     * route has no cyclic schedule of its own) and both lay a live plate over
-     * the tick the sheet already has painted on it — the sheet's own tick cannot
-     * light up under the cursor. That used to be four copies across two files;
-     * this is the one.
+     * <p>The cyclic socket and confirm tick are already painted into the sheet,
+     * so this paints the socket back over (a route has no cyclic schedule) and
+     * lays a live plate over the tick, since the sheet's own tick cannot light
+     * up under the cursor.
      *
      * @return the panel's own origin and size, for whatever else — a card, a
      *         list — is drawn relative to it
@@ -192,11 +150,8 @@ public class CtSkin {
 
     /**
      * A raised plate: an outline, a lit top and left, a shaded bottom and right,
-     * and the face between them. The title bar and the footer are both one.
-     *
-     * <p>The lighting is not symmetric and neither is Create's — one row along
-     * the top and bottom, two columns down the sides. Matching it matters more
-     * than tidying it, because the two are drawn thirty pixels apart.
+     * and the face between them — measured off a plaque row of
+     * {@code create:textures/gui/schedule.png}, columns x13..238.
      */
     private static void plate(GuiGraphics graphics, int x, int y, int width, int height) {
         int right = x + width;
@@ -220,16 +175,7 @@ public class CtSkin {
         checker(graphics, x + RIM, y + 1, width - RIM * 2, height - 2);
     }
 
-    /**
-     * One row of a table. Odd rows are banded and even ones are left alone, so
-     * half the list costs nothing to draw and the field still shows through.
-     *
-     * <p>Create draws a schedule entry as a card — a rimmed, inset plate with a
-     * gap either side. That reads well for four entries and badly for twenty,
-     * because every card spends four pixels of height on its own edges and two
-     * more on the gap. Banding tells rows apart with none of it, so they can
-     * touch and the whole list gets shorter.
-     */
+    /** One row of a table. Odd rows are banded and even ones are left alone, so half the list costs nothing to draw. */
     public static void row(GuiGraphics graphics, int x, int y, int width, int height, int index,
         boolean selected) {
         if (selected)
@@ -238,14 +184,7 @@ public class CtSkin {
             graphics.fill(x, y, x + width, y + height, ROW_BAND);
     }
 
-    /**
-     * Text in a column that ends, with a mark where it was cut.
-     *
-     * <p>A bare stop is worse than no room at all: "Cargo ≥ 1 st" and "貨物 ≥ 1"
-     * are read as what the field says rather than as what is left of it, and a
-     * player acts on the wrong number without ever knowing there was more. The
-     * ellipsis costs four pixels and is the only thing that says so.
-     */
+    /** Text in a column that ends, with a mark where it was cut. */
     public static void clipped(GuiGraphics graphics, Font font, Component text, int x, int y, int width,
         int colour) {
         if (font.width(text) <= width) {

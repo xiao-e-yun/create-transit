@@ -23,35 +23,10 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
-/**
- * Every route in the world, and the four things you can do to the set of them.
- *
- * <p>Ours rather than borrowed, unlike the editor: a list of names needs none of
- * {@code ScheduleScreen} — no instruction editor, no condition editor, no ghost
- * slots — so there is nothing to borrow and nothing an addon would want to hang
- * off it. Which also means every widget here is an ordinary widget, added the
- * ordinary way.
- *
- * <p>One field, moved to whichever row is being typed into, rather than a field
- * per row or a field in a footer. Per row it would have to be rebound every time
- * the list scrolls, and scrolling while typing would hand what is being typed to
- * a different route. In a footer it would need a button and a chosen row to say
- * which route it meant. Moved, it is always over the name it is editing, and the
- * empty row at the end makes a route for the same reason a blank name is not one
- * that exists yet.
- *
- * <p>Reads {@link ClientRoutes} afresh every frame instead of taking a copy.
- * Creating and deleting are round trips, so the list changes underneath this
- * screen when the server answers, and a copy would need telling.
- */
+/** Every route in the world, and the four things you can do to the set of them. */
 public class RouteListScreen extends Screen {
 
-    /**
-     * Create's own schedule panel, whole. The title plaque, the checkered field
-     * and the footer with its confirm tick are painted into it already, and this
-     * screen wants all three — so the picture is the layout, and every offset
-     * below is one {@code ScheduleScreen} already uses.
-     */
+    /** Create's own schedule panel, whole — every offset below is one {@code ScheduleScreen} already uses. */
     private static final AllGuiTextures PANEL = AllGuiTextures.SCHEDULE;
 
     /** Stands for the empty row at the end, which belongs to no route yet. */
@@ -70,28 +45,16 @@ public class RouteListScreen extends Screen {
     /** How many buttons a route's row ends with: open it, and remove it. */
     private static final int SLOTS = 2;
 
-    /**
-     * What the cursor is over, or null. Held from the drawing to the end of the
-     * frame because a tooltip has to be the last thing on screen, and the rows
-     * are drawn inside a scissor that a tooltip must not be clipped by.
-     */
+    /** What the cursor is over, or null — held until the frame's end because the rows are drawn inside a scissor the tooltip must not be clipped by. */
     private String hovered;
 
-    /**
-     * The routes as they were last drawn, in the order they were drawn in. A
-     * click is answered against this rather than against a fresh map, so that
-     * what was hit is what was on screen.
-     */
+    /** The routes as they were last drawn, in that order — a click is answered against this rather than a fresh map. */
     private final List<Map.Entry<UUID, String>> shown = new ArrayList<>();
 
     /** Which route was being renamed when this click arrived, if any. */
     private UUID committed;
 
-    /**
-     * Where the rows are, which is the only record of it. Kept between frames
-     * because a click arrives between them, and the boxes in here are where the
-     * last frame actually put things — including how far the easing had got.
-     */
+    /** Where the rows are, which is the only record of it — kept between frames since a click arrives between them. */
     private final ScrollTable list = new ScrollTable(CtSkin.ROW_HEIGHT, new Routes(), scroll);
 
     public RouteListScreen() {
@@ -117,14 +80,11 @@ public class RouteListScreen extends Screen {
 
     @Override
     protected void init() {
-        // Made once and moved, never rebuilt: init runs again on a resize, and a
+        // Made once and moved, never rebuilt — init() reruns on a resize, and a
         // fresh field would drop what was half typed.
         if (field == null) {
-            // Not zero, though {@link #place} sets the real one before it is ever
-            // drawn. EditBox works out how far a value is scrolled the moment it
-            // is set, against whatever width it has at that moment — at zero the
-            // inner width is negative, the whole name counts as scrolled past,
-            // and the first name a player opens comes up blank.
+            // Not zero: EditBox scrolls its value to fit the width it has when
+            // set, and at zero width the name would come up blank.
             field = new EditBox(font, 0, 0, CtSkin.LIST_WIDTH, 10, CommonComponents.EMPTY);
             field.setBordered(false);
             field.setMaxLength(Route.MAX_NAME_LENGTH);
@@ -155,8 +115,7 @@ public class RouteListScreen extends Screen {
         shown.addAll(ClientRoutes.all()
             .entrySet());
 
-        // One past the routes for the row that makes another, which is how the
-        // stops table spells the same thing.
+        // One past the routes, for the row that makes another.
         list.rows(shown.size() + 1);
         list.arrange(new Box(x, y, width, bottom - y));
         list.paint(graphics, font, mouseX, mouseY);
@@ -173,14 +132,7 @@ public class RouteListScreen extends Screen {
         return row.right() - Strip.width(SLOTS);
     }
 
-    /**
-     * One route per row, and one more row that makes another.
-     *
-     * <p>Drawing and clicking are the two halves of the same shape here, which
-     * is why they are one class: the slot the cursor is in decides the tooltip,
-     * the red behind an armed delete, and what a press does, and all three used
-     * to work it out for themselves.
-     */
+    /** One route per row, and one more row that makes another. */
     private class Routes implements ScrollTable.Row {
 
         @Override
@@ -190,8 +142,8 @@ public class RouteListScreen extends Screen {
             int strip = strip(at);
             int name = strip - at.x() - 10;
 
-            // The field is drawn over the row instead, and drawing both would put
-            // the old name under what is being typed.
+            // The field is drawn over the row instead, so the old name isn't
+            // drawn under what is being typed.
             if (route.equals(editing))
                 place(at.x() + 8, at.y(), name);
             else if (NEW.equals(route))
@@ -238,8 +190,7 @@ public class RouteListScreen extends Screen {
                 // this screen goes away when that arrives rather than here.
                 case 0 -> (graphics, mouseX, mouseY, click) -> {
                     // The trail is left as it is: this route takes the place of
-                    // whichever one was open when the list was reached, and the
-                    // way back out of it is the way that one came.
+                    // whichever one was open when the list was reached.
                     CtPackets.CHANNEL.sendToServer(new RouteEditPacket(route));
                     return true;
                 };
@@ -274,8 +225,7 @@ public class RouteListScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Clicking anywhere that is not the field commits what is in it, the way
-        // leaving a field commits it everywhere else.
+        // Clicking anywhere but the field commits what's in it, same as leaving a field.
         UUID was = editing;
         if (was != null && !field.isMouseOver(mouseX, mouseY))
             commit();
@@ -285,8 +235,7 @@ public class RouteListScreen extends Screen {
         if (button != 0)
             return false;
 
-        // The tick is painted into the sheet, so only the target around it is
-        // ours. Closing is all it does — nothing here is held until confirmed.
+        // The tick is painted into the sheet; only the target around it is ours.
         if (CtSkin.confirm(left(), top())
             .holds(mouseX, mouseY)) {
             onClose();
@@ -309,13 +258,7 @@ public class RouteListScreen extends Screen {
         field.setFocused(true);
     }
 
-    /**
-     * Sends what was typed, if it says anything and says something new.
-     *
-     * <p>A blank name is not a refusal to be handled, it is the row as it was
-     * found — and renaming a route to what it is already called is a packet that
-     * would change nothing.
-     */
+    /** Sends what was typed, if it says anything and says something new. */
     private void commit() {
         UUID route = editing;
         String wanted = field.getValue()
@@ -357,14 +300,7 @@ public class RouteListScreen extends Screen {
         return scroll.wheel(delta) || super.mouseScrolled(mouseX, mouseY, delta);
     }
 
-    /**
-     * Back to whatever led here, if anything did.
-     *
-     * <p>The tick and Escape both come through here, and both mean the same
-     * thing: done with the list. Done with it is not done altogether when a
-     * route or a schedule is waiting underneath — this screen is a step in that
-     * trip, not the end of it.
-     */
+    /** Back to whatever led here, if anything did. */
     @Override
     public void onClose() {
         if (!RouteTrail.leave())

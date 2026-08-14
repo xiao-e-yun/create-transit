@@ -60,8 +60,7 @@ public class CreateTransit {
 
     private static void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(CtPackets::register);
-        // Schedule types are looked up by id when an entry is read back out of
-        // NBT, so they have to be in Create's table before any world loads.
+        // Schedule types are looked up by id from NBT, so they must be in Create's table before any world loads.
         event.enqueueWork(CtSchedule::register);
     }
 

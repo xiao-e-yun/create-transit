@@ -21,24 +21,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * Adds the postal lane toggle to Create's schedule screen.
- *
- * <p>Which post a train runs is that train's business, not a route's — the
- * flag lives on the schedule holding a route reference, not on the route
- * itself — so the button belongs beside every other train-specific control
- * on this screen, and is hidden while a route itself is open for editing.
- */
-// remap = false: the target is a Create class, so its names are never
-// obfuscated and there is no SRG mapping for the annotation processor.
+/** Adds the postal lane toggle to Create's schedule screen; hidden while a route itself is open for editing. */
+// remap = false: a Create class, so its names are never obfuscated.
 @Mixin(value = ScheduleScreen.class, remap = false)
-// Extending the real superclass rather than shadowing what it holds. leftPos,
-// topPos and addRenderableWidget are Minecraft's, and a @Shadow of an inherited
-// member is one the annotation processor cannot find in the target class — it
-// compiles with a warning and then has no obfuscation mapping to resolve with
-// outside a dev workspace. Inherited normally they are plain references, which
-// reobf remaps like any other call. The constructor exists only to satisfy
-// javac; nothing ever builds this class.
+// Extends the real superclass rather than shadowing it: a @Shadow of an inherited member has no obfuscation
+// mapping outside a dev workspace, while extending normally it remaps like any other reference. The
+// constructor exists only to satisfy javac; nothing ever builds this class.
 public abstract class TransitScheduleScreenMixin extends AbstractSimiContainerScreen<ScheduleMenu> {
 
     private TransitScheduleScreenMixin(ScheduleMenu menu, Inventory inventory, Component title) {
@@ -49,20 +37,7 @@ public abstract class TransitScheduleScreenMixin extends AbstractSimiContainerSc
     private static final String LANG_TRANSIT_OFF = "create_transit.schedule.transit_train.off";
     private static final String LANG_TRANSIT_ON = "create_transit.schedule.transit_train.on";
 
-    /**
-     * At the right end of the footer, before the tick at 214.
-     *
-     * <p>It sat beside the cyclic button at 81 first, with the three that say
-     * something about the schedule as a whole. Wrong company: those three are
-     * about running the schedule — loop it, rewind it, skip a stop — where this
-     * one says what the train is for. Next to the tick it reads as the last
-     * thing decided before the paper is handed over, and the empty half of the
-     * footer stops looking like a mistake.
-     *
-     * <p>The 29 is the transit link's own, where its reset sits 29 from its
-     * confirm. Same pair of roles, same gap, so two screens of this mod space
-     * a button off a tick the same way.
-     */
+    /** Right end of the footer, before the tick at 214; the 29px gap matches the transit link screen's own reset-to-confirm spacing. */
     @Unique
     private static final int CREATE_TRANSIT$BUTTON_X = 214 - 29;
 
@@ -77,20 +52,11 @@ public abstract class TransitScheduleScreenMixin extends AbstractSimiContainerSc
 
     @Inject(method = "init", at = @At("TAIL"), remap = true)
     private void createTransit$addTransitTrainButton(CallbackInfo ci) {
-        // Not on a route. A route is a run of stops that any number of trains
-        // may follow, and which post a train runs is that train's business —
-        // the flag lives on the schedule holding the reference, not on the
-        // thing referenced. Asked of the menu rather than of the route mixin's
-        // own state, because this mixin owns no assumption about when that one
-        // runs relative to this one: the menu already knows whether this is a
-        // route without needing to ask it.
+        // Not on a route — the transit flag lives on the schedule holding the reference, not on the route itself.
         if (RouteEditSession.isEditor(menu.contentHolder))
             return;
 
-        // The box itself rather than a glyph from the atlas: it is the thing the
-        // lane is named after, it is what the transit link's screen already
-        // draws to mean the same word, and nothing in Create's sheet means
-        // "still abroad".
+        // The box itself, not an atlas glyph — nothing in Create's sheet means "still abroad".
         ItemStack box = CtItems.TRANSIT_PACKAGES.get(0)
             .asStack();
         ScreenElement icon = (g, x, y) -> g.renderItem(box, x, y);
@@ -119,8 +85,7 @@ public abstract class TransitScheduleScreenMixin extends AbstractSimiContainerSc
             .add(Component.translatable(on ? LANG_TRANSIT_ON : LANG_TRANSIT_OFF));
     }
 
-    // HEAD and not TAIL: Create sets these flags at the top of both methods, and
-    // stopEditing returns early below that when nothing was being edited.
+    // HEAD, not TAIL: Create sets these flags at the top of both methods, and stopEditing returns early otherwise.
     @Inject(method = "startEditing", at = @At("HEAD"))
     private void createTransit$hideTransitTrain(CallbackInfo ci) {
         if (createTransit$transitTrain != null)

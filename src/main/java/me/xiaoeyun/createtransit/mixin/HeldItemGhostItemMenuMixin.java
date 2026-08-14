@@ -13,18 +13,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Keeps a route's borrowed schedule screen open.
- *
- * <p>The menu this guards is meant for an item the player is holding, so it
- * stays valid only while that exact stack is the selected one:
- *
- * <pre>return playerInventory.getSelected() == contentHolder;</pre>
- *
- * <p>That is instance equality against a hotbar slot. A route is edited on a
- * stack that was made for the trip and never given to anyone, so it is in no
- * inventory and the answer is always no — the server would close the screen on
- * the tick after it opened. Answering yes for that one case is the whole change;
- * every schedule a player actually holds still gets Create's own check.
+ * Keeps a route's borrowed schedule screen open: Create's own check is instance equality against a hotbar slot
+ * — {@code return playerInventory.getSelected() == contentHolder;} — and a route's stack is in no inventory.
  */
 // remap = false: a Create class, so its names are never obfuscated.
 @Mixin(value = HeldItemGhostItemMenu.class, remap = false)

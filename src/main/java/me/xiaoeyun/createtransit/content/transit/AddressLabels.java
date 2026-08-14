@@ -86,16 +86,7 @@ public final class AddressLabels {
         return trimLeading(address.substring(end));
     }
 
-    /**
-     * A pattern matching any address whose head label is {@code name}, for the
-     * one caller that cannot use {@link #match}: Create's own retrieval, which
-     * compares an address against a regex directly.
-     *
-     * <p>Quoted rather than assembled, because the delimiters are regex syntax —
-     * {@code <[warehouse]>} handed to the engine raw is a character class that
-     * matches one letter. Blank and {@link #WILDCARD} both take any label, the
-     * way a blank filter takes any address everywhere else in a schedule.
-     */
+    /** A regex matching any address with head label {@code name}, for Create's retrieval; {@link Pattern#quote} because the label delimiters are regex syntax. */
     public static String headLabelRegex(String name) {
         String sanitized = sanitizeName(name);
         if (sanitized.isEmpty() || WILDCARD.equals(sanitized))

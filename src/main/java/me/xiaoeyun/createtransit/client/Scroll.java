@@ -2,24 +2,7 @@ package me.xiaoeyun.createtransit.client;
 
 import net.minecraft.util.Mth;
 
-/**
- * How far a list has been scrolled, and how far it may go.
- *
- * <p>Nothing here is vertical. It clamps one number against how much more there
- * is than there is room for, so an axis is whatever the caller passes in — a
- * band of alternatives too wide for its card would use it the same way a list of
- * stops too tall for its window does.
- *
- * <p>Cheap here for one reason: hit targets are recorded as they are drawn, so
- * moving the drawing moves what can be clicked with it. There is no second copy
- * of the geometry to offset, and nothing to keep in agreement.
- *
- * <p>The range is set by whoever draws, because that is where both measurements
- * are known — a caller that worked them out first would be a second opinion
- * about a layout it does not own. Until something has been drawn once the range
- * is zero and the wheel does nothing, which is also the right answer for a list
- * that fits.
- */
+/** How far a list has been scrolled, and how far it may go. */
 public class Scroll {
 
     /** A notch of the wheel, which is about a row either way. */
@@ -61,13 +44,7 @@ public class Scroll {
         return to(offset - (int) Math.signum(delta) * STEP);
     }
 
-    /**
-     * Moves to a given place, for a button that was told where to land.
-     *
-     * <p>Alternatives are not all the same width, so an arrow that stepped by a
-     * fixed amount would leave one of them half off the edge. Whoever draws them
-     * knows where each one starts and hands the target over.
-     */
+    /** Moves to a given place, for a button that was told where to land. */
     public boolean to(int where) {
         if (range <= 0)
             return false;
