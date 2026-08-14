@@ -38,7 +38,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.simple.SimpleChannel;
 
 /** Hangs the route layout on Create's schedule screen; every injection defers to {@link RouteView} when this is a route and otherwise leaves Create's screen untouched. */
-// remap = false: a Create class, so its names are never obfuscated.
+// remap = false: a Create class, so its names are never obfuscated — except members inherited
+// from Minecraft (init, removed, mouse/key handlers), which carry SRG names in production and
+// mark remap = true individually.
 @Mixin(value = ScheduleScreen.class, remap = false)
 public abstract class ScheduleScreenTableMixin implements RouteScreen {
 
@@ -55,7 +57,7 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     protected abstract void startEditing(IScheduleInput field, Consumer<Boolean> onClose,
         boolean allowDeletion);
 
-    @Shadow
+    @Shadow(remap = true)
     protected abstract void init();
 
     @Shadow
@@ -131,7 +133,7 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     }
 
     /** The panel texture, which a layout using the whole screen has no use for. */
-    @Redirect(method = "renderBg", at = @At(value = "INVOKE", ordinal = 0,
+    @Redirect(method = "renderBg", remap = true, at = @At(value = "INVOKE", ordinal = 0, remap = false,
         target = "Lcom/simibubi/create/foundation/gui/AllGuiTextures;render(Lnet/minecraft/client/gui/GuiGraphics;II)V"))
     private void createTransit$panel(AllGuiTextures texture, GuiGraphics graphics, int x, int y) {
         if (createTransit$view == null)
@@ -162,21 +164,21 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
             cir.setReturnValue(createTransit$view.action(graphics, mouseX, mouseY, click));
     }
 
-    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, remap = true)
     private void createTransit$grabMap(double mouseX, double mouseY, int button,
         CallbackInfoReturnable<Boolean> cir) {
         if (createTransit$view != null && createTransit$view.grab(mouseX, mouseY, button))
             cir.setReturnValue(true);
     }
 
-    @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true, remap = true)
     private void createTransit$wheel(double mouseX, double mouseY, double delta,
         CallbackInfoReturnable<Boolean> cir) {
         if (createTransit$view != null && createTransit$view.wheel(mouseX, mouseY, delta))
             cir.setReturnValue(true);
     }
 
-    @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true, remap = true)
     private void createTransit$closeConditions(int keyCode, int scanCode, int modifiers,
         CallbackInfoReturnable<Boolean> cir) {
         if (createTransit$view != null && createTransit$view.escape(keyCode))
@@ -184,7 +186,7 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     }
 
     /** Create's own {@code removed()} always sends {@code ScheduleEditPacket}, which would write the route's stops into whatever the player is holding; redirected to our own save for a route. */
-    @Redirect(method = "removed", at = @At(value = "INVOKE",
+    @Redirect(method = "removed", remap = true, at = @At(value = "INVOKE", remap = false,
         target = "Lnet/minecraftforge/network/simple/SimpleChannel;sendToServer(Ljava/lang/Object;)V"))
     private void createTransit$saveRoute(SimpleChannel channel, Object message) {
         if (createTransit$view != null)
@@ -217,7 +219,7 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     }
 
     /** Drops the buttons that only mean something to a train's own schedule — a route is not cyclic, and progress belongs to each train following it. */
-    @Inject(method = "init", at = @At("TAIL"))
+    @Inject(method = "init", at = @At("TAIL"), remap = true)
     private void createTransit$dropScheduleControls(CallbackInfo ci) {
         ItemStack stack = createTransit$editorStack();
         if (stack.isEmpty())
