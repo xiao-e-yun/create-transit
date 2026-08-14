@@ -150,9 +150,10 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         for (UUID id : ids)
             names.add(Component.literal(ClientRoutes.nameOf(id)));
 
-        // Always present, even with zero routes — a scroll input needs at least one option to have a state.
-        names.add(Component.translatable("create_transit.route.select.new")
-            .withStyle(ChatFormatting.GOLD));
+        // A scroll input needs at least one option to have a state; the placeholder selects nothing.
+        if (ids.isEmpty())
+            names.add(Component.translatable("create_transit.route.select.none")
+                .withStyle(ChatFormatting.GRAY));
 
         // Written before the widgets build, since loadValues reads this tag when constructing them.
         RouteReference current = reference();

@@ -26,7 +26,7 @@
   "create_transit.route.save.cycle": "Not saved: %s would reference itself",
   "create_transit.route.save.done": "Saved route %s",
   "create_transit.route.save.missing": "The route being edited no longer exists",
-  "create_transit.route.select.new": "+ New route",
+  "create_transit.route.select.none": "No routes yet",
   "create_transit.route.window.conditions": "Overrides",
   "create_transit.route.window.manage": "Back to the route list",
   "create_transit.route.window.map": "Map",

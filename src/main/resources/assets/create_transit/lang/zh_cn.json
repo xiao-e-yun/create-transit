@@ -26,7 +26,7 @@
   "create_transit.route.save.cycle": "未保存：%s 会引用到自己",
   "create_transit.route.save.done": "已保存路线 %s",
   "create_transit.route.save.missing": "正在编辑的路线已经不存在了",
-  "create_transit.route.select.new": "+ 新增路线",
+  "create_transit.route.select.none": "尚无路线",
   "create_transit.route.window.conditions": "复写条件",
   "create_transit.route.window.manage": "返回路线列表",
   "create_transit.route.window.map": "地图",
