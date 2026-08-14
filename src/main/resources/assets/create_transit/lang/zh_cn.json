@@ -37,7 +37,7 @@
   "create_transit.schedule.instruction.follow_route.mark.reversed": "反",
   "create_transit.schedule.instruction.follow_route.mark.skipped": "略",
   "create_transit.schedule.instruction.follow_route.reversed": "反向运行这条路线",
-  "create_transit.schedule.instruction.follow_route.skipped": "略过它的第一站",
+  "create_transit.schedule.instruction.follow_route.skipped": "跳过终点站",
   "create_transit.schedule.instruction.follow_route.summary": "跟随一条共用路线",
   "create_transit.schedule.instruction.package_round": "巡回收送包裹",
   "create_transit.schedule.instruction.package_round.address": "收取标有该收址的包裹",

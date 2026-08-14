@@ -72,7 +72,7 @@ public final class Itinerary {
             if (reference != null) {
                 Route route = store == null ? null : store.get(reference.route());
                 if (route != null && anywhere(
-                    route.flatten(store::get, reference.reversed(), reference.skipFirst()), named, store))
+                    route.flatten(store::get, reference.reversed(), reference.skipTerminus()), named, store))
                     return true;
                 continue;
             }

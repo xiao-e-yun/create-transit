@@ -60,7 +60,7 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
     /** Screen position of the picker, not a route id — rewritten from {@link #NBT_ROUTE} whenever the editor opens. */
     private static final String NBT_INDEX = "RouteIndex";
     public static final String NBT_REVERSED = "Reversed";
-    public static final String NBT_SKIP_FIRST = "SkipFirst";
+    public static final String NBT_SKIP_TERMINUS = "SkipTerminus";
 
     /** How far through the flattened route this train has gotten; advances only once standing at the sent station — Create gives no arrival hook. */
     public static final String NBT_PROGRESS = "Progress";
@@ -104,13 +104,13 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         return getData().getString(NBT_RESOLVED);
     }
 
-    /** The route's name, marked when this reference is reversed or skips its first stop. */
+    /** The route's name, marked when this reference is reversed or skips its terminus. */
     @Override
     public Pair<ItemStack, Component> getSummary() {
         MutableComponent text = Component.literal(getLabelText());
         if (flag(NBT_REVERSED))
             text.append(mark(LANG_MARK_REVERSED));
-        if (flag(NBT_SKIP_FIRST))
+        if (flag(NBT_SKIP_TERMINUS))
             text.append(mark(LANG_MARK_SKIPPED));
         return Pair.of(AllBlocks.TRACK_STATION.asStack(), text);
     }
@@ -128,7 +128,7 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         if (route.isEmpty())
             return null;
         try {
-            return new RouteReference(UUID.fromString(route), flag(NBT_REVERSED), flag(NBT_SKIP_FIRST));
+            return new RouteReference(UUID.fromString(route), flag(NBT_REVERSED), flag(NBT_SKIP_TERMINUS));
         } catch (IllegalArgumentException malformed) {
             // Hand-written NBT; treated as no reference since this is read mid-decision, not thrown.
             return null;
@@ -170,7 +170,7 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         accessor.createTransit$getTarget()
             .add(Pair.of(configure, "Dummy"));
         toggle(accessor, 83, AllIcons.I_FLIP, NBT_REVERSED, LANG_REVERSED);
-        toggle(accessor, 101, AllIcons.I_SKIP_MISSING, NBT_SKIP_FIRST, LANG_SKIPPED);
+        toggle(accessor, 101, AllIcons.I_SKIP_MISSING, NBT_SKIP_TERMINUS, LANG_SKIPPED);
 
         // Read at press time, not captured, since the picker doesn't exist until after this button is added.
         SelectionScrollInput[] picker = new SelectionScrollInput[1];
@@ -269,7 +269,7 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
 
         getData().putString(NBT_TEXT, route.name);
 
-        List<ScheduleEntry> stops = route.flatten(store::get, reference.reversed(), reference.skipFirst());
+        List<ScheduleEntry> stops = route.flatten(store::get, reference.reversed(), reference.skipTerminus());
         int progress = getData().getInt(NBT_PROGRESS);
 
         // Create re-runs the live entry mid-journey and on assembly, not just on departure — answered for the stop already under way.

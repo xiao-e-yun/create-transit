@@ -67,11 +67,11 @@ public class Route {
      *
      * @param lookup resolves a referenced route; null for a deleted route, which contributes nothing
      */
-    public List<ScheduleEntry> flatten(Function<UUID, Route> lookup, boolean reversed, boolean skipFirst) {
+    public List<ScheduleEntry> flatten(Function<UUID, Route> lookup, boolean reversed, boolean skipTerminus) {
         List<ScheduleEntry> out = new ArrayList<>();
         collect(out, lookup, reversed, new HashSet<>(), 0);
-        if (skipFirst && !out.isEmpty())
-            out.remove(0);
+        if (skipTerminus && !out.isEmpty())
+            out.remove(out.size() - 1);
         return out;
     }
 
@@ -95,8 +95,9 @@ public class Route {
 
             int before = out.size();
             nested.collect(out, lookup, reference.reversed() != reversed, visiting, depth + 1);
-            if (reference.skipFirst() && out.size() > before)
-                out.remove(before);
+            // The omitted terminus sits at the head of the contribution when the enclosing direction is reversed.
+            if (reference.skipTerminus() && out.size() > before)
+                out.remove(reversed ? before : out.size() - 1);
         }
 
         visiting.remove(id);

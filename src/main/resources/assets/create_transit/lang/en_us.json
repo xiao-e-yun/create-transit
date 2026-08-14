@@ -37,7 +37,7 @@
   "create_transit.schedule.instruction.follow_route.mark.reversed": "Rev",
   "create_transit.schedule.instruction.follow_route.mark.skipped": "Skip",
   "create_transit.schedule.instruction.follow_route.reversed": "Run the route backwards",
-  "create_transit.schedule.instruction.follow_route.skipped": "Skip its first stop",
+  "create_transit.schedule.instruction.follow_route.skipped": "Skip the terminus",
   "create_transit.schedule.instruction.follow_route.summary": "Follow a shared route",
   "create_transit.schedule.instruction.package_round": "Circulate Packages",
   "create_transit.schedule.instruction.package_round.address": "Collect Packages with this Address",
