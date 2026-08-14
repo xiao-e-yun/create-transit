@@ -572,6 +572,14 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         getData().remove(NBT_RESOLVED);
     }
 
+    @Override
+    public void clearTransient(ScheduleEntry entry) {
+        clearProgress();
+        // Empty is a follower's true resting state: it owns no conditions,
+        // it borrows whichever stop's it is heading for.
+        entry.conditions = new ArrayList<>();
+    }
+
     /**
      * Overridden because the inherited summary asks Create's language file for
      * a key under Create's namespace, which will never hold ours.

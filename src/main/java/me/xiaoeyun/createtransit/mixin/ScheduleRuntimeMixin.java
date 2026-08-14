@@ -1,7 +1,5 @@
 package me.xiaoeyun.createtransit.mixin;
 
-import java.util.ArrayList;
-
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -14,8 +12,6 @@ import com.simibubi.create.content.trains.schedule.Schedule;
 import com.simibubi.create.content.trains.schedule.ScheduleEntry;
 import com.simibubi.create.content.trains.schedule.ScheduleRuntime;
 
-import me.xiaoeyun.createtransit.content.freight.PackageRoundInstruction;
-import me.xiaoeyun.createtransit.content.route.FollowRouteInstruction;
 import me.xiaoeyun.createtransit.content.schedule.Repeats;
 import net.minecraft.world.item.ItemStack;
 
@@ -51,16 +47,9 @@ public class ScheduleRuntimeMixin {
     private void createTransit$forgetProgress(CallbackInfoReturnable<ItemStack> cir) {
         if (schedule == null)
             return;
-        for (ScheduleEntry entry : schedule.entries) {
-            if (entry.instruction instanceof PackageRoundInstruction round)
-                round.clearRound();
-            if (!(entry.instruction instanceof FollowRouteInstruction follow))
-                continue;
-            follow.clearProgress();
-            // Empty is a follower's true resting state: it owns no conditions,
-            // it borrows whichever stop's it is heading for.
-            entry.conditions = new ArrayList<>();
-        }
+        for (ScheduleEntry entry : schedule.entries)
+            if (entry.instruction instanceof Repeats repeats)
+                repeats.clearTransient(entry);
     }
 
     /**

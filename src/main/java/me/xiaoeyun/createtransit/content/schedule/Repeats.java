@@ -1,5 +1,7 @@
 package me.xiaoeyun.createtransit.content.schedule;
 
+import com.simibubi.create.content.trains.schedule.ScheduleEntry;
+
 /**
  * An instruction that wants its entry run again once the train departs.
  *
@@ -26,5 +28,17 @@ package me.xiaoeyun.createtransit.content.schedule;
 public interface Repeats {
 
     boolean again();
+
+    /**
+     * Drops whatever about this entry only makes sense while a particular
+     * train is running it. Called when a schedule is taken back out of a
+     * train — deliberately not when the train itself is saved, where that
+     * state is exactly what should be remembered.
+     *
+     * @param entry the entry this instruction is on, since some of what is
+     *              dropped — a follower's borrowed wait conditions — lives on
+     *              the entry rather than the instruction
+     */
+    void clearTransient(ScheduleEntry entry);
 
 }

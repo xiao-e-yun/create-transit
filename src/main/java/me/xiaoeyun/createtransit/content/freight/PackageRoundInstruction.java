@@ -20,6 +20,7 @@ import com.simibubi.create.content.trains.entity.Carriage;
 import com.simibubi.create.content.trains.entity.Train;
 import com.simibubi.create.content.trains.graph.DiscoveredPath;
 import com.simibubi.create.content.trains.graph.EdgePointType;
+import com.simibubi.create.content.trains.schedule.ScheduleEntry;
 import com.simibubi.create.content.trains.schedule.ScheduleRuntime;
 import com.simibubi.create.content.trains.schedule.ScheduleRuntime.State;
 import com.simibubi.create.content.trains.schedule.destination.TextScheduleInstruction;
@@ -354,6 +355,11 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
     public void clearRound() {
         getData().remove(NBT_VISITED);
         getData().remove(NBT_SENT);
+    }
+
+    @Override
+    public void clearTransient(ScheduleEntry entry) {
+        clearRound();
     }
 
     /**

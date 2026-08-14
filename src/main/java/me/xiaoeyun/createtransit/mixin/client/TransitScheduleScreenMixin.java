@@ -5,18 +5,15 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.simibubi.create.content.trains.schedule.Schedule;
 import com.simibubi.create.content.trains.schedule.ScheduleMenu;
 import com.simibubi.create.content.trains.schedule.ScheduleScreen;
-import com.simibubi.create.content.trains.schedule.destination.ScheduleInstruction;
 import com.simibubi.create.foundation.gui.menu.AbstractSimiContainerScreen;
 import com.simibubi.create.foundation.gui.widget.IconButton;
 
 import me.xiaoeyun.createtransit.content.freight.TransitTrain;
-import me.xiaoeyun.createtransit.content.route.FollowRouteInstruction;
 import me.xiaoeyun.createtransit.content.route.RouteEditSession;
 import me.xiaoeyun.createtransit.registry.CtItems;
 import net.createmod.catnip.gui.element.ScreenElement;
@@ -25,30 +22,12 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Keeps a route follower's borrowed conditions out of the schedule editor.
+ * Adds the postal lane toggle to Create's schedule screen.
  *
- * <p>A follower has to write the current stop's conditions onto its own entry,
- * because the runtime waits on the conditions of the entry it is sitting on and
- * nowhere else. Those conditions belong to the route, not to this piece of
- * paper: the player never set them, editing them achieves nothing, and the next
- * stop overwrites whatever they typed. An editable control that silently
- * reverts is worse than no control.
- *
- * <p>{@code supportsConditions} is the single fact the whole card is laid out
- * from — its height, its header texture, which strip icon it wears, whether the
- * wait row is drawn, and the height the click test walks past. Answering it
- * once, here, turns a follower into an action card exactly like a throttle
- * change, with every one of those consequences following on their own.
- *
- * <p>Only the screen is redirected. The instruction still reports true to
- * everything else, because there the answer is genuinely yes — it does wait,
- * and its conditions must still be written to disk.
- *
- * <p>There was a second injection here, replacing Create's station autocomplete
- * with a list of routes. It never ran: those suggestions are attached to an
- * {@code EditBox} found among the editor's sub-widgets, and a follower builds a
- * picker and a button instead — the route is chosen, not typed. Which routes may
- * be chosen is decided where that picker is built.
+ * <p>Which post a train runs is that train's business, not a route's — the
+ * flag lives on the schedule holding a route reference, not on the route
+ * itself — so the button belongs beside every other train-specific control
+ * on this screen, and is hidden while a route itself is open for editing.
  */
 // remap = false: the target is a Create class, so its names are never
 // obfuscated and there is no SRG mapping for the annotation processor.
@@ -60,9 +39,9 @@ import net.minecraft.world.item.ItemStack;
 // outside a dev workspace. Inherited normally they are plain references, which
 // reobf remaps like any other call. The constructor exists only to satisfy
 // javac; nothing ever builds this class.
-public abstract class ScheduleScreenMixin extends AbstractSimiContainerScreen<ScheduleMenu> {
+public abstract class TransitScheduleScreenMixin extends AbstractSimiContainerScreen<ScheduleMenu> {
 
-    private ScheduleScreenMixin(ScheduleMenu menu, Inventory inventory, Component title) {
+    private TransitScheduleScreenMixin(ScheduleMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
     }
 
@@ -96,21 +75,15 @@ public abstract class ScheduleScreenMixin extends AbstractSimiContainerScreen<Sc
     @Unique
     private IconButton createTransit$transitTrain;
 
-    @Redirect(method = { "renderSchedule", "renderScheduleEntry", "action" },
-        at = @At(value = "INVOKE",
-            target = "Lcom/simibubi/create/content/trains/schedule/destination/ScheduleInstruction;supportsConditions()Z"))
-    private boolean createTransit$hideBorrowedConditions(ScheduleInstruction instruction) {
-        return instruction.supportsConditions() && !(instruction instanceof FollowRouteInstruction);
-    }
-
     @Inject(method = "init", at = @At("TAIL"), remap = true)
     private void createTransit$addTransitTrainButton(CallbackInfo ci) {
         // Not on a route. A route is a run of stops that any number of trains
         // may follow, and which post a train runs is that train's business —
         // the flag lives on the schedule holding the reference, not on the
-        // thing referenced. Asked of the menu rather than of the view this
-        // screen grows, because that view is built by another mixin's injection
-        // into this same method and nothing decides which of the two runs first.
+        // thing referenced. Asked of the menu rather than of the route mixin's
+        // own state, because this mixin owns no assumption about when that one
+        // runs relative to this one: the menu already knows whether this is a
+        // route without needing to ask it.
         if (RouteEditSession.isEditor(menu.contentHolder))
             return;
 
