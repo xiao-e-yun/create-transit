@@ -13,7 +13,6 @@
     "PackageItemMixin",
     "PackageRepackageHelperMixin",
     "PackagerBlockEntityMixin",
-    "ScheduleEditPacketMixin",
     "ScheduleMixin",
     "ScheduleRuntimeMixin"
   ],

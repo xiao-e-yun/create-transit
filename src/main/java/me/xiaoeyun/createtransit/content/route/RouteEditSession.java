@@ -1,12 +1,8 @@
 package me.xiaoeyun.createtransit.content.route;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-
-import javax.annotation.Nullable;
 
 import com.simibubi.create.AllItems;
 import com.simibubi.create.AllMenuTypes;
@@ -46,12 +42,9 @@ import net.minecraftforge.network.NetworkHooks;
  * and stop following the route, which is the one thing this system exists to
  * prevent.
  *
- * <p>Two mixins make that stack behave. {@code HeldItemGhostItemMenu.stillValid}
+ * <p>One mixin makes that stack behave: {@code HeldItemGhostItemMenu.stillValid}
  * asks whether the menu's stack is still the one selected in the hotbar, which
  * a stack that was never in an inventory can never be; it is answered for ours.
- * And {@code ScheduleEditPacket}, which is what a closing schedule screen sends,
- * writes to whatever schedule the player happens to be holding — so for a route
- * session it is stopped at the door and its payload comes here instead.
  */
 public class RouteEditSession {
 
@@ -72,29 +65,6 @@ public class RouteEditSession {
      */
     private static final String NBT_DEFAULTS = "CtDefaults";
 
-    /**
-     * Who is editing what.
-     *
-     * <p>Kept here rather than read back off the menu because by the time the
-     * edit arrives the menu is gone: closing a screen sends the container-close
-     * packet first and the schedule-edit packet second, so the server has
-     * already put the player back on their inventory menu.
-     */
-    private static final Map<UUID, UUID> EDITING = new HashMap<>();
-
-    /**
-     * Opened, but not yet drawn.
-     *
-     * <p>Opening a route replaces whatever menu the player had, and the screen
-     * that is being replaced saves itself on the way out — so the very next
-     * schedule to arrive is the one being displaced, not the route. Marking it
-     * active at that moment would take a player's own schedule for the route
-     * and then write the route back into the item they are holding, losing
-     * both. The client says when its route editor is actually up, which is
-     * necessarily after the displaced screen has gone.
-     */
-    private static final Map<UUID, UUID> PENDING = new HashMap<>();
-
     private RouteEditSession() {}
 
     public static void open(ServerPlayer player, Route route) {
@@ -108,7 +78,6 @@ public class RouteEditSession {
         tag.putString(NBT_NAME, route.name);
         tag.put(NBT_DEFAULTS, Route.writeConditions(route.defaults));
 
-        PENDING.put(player.getUUID(), route.id);
         NetworkHooks.openScreen(player,
             new SimpleMenuProvider(
                 (id, inventory, p) -> new ScheduleMenu(AllMenuTypes.SCHEDULE.get(), id, inventory, stack),
@@ -131,8 +100,8 @@ public class RouteEditSession {
      * Which route the editor was opened on, read off the stack by the client.
      *
      * <p>The client is told the name rather than trusted to remember it, and
-     * says it back when it sends the envelope — so a message that arrives late,
-     * or after the player has opened something else, still names what it means.
+     * says it back when it saves — so a message that arrives late, or after the
+     * player has opened something else, still names what it means.
      */
     public static UUID routeOf(ItemStack stack) {
         return stack.getOrCreateTag()
@@ -150,60 +119,14 @@ public class RouteEditSession {
     }
 
     /**
-     * Takes the edited default conditions back.
+     * Takes the edited stops, name and defaults back in one message, unless the
+     * stops would make the route reach itself.
      *
-     * <p>Separate from {@link #save} because it arrives separately: the stops
-     * ride in Create's own closing packet and these cannot, so they are two
-     * messages sent in the same breath. Silent when it works — the stop save
-     * that came a moment before has already said the route was saved, and
-     * saying it twice for one close reads as two saves.
+     * <p>One call rather than a lookup and a session, because the server keeps
+     * no record of who is editing what — the client says which route this is,
+     * every time.
      */
-    public static void saveEnvelope(ServerPlayer player, UUID id, String name, ListTag defaults) {
-        RouteStore store = RouteStore.get(player.server);
-        Route route = store.get(id);
-        if (route == null) {
-            tell(player, "create_transit.route.save.missing", ChatFormatting.RED);
-            return;
-        }
-        route.defaults = Route.readConditions(defaults);
-        store.setDirty();
-
-        // Refused rather than silently kept, because the name is how a reference
-        // is authored: two routes called the same thing would make typing one
-        // ambiguous. The route keeps the name it had.
-        if (!route.name.equals(name) && !store.rename(id, name))
-            tell(player, "create_transit.route.rename.taken", ChatFormatting.RED, name);
-    }
-
-    /**
-     * The route this player was editing, forgotten in the same breath.
-     *
-     * <p>Read once, because the packet that asks arrives once. Leaving it would
-     * make the next ordinary schedule this player edits look like a route.
-     */
-    @Nullable
-    public static UUID claim(ServerPlayer player) {
-        return EDITING.remove(player.getUUID());
-    }
-
-    /**
-     * The client's route editor is up, so the next schedule it sends is the
-     * route's. Said by the client rather than assumed here because only the
-     * client knows when the screen it displaced has finished leaving.
-     */
-    public static void opened(ServerPlayer player) {
-        UUID route = PENDING.remove(player.getUUID());
-        if (route != null)
-            EDITING.put(player.getUUID(), route);
-    }
-
-    public static void forget(ServerPlayer player) {
-        EDITING.remove(player.getUUID());
-        PENDING.remove(player.getUUID());
-    }
-
-    /** Takes the edited stops back, unless doing so would make the route reach itself. */
-    public static void save(ServerPlayer player, UUID id, Schedule edited) {
+    public static void save(ServerPlayer player, UUID id, Schedule edited, String name, ListTag defaults) {
         RouteStore store = RouteStore.get(player.server);
         Route route = store.get(id);
         if (route == null) {
@@ -219,11 +142,18 @@ public class RouteEditSession {
             return;
         }
 
+        route.defaults = Route.readConditions(defaults);
         store.setDirty();
         // Where the stops went is on every client's map now, so the clients are
         // told. A route that follows this one is drawn from what it says here.
         store.syncNames();
         tell(player, "create_transit.route.save.done", ChatFormatting.GREEN, route.name);
+
+        // Refused rather than silently kept, because the name is how a reference
+        // is authored: two routes called the same thing would make typing one
+        // ambiguous. The route keeps the name it had.
+        if (!route.name.equals(name) && !store.rename(id, name))
+            tell(player, "create_transit.route.rename.taken", ChatFormatting.RED, name);
     }
 
     /**

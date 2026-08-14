@@ -3,6 +3,8 @@ package me.xiaoeyun.createtransit.network;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import com.simibubi.create.content.trains.schedule.Schedule;
+
 import me.xiaoeyun.createtransit.content.route.Route;
 import me.xiaoeyun.createtransit.content.route.RouteEditSession;
 import net.minecraft.nbt.CompoundTag;
@@ -13,36 +15,37 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
 /**
- * The part of a route that is not a schedule.
+ * A route editor's whole close, in one message.
  *
- * <p>Stops travel inside Create's own closing packet, because a route's stops
- * really are a schedule's entries. Its name and default conditions are not — a
- * {@code Schedule} has no field either fits in — so they need a message, and
- * this is it.
- *
- * <p>Sent from {@code removed()} straight after Create's, so it is handled
- * second and the stops are already in. It names its route rather than relying on
- * the session, so nothing about it depends on arriving in that order.
+ * <p>Everything a route's screen holds: the stops, in the same NBT shape
+ * {@code ScheduleEditPacket} would have carried them in; and the name and
+ * default conditions a {@code Schedule} has no field for. It names its own
+ * route rather than relying on the server to remember, because the server
+ * keeps no record of who is editing what.
  */
-public class RouteEnvelopePacket {
+public class RouteSavePacket {
 
     /** One key, because a buffer writes a compound and the payload is a list. */
     private static final String NBT_DEFAULTS = "Defaults";
 
     private final UUID route;
 
+    private final CompoundTag schedule;
+
     private final String name;
 
     private final ListTag defaults;
 
-    public RouteEnvelopePacket(UUID route, String name, ListTag defaults) {
+    public RouteSavePacket(UUID route, CompoundTag schedule, String name, ListTag defaults) {
         this.route = route;
+        this.schedule = schedule;
         this.name = name;
         this.defaults = defaults;
     }
 
-    public RouteEnvelopePacket(FriendlyByteBuf buffer) {
+    public RouteSavePacket(FriendlyByteBuf buffer) {
         route = buffer.readUUID();
+        schedule = buffer.readNbt();
         name = buffer.readUtf(Route.MAX_NAME_LENGTH);
         CompoundTag tag = buffer.readNbt();
         defaults = tag == null ? new ListTag() : tag.getList(NBT_DEFAULTS, Tag.TAG_LIST);
@@ -50,6 +53,7 @@ public class RouteEnvelopePacket {
 
     public void encode(FriendlyByteBuf buffer) {
         buffer.writeUUID(route);
+        buffer.writeNbt(schedule);
         buffer.writeUtf(name, Route.MAX_NAME_LENGTH);
         CompoundTag tag = new CompoundTag();
         tag.put(NBT_DEFAULTS, defaults);
@@ -59,8 +63,10 @@ public class RouteEnvelopePacket {
     public void handle(Supplier<NetworkEvent.Context> context) {
         ServerPlayer sender = context.get()
             .getSender();
-        if (sender != null)
-            RouteEditSession.saveEnvelope(sender, route, name, defaults);
+        if (sender == null)
+            return;
+        Schedule edited = Schedule.fromTag(schedule == null ? new CompoundTag() : schedule);
+        RouteEditSession.save(sender, route, edited, name, defaults);
     }
 
 }

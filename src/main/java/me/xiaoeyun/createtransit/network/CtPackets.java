@@ -32,23 +32,18 @@ public class CtPackets {
             .decoder(RouteEditPacket::new)
             .consumerMainThread(RouteEditPacket::handle)
             .add();
-        CHANNEL.messageBuilder(RouteOpenedPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(RouteOpenedPacket::encode)
-            .decoder(RouteOpenedPacket::new)
-            .consumerMainThread(RouteOpenedPacket::handle)
-            .add();
         // Which routes exist, changed from the route list.
         CHANNEL.messageBuilder(RouteManagePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
             .encoder(RouteManagePacket::encode)
             .decoder(RouteManagePacket::new)
             .consumerMainThread(RouteManagePacket::handle)
             .add();
-        // The other half of that close: what the editor holds that a schedule
-        // cannot carry, sent right after Create's own so it lands second.
-        CHANNEL.messageBuilder(RouteEnvelopePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(RouteEnvelopePacket::encode)
-            .decoder(RouteEnvelopePacket::new)
-            .consumerMainThread(RouteEnvelopePacket::handle)
+        // A route editor's whole close: its stops, name and default conditions,
+        // in place of the schedule-edit packet Create's screen would have sent.
+        CHANNEL.messageBuilder(RouteSavePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+            .encoder(RouteSavePacket::encode)
+            .decoder(RouteSavePacket::new)
+            .consumerMainThread(RouteSavePacket::handle)
             .add();
         // The last step out of a trip that began at a held schedule. Added at
         // the end rather than beside the other route messages, because an id is

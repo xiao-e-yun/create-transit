@@ -5,7 +5,6 @@ import com.simibubi.create.AllCreativeModeTabs;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.foundation.item.ItemDescription;
 
-import me.xiaoeyun.createtransit.content.route.RouteEditSession;
 import me.xiaoeyun.createtransit.content.route.RouteStore;
 import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.registry.CtBlockEntities;
@@ -54,7 +53,6 @@ public class CreateTransit {
 
         modEventBus.addListener(CreateTransit::commonSetup);
         MinecraftForge.EVENT_BUS.addListener(CreateTransit::onPlayerJoin);
-        MinecraftForge.EVENT_BUS.addListener(CreateTransit::onPlayerLeave);
         // Create's creative tab is filled from Create's own registrate, which
         // never sees an addon's entries, so our blocks have to add themselves.
         modEventBus.addListener(CtCreativeTab::onBuildContents);
@@ -71,16 +69,6 @@ public class CreateTransit {
     private static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player)
             RouteStore.syncNamesTo(player);
-    }
-
-    /**
-     * A route editor is closed by the packet that saves it, so leaving without
-     * one would strand the session — and the next schedule that player edited
-     * would be taken for the route they had open when they quit.
-     */
-    private static void onPlayerLeave(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player)
-            RouteEditSession.forget(player);
     }
 
     public static CreateRegistrate registrate() {

@@ -28,14 +28,13 @@ import me.xiaoeyun.createtransit.client.RouteHost;
 import me.xiaoeyun.createtransit.client.RouteScreen;
 import me.xiaoeyun.createtransit.client.RouteView;
 import me.xiaoeyun.createtransit.content.route.RouteEditSession;
-import me.xiaoeyun.createtransit.network.CtPackets;
-import me.xiaoeyun.createtransit.network.RouteOpenedPacket;
 import net.createmod.catnip.gui.element.GuiGameElement;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.network.simple.SimpleChannel;
 
 /**
  * Hangs the route layout on Create's schedule screen.
@@ -230,13 +229,18 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     }
 
     /**
-     * At the tail, so Create's own closing packet is already on its way and the
-     * envelope is handled after the stops it belongs with.
+     * Create's own {@code removed()} always sends {@code ScheduleEditPacket},
+     * which would write the route's stops into whatever the player happens to
+     * be holding. For a route this redirects that send into our own self-naming
+     * save instead; an ordinary schedule's screen is untouched.
      */
-    @Inject(method = "removed", at = @At("TAIL"))
-    private void createTransit$saveEnvelope(CallbackInfo ci) {
+    @Redirect(method = "removed", at = @At(value = "INVOKE",
+        target = "Lnet/minecraftforge/network/simple/SimpleChannel;sendToServer(Ljava/lang/Object;)V"))
+    private void createTransit$saveRoute(SimpleChannel channel, Object message) {
         if (createTransit$view != null)
             createTransit$view.close();
+        else
+            channel.sendToServer(message);
     }
 
     @Inject(method = "getExtraAreas", at = @At("HEAD"), cancellable = true)
@@ -268,13 +272,8 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
         // Kept across re-inits rather than rebuilt with them: this runs again on
         // a resize and after every stop added or deleted, and a fresh view would
         // send the map back to the player and forget the chosen row each time.
-        if (createTransit$view == null) {
+        if (createTransit$view == null)
             createTransit$view = new RouteView(createTransit$host(), stack);
-            // Also where the server is told the editor is really up: the
-            // schedule this replaced has already saved itself by now, so
-            // anything sent from here on belongs to the route.
-            CtPackets.CHANNEL.sendToServer(new RouteOpenedPacket());
-        }
 
         confirmButton.visible = false;
         cyclicButton.visible = false;

@@ -12,6 +12,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.simibubi.create.compat.trainmap.TrainMapManager;
 import com.simibubi.create.content.trains.schedule.IScheduleInput;
+import com.simibubi.create.content.trains.schedule.Schedule;
 import com.simibubi.create.content.trains.schedule.ScheduleEntry;
 import com.simibubi.create.content.trains.schedule.condition.ScheduleWaitCondition;
 import com.simibubi.create.content.trains.schedule.condition.ScheduledDelay;
@@ -25,7 +26,7 @@ import me.xiaoeyun.createtransit.content.route.RouteEditSession;
 import me.xiaoeyun.createtransit.content.route.RouteReference;
 import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.network.RouteEditPacket;
-import me.xiaoeyun.createtransit.network.RouteEnvelopePacket;
+import me.xiaoeyun.createtransit.network.RouteSavePacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -345,15 +346,17 @@ public class RouteView {
     }
 
     /**
-     * Sends back what Create's closing packet does not carry.
+     * Saves the route: its stops, its name, and its default conditions, in
+     * place of the schedule-edit packet Create's screen would otherwise send.
      *
-     * <p>Called from {@code removed()} after Create has sent its own, so the
-     * stops are already in when this arrives and the route it names is still
-     * there to receive them.
+     * <p>Called from a redirect on {@code removed()} that never lets that
+     * packet go out for a route, so this is the only save it gets.
      */
     public void close() {
+        Schedule schedule = new Schedule();
+        schedule.entries = host.entries();
         CtPackets.CHANNEL.sendToServer(
-            new RouteEnvelopePacket(route, name, Route.writeConditions(defaults)));
+            new RouteSavePacket(route, schedule.write(), name, Route.writeConditions(defaults)));
     }
 
     /**
