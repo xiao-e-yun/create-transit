@@ -16,6 +16,7 @@ import me.xiaoeyun.createtransit.content.route.Route;
 import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.network.RouteEditPacket;
 import me.xiaoeyun.createtransit.network.RouteManagePacket;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -86,14 +87,12 @@ public class RouteListScreen extends Screen {
     /** Which route was being renamed when this click arrived, if any. */
     private UUID committed;
 
-    private final TableNode table = new TableNode(CtSkin.ROW_HEIGHT, new Routes());
-
     /**
      * Where the rows are, which is the only record of it. Kept between frames
      * because a click arrives between them, and the boxes in here are where the
      * last frame actually put things — including how far the easing had got.
      */
-    private final ScrollNode list = new ScrollNode(table, scroll);
+    private final ScrollTable list = new ScrollTable(CtSkin.ROW_HEIGHT, new Routes(), scroll);
 
     public RouteListScreen() {
         super(Component.translatable("create_transit.route.list.title"));
@@ -176,10 +175,9 @@ public class RouteListScreen extends Screen {
 
         // One past the routes for the row that makes another, which is how the
         // stops table spells the same thing.
-        table.rows(shown.size() + 1);
-        Box within = new Box(x, y, width, bottom - y);
-        list.arrange(within);
-        list.paint(new Node.Paint(graphics, font, mouseX, mouseY, within));
+        list.rows(shown.size() + 1);
+        list.arrange(new Box(x, y, width, bottom - y));
+        list.paint(graphics, font, mouseX, mouseY);
     }
 
     /** Which route a row stands for; the one past the end makes another. */
@@ -201,11 +199,11 @@ public class RouteListScreen extends Screen {
      * the red behind an armed delete, and what a press does, and all three used
      * to work it out for themselves.
      */
-    private class Routes implements TableNode.Row {
+    private class Routes implements ScrollTable.Row {
 
         @Override
-        public void paint(Node.Paint paint, int index, Box at, boolean hovered) {
-            GuiGraphics graphics = paint.graphics();
+        public void paint(GuiGraphics graphics, Font font, int index, Box at, boolean hovered,
+            double mouseX, double mouseY) {
             UUID route = route(index);
             int strip = strip(at);
             int name = strip - at.x() - 10;
@@ -226,7 +224,7 @@ public class RouteListScreen extends Screen {
 
             Strip buttons = Strip.endingAt(graphics, at.right(), at.y(), SLOTS);
 
-            int slot = hovered ? Strip.slotAt(strip, SLOTS, paint.mouseX()) : -1;
+            int slot = hovered ? Strip.slotAt(strip, SLOTS, mouseX) : -1;
             boolean armed = route.equals(confirming);
             if (slot >= 0)
                 RouteListScreen.this.hovered = slot == 0 ? "create_transit.route.list.open"
@@ -245,7 +243,7 @@ public class RouteListScreen extends Screen {
         }
 
         @Override
-        public Node.Action hit(TableNode rows, int index, Box at, double x, double y) {
+        public Action hit(ScrollTable rows, int index, Box at, double x, double y) {
             UUID route = route(index);
             if (NEW.equals(route))
                 return (graphics, mouseX, mouseY, click) -> {
@@ -320,7 +318,7 @@ public class RouteListScreen extends Screen {
         // Against the boxes the last frame drew, so a click lands on what it
         // looks like it hit — including part way through the easing.
         committed = was;
-        Node.Action action = list.hit(mouseX, mouseY);
+        Action action = list.hit(mouseX, mouseY);
         return action != null && action.act(null, mouseX, mouseY, button);
     }
 

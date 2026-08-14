@@ -253,18 +253,18 @@ public class RouteView {
     private Box mapBox;
 
     /** The stops table, kept so a click can be asked of the boxes it drew. */
-    private ScrollNode stopList;
+    private ScrollTable stopList;
 
     /** How the stops table asks what a press on one of its rows means. */
     private final RouteTable.Stops presses = new RouteTable.Stops() {
 
         @Override
-        public Node.Action at(int index, int slot) {
+        public Action at(int index, int slot) {
             return stop(index, slot);
         }
 
         @Override
-        public Node.Action grip(int index, TableNode rows) {
+        public Action grip(int index, ScrollTable rows) {
             return RouteView.this.grip(index, rows);
         }
 
@@ -285,7 +285,7 @@ public class RouteView {
      * again on each move: the cursor leaves what it grabbed almost at once, and
      * whatever this took hold of is still true wherever the cursor goes.
      */
-    private Node.Action dragging;
+    private Action dragging;
 
     /** Where the map is centred, in blocks. NaN until the player's position seeds it. */
     /** What the map says is under the cursor, held until the frame's last word. */
@@ -476,7 +476,7 @@ public class RouteView {
         return new RouteTable.Conditions() {
 
             @Override
-            public Node.Action condition(int column, int row) {
+            public Action condition(int column, int row) {
                 return (graphics, mouseX, mouseY, click) -> {
                     RouteView.this.condition(graphics, mouseX, mouseY, click, columns, column, row,
                         route);
@@ -485,7 +485,7 @@ public class RouteView {
             }
 
             @Override
-            public Node.Action add(int column) {
+            public Action add(int column) {
                 return (graphics, mouseX, mouseY, click) -> {
                     if (click == 0)
                         host.startEditing(new ScheduledDelay(), confirmed -> {
@@ -500,7 +500,7 @@ public class RouteView {
             }
 
             @Override
-            public Node.Action alternative() {
+            public Action alternative() {
                 return (graphics, mouseX, mouseY, click) -> {
                     if (click == 0)
                         host.startEditing(new ScheduledDelay(), confirmed -> {
@@ -519,7 +519,7 @@ public class RouteView {
             // One alternative at a time, the way Create's arrows move. Where to
             // land came with the arrow, from where the columns were drawn.
             @Override
-            public Node.Action scroll(int target) {
+            public Action scroll(int target) {
                 return (graphics, mouseX, mouseY, click) -> {
                     if (click == 0)
                         across.to(target);
@@ -535,7 +535,7 @@ public class RouteView {
      * @param slot 0 opens its conditions, 1 copies it, 2 removes it, and -1 is
      *             the row itself
      */
-    private Node.Action stop(int index, int slot) {
+    private Action stop(int index, int slot) {
         List<ScheduleEntry> entries = host.entries();
         if (index >= entries.size())
             return this::addStop;
@@ -575,12 +575,12 @@ public class RouteView {
      * anyway — and it is better feedback than any ghost row could be, because
      * what moves under the cursor is the thing itself.
      */
-    private Node.Action grip(int index, TableNode rows) {
+    private Action grip(int index, ScrollTable rows) {
         List<ScheduleEntry> entries = host.entries();
         if (index >= entries.size())
             return null;
 
-        return new Node.Action() {
+        return new Action() {
 
             /** Where it is now, which is not where it was picked up from. */
             private int at = index;
@@ -636,7 +636,7 @@ public class RouteView {
      * that the two beside it do not shuffle along, and an empty slot answers to
      * nobody.
      */
-    private Node.Action conditionsOf(ScheduleEntry entry, int index) {
+    private Action conditionsOf(ScheduleEntry entry, int index) {
         if (!entry.instruction.supportsConditions() || RouteReference.of(entry.instruction) != null)
             return null;
 
@@ -742,7 +742,7 @@ public class RouteView {
      * the server has to be told — it hands out a menu either way — so the trail
      * stays here.
      */
-    private Node.Action open(UUID nested) {
+    private Action open(UUID nested) {
         return (graphics, mouseX, mouseY, click) -> {
             if (click == 0) {
                 RouteTrail.push(route);
@@ -1069,7 +1069,7 @@ public class RouteView {
         // built while drawing, so nothing scrolled out of it can be hit. While
         // the conditions are up they replace the layout entirely, table and all.
         if (conditionsFor < 0 && stopList != null) {
-            Node.Action stop = stopList.hit(mouseX, mouseY);
+            Action stop = stopList.hit(mouseX, mouseY);
             if (stop != null) {
                 if (click == 0)
                     dragging = stop;
@@ -1077,7 +1077,7 @@ public class RouteView {
             }
         }
 
-        Node.Action action = RouteTable.at(lines, mouseX, mouseY);
+        Action action = RouteTable.at(lines, mouseX, mouseY);
         if (action == null) {
             // While the conditions are up the click is swallowed and nothing
             // else happens. Closing on a stray click made sense while there was

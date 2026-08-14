@@ -224,16 +224,16 @@ public class RouteTable {
      */
     public interface Conditions {
 
-        Node.Action condition(int column, int row);
+        Action condition(int column, int row);
 
         /** One more condition in a column the train must also wait for. */
-        Node.Action add(int column);
+        Action add(int column);
 
         /** One more column: a second way for the train to be let go. */
-        Node.Action alternative();
+        Action alternative();
 
         /** @param target where the band should scroll to, in pixels */
-        Node.Action scroll(int target);
+        Action scroll(int target);
     }
 
     /**
@@ -259,7 +259,7 @@ public class RouteTable {
      */
     public interface Stops {
 
-        Node.Action at(int index, int slot);
+        Action at(int index, int slot);
 
         /**
          * A press on the row's icon, which is what carries it somewhere else.
@@ -270,7 +270,7 @@ public class RouteTable {
          * to the release to find out changes how the common case feels for the
          * sake of the rare one.
          */
-        Node.Action grip(int index, TableNode rows);
+        Action grip(int index, ScrollTable rows);
 
         /**
          * Said as a row is drawn under the cursor, so that the map can mark the
@@ -297,9 +297,9 @@ public class RouteTable {
      * are drawn is the next cheapest thing, and it cannot fall out of step with
      * the drawing because it is the drawing.
      */
-    public record Line(Box at, Node.Action action) {
+    public record Line(Box at, Action action) {
 
-        Line(int x, int y, int width, int height, Node.Action action) {
+        Line(int x, int y, int width, int height, Action action) {
             this(new Box(x, y, width, height), action);
         }
     }
@@ -316,7 +316,7 @@ public class RouteTable {
      * band alone says which row it is — a marker beside it would be a second
      * way of saying the same thing.
      */
-    public static ScrollNode render(GuiGraphics graphics, Font font, List<ScheduleEntry> entries, int x,
+    public static ScrollTable render(GuiGraphics graphics, Font font, List<ScheduleEntry> entries, int x,
         int y, int width, int bottom, double mouseX, double mouseY, Scroll scroll, Stops stops) {
         // Where the text of a row may run: from past the icon to short of the
         // buttons, and short again of the mark that sits beside them.
@@ -343,16 +343,15 @@ public class RouteTable {
         // same band and the same lighting: it is one more row of the same list,
         // reached down the same column, and a row that alone stays dark reads as
         // disabled.
-        TableNode table = new TableNode(CtSkin.ROW_HEIGHT, new TableNode.Row() {
+        ScrollTable window = new ScrollTable(CtSkin.ROW_HEIGHT, new ScrollTable.Row() {
 
             @Override
-            public void paint(Node.Paint paint, int index, Box at, boolean hovered) {
+            public void paint(GuiGraphics graphics, Font font, int index, Box at, boolean hovered,
+                double mouseX, double mouseY) {
                 if (index == entries.size()) {
-                    paint.graphics()
-                        .drawString(paint.font(),
-                            Component.translatable("create_transit.route.add_stop"), textX,
-                            at.y() + TEXT, CtSkin.MUTED_TEXT, false);
-                    AllIcons.I_ADD.render(paint.graphics(), at.x() + ICON_PAD, at.y() + ICON_INSET);
+                    graphics.drawString(font, Component.translatable("create_transit.route.add_stop"),
+                        textX, at.y() + TEXT, CtSkin.MUTED_TEXT, false);
+                    AllIcons.I_ADD.render(graphics, at.x() + ICON_PAD, at.y() + ICON_INSET);
                     return;
                 }
 
@@ -360,31 +359,28 @@ public class RouteTable {
                     stops.over(index);
 
                 ScheduleEntry entry = entries.get(index);
-                paint.graphics()
-                    .renderItem(entry.instruction.getSummary()
-                        .getFirst(), at.x() + ICON_PAD, at.y() + ICON_INSET);
-                CtSkin.clipped(paint.graphics(), paint.font(), action(entry), textX, at.y() + TEXT,
-                    actions - 4, CtSkin.MUTED_TEXT);
-                CtSkin.clipped(paint.graphics(), paint.font(), entry.instruction.getSummary()
+                graphics.renderItem(entry.instruction.getSummary()
+                    .getFirst(), at.x() + ICON_PAD, at.y() + ICON_INSET);
+                CtSkin.clipped(graphics, font, action(entry), textX, at.y() + TEXT, actions - 4,
+                    CtSkin.MUTED_TEXT);
+                CtSkin.clipped(graphics, font, entry.instruction.getSummary()
                     .getSecond(), textX + actions, at.y() + TEXT, textEnd - textX - actions,
                     CtSkin.FIELD_TEXT);
 
-                buttons(paint.graphics(), paint.font(), entry, buttons, at.y());
+                buttons(graphics, font, entry, buttons, at.y());
             }
 
             @Override
-            public Node.Action hit(TableNode rows, int index, Box at, double hitX, double hitY) {
+            public Action hit(ScrollTable rows, int index, Box at, double hitX, double hitY) {
                 if (hitX < textX)
                     return stops.grip(index, rows);
                 return stops.at(index, Strip.slotAt(buttons, SLOTS, hitX));
             }
-        }).rows(entries.size() + 1)
+        }, scroll).rows(entries.size() + 1)
             .lit(stops::lit);
 
-        ScrollNode window = new ScrollNode(table, scroll);
-        Box within = new Box(x, top, width, bottom - top);
-        window.arrange(within);
-        window.paint(new Node.Paint(graphics, font, mouseX, mouseY, within));
+        window.arrange(new Box(x, top, width, bottom - top));
+        window.paint(graphics, font, mouseX, mouseY);
         return window;
     }
 
@@ -442,7 +438,7 @@ public class RouteTable {
      * structure, kept; only its shape on screen is ours.
      */
     public static List<Line> conditions(GuiGraphics graphics, Font font, ScheduleEntry entry,
-        Conditions of, Node.Action close, int screenWidth, int screenHeight, double mouseX,
+        Conditions of, Action close, int screenWidth, int screenHeight, double mouseX,
         double mouseY, Scroll down, Scroll across) {
         List<List<ScheduleWaitCondition>> columns = entry.conditions;
 
@@ -762,7 +758,7 @@ public class RouteTable {
      * found.
      */
     private static void record(List<Line> lines, Box cut, int x, int y, int width,
-        Node.Action action) {
+        Action action) {
         if (cut == null)
             return;
         Box box = new Box(x, y, width, CONDITION_ROW).within(cut);
@@ -909,7 +905,7 @@ public class RouteTable {
      * window whose whole band is a hundred pixels. Away from the band there is
      * nothing to take them from.
      */
-    private static void arrow(GuiGraphics graphics, List<Line> lines, boolean back, Node.Action action,
+    private static void arrow(GuiGraphics graphics, List<Line> lines, boolean back, Action action,
         AllGuiTextures glyph, int x, int y) {
         glyph.render(graphics, x, y);
         // First in the list, because the target may still overlap the last pixel
@@ -939,7 +935,7 @@ public class RouteTable {
     }
 
     /** Who answers for the cursor, or null if nothing drawn here does. */
-    public static Node.Action at(List<Line> lines, double mouseX, double mouseY) {
+    public static Action at(List<Line> lines, double mouseX, double mouseY) {
         for (Line line : lines)
             if (line.at()
                 .holds(mouseX, mouseY))
