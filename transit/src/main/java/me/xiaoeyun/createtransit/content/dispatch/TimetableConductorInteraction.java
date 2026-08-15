@@ -29,7 +29,6 @@ public class TimetableConductorInteraction {
 
     // Spelled out, not built from a prefix, so scripts/lang_audit.py can see these keys.
     private static final String LANG_BIND_FIRST = "create_transit.timetable.bind_first";
-    private static final String LANG_NEEDS_CONDUCTORS = "create_transit.timetable.needs_conductors";
     private static final String LANG_ENROLLED = "create_transit.timetable.enrolled";
     private static final String LANG_RETIRED = "create_transit.timetable.retired";
 
@@ -94,9 +93,6 @@ public class TimetableConductorInteraction {
             denial = Component.translatable(LANG_BIND_FIRST);
         else if (train.runtime.getSchedule() != null)
             denial = Component.translatable("create.schedule.remove_with_empty_hand");
-        // Checked again at every assignment -- a conductor can be removed later -- but refusing here says so to a face.
-        else if (!train.hasForwardConductor() || !train.hasBackwardConductor())
-            denial = Component.translatable(LANG_NEEDS_CONDUCTORS);
 
         if (denial != null) {
             if (onServer) {
