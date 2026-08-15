@@ -373,12 +373,6 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
         String address = PackageItem.getAddress(sample);
         TransitCustoms declaration = TransitCustoms.head(sample, address);
         List<TransitCustoms> onward = TransitCustoms.pop(sample, address);
-        PackageOrderWithCrafts context = null;
-        for (ItemStack member : members) {
-            context = PackageItem.getOrderContext(member);
-            if (context != null)
-                break;
-        }
 
         // Upstream returns recipe boxes as one entry per stack of identical
         // copies; the parent slot numbers every physical box.
@@ -405,9 +399,11 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             else
                 PackageItem.addAddress(box, remaining);
             boolean last = index == boxes.size() - 1;
-            // Vanilla carries the order context on one box of a shipment only.
+            // setOrder rewrites Fragment wholesale, and repack already put the right
+            // context on each box — a single recipe on every one it split by recipe.
+            PackageOrderWithCrafts context = PackageItem.getOrderContext(box);
             PackageItem.setOrder(box, declaration.parentOrderId(), declaration.parentLinkIndex(),
-                declaration.parentIsFinalLink(), index, last, last ? context : null);
+                declaration.parentIsFinalLink(), index, last, context);
             // After setOrder, which is what clears them.
             TransitCustoms.store(box, onward);
             // After the tag is written, since restyling copies it across.
