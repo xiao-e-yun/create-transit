@@ -101,7 +101,9 @@ public class TransitDispatch {
             return null;
         }
 
-        if (aboard.isEmpty() && hasRoom(train)) {
+        // A one-way train leaves claimable work to an idle double-header -- some deliveries only they can finish.
+        boolean oneWay = !train.hasForwardConductor() || !train.hasBackwardConductor();
+        if (aboard.isEmpty() && hasRoom(train) && !(oneWay && idleDoubleHeader(train))) {
             ArrayList<GlobalStation> backlog = new ArrayList<>();
             for (GlobalStation station : train.graph.getPoints(EdgePointType.STATION))
                 if (!claimed(station.name) && hasWaitingMail(server, station))
@@ -156,6 +158,21 @@ public class TransitDispatch {
             if (entry.getValue().deadline < now || !Create.RAILWAYS.trains.containsKey(entry.getKey()))
                 iterator.remove();
         }
+    }
+
+    /** An enrolled, unpaused, empty double-header with no order — the train worth saving the job for. */
+    private static boolean idleDoubleHeader(Train self) {
+        for (Train other : Create.RAILWAYS.trains.values()) {
+            if (other == self || ORDERS.containsKey(other.id) || other.runtime.paused)
+                continue;
+            if (!other.hasForwardConductor() || !other.hasBackwardConductor())
+                continue;
+            if (TransitTimetableInstruction.depotOf(other.runtime.getSchedule()) == null)
+                continue;
+            if (transitAboard(other).isEmpty())
+                return true;
+        }
+        return false;
     }
 
     private static boolean claimed(String station) {
