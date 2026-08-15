@@ -159,6 +159,27 @@ public class TransitDispatch {
         return order != null && order.station.equals(station.name);
     }
 
+    /**
+     * A bay just opened: wake one train queued for a taken bay of the same name.
+     * Navigation never re-plans on its own, so a train that settled for the queue
+     * when everything was full would otherwise hold the yard's throat forever;
+     * cancelling re-polls it, and selection then finds this bay free.
+     */
+    public static void bayFreed(GlobalStation bay) {
+        for (Train other : Create.RAILWAYS.trains.values()) {
+            GlobalStation target = other.navigation.destination;
+            if (target == null || target == bay || !bay.name.equals(target.name))
+                continue;
+            if (TransitTimetableInstruction.depotOf(other.runtime.getSchedule()) == null)
+                continue;
+            Train holder = target.getNearestTrain();
+            if (holder == null || holder == other)
+                continue;
+            other.navigation.cancelNavigation();
+            return;
+        }
+    }
+
     /** Orders whose train is gone or whose time is up; checked lazily since the map is fleet-sized. */
     private static void sweep(Level level) {
         long now = level.getGameTime();

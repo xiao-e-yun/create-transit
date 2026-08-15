@@ -3,7 +3,9 @@ package me.xiaoeyun.createtransit.mixin;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.simibubi.create.content.trains.entity.Train;
 import com.simibubi.create.content.trains.station.GlobalStation;
@@ -32,6 +34,11 @@ public abstract class GlobalStationMixin {
         if (train != null && !TransitDispatch.mayLoad(train, (GlobalStation) (Object) this, stack))
             return stack;
         return ItemHandlerHelper.insertItemStacked(carriage, stack, simulate);
+    }
+
+    @Inject(method = "trainDeparted", at = @At("TAIL"), remap = false)
+    private void createTransit$bayFreed(Train train, CallbackInfo ci) {
+        TransitDispatch.bayFreed((GlobalStation) (Object) this);
     }
 
 }
