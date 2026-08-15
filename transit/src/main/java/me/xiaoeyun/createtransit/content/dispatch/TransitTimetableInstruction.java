@@ -61,6 +61,20 @@ public class TransitTimetableInstruction extends TextScheduleInstruction {
         return null;
     }
 
+    /** The one-stop schedule a timetable item applies. */
+    public static Schedule schedule(String depot) {
+        TransitTimetableInstruction instruction = new TransitTimetableInstruction();
+        instruction.getData()
+            .putString("Text", depot);
+        instruction.getData()
+            .putBoolean("FromItem", true);
+        ScheduleEntry entry = new ScheduleEntry();
+        entry.instruction = instruction;
+        Schedule schedule = new Schedule();
+        schedule.entries.add(entry);
+        return schedule;
+    }
+
     /** Whether the schedule came from a timetable item, which is what makes handing one back not an item dupe. */
     public static boolean fromItem(@Nullable Schedule schedule) {
         if (schedule == null)

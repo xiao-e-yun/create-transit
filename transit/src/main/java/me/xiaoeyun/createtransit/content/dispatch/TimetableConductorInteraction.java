@@ -5,8 +5,6 @@ import com.simibubi.create.content.contraptions.Contraption;
 import com.simibubi.create.content.trains.entity.CarriageContraption;
 import com.simibubi.create.content.trains.entity.CarriageContraptionEntity;
 import com.simibubi.create.content.trains.entity.Train;
-import com.simibubi.create.content.trains.schedule.Schedule;
-import com.simibubi.create.content.trains.schedule.ScheduleEntry;
 
 import net.createmod.catnip.data.Couple;
 import net.minecraft.core.BlockPos;
@@ -77,16 +75,7 @@ public class TimetableConductorInteraction {
             return;
         }
 
-        Schedule schedule = new Schedule();
-        TransitTimetableInstruction instruction = new TransitTimetableInstruction();
-        instruction.getData()
-            .putString("Text", depot);
-        instruction.getData()
-            .putBoolean("FromItem", true);
-        ScheduleEntry entry = new ScheduleEntry();
-        entry.instruction = instruction;
-        schedule.entries.add(entry);
-        train.runtime.setSchedule(schedule, false);
+        train.runtime.setSchedule(TransitTimetableInstruction.schedule(depot), false);
         held.shrink(1);
 
         AllSoundEvents.CONFIRM.playOnServer(player.level(), player.blockPosition(), 1, 1);

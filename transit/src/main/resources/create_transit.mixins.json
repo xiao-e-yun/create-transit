@@ -6,6 +6,7 @@
   "refmap": "create_transit.refmap.json",
   "mixins": [
     "ChainConveyorRoutingTableMixin",
+    "ConductorBlockInteractionBehaviorMixin",
     "GlobalStationMixin",
     "LogisticsManagerMixin",
     "PackageItemMixin",

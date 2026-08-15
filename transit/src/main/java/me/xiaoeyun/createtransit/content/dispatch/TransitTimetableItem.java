@@ -2,10 +2,10 @@ package me.xiaoeyun.createtransit.content.dispatch;
 
 import java.util.List;
 
-import com.simibubi.create.content.trains.entity.Train;
 import com.simibubi.create.content.trains.station.GlobalStation;
 import com.simibubi.create.content.trains.station.StationBlockEntity;
 
+import me.xiaoeyun.createtransit.registry.CtItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -41,13 +41,6 @@ public class TransitTimetableItem extends Item {
             return InteractionResult.PASS;
 
         Player player = context.getPlayer();
-        // A bound timetable enrolls the waiting train instead; sneak to rebind anyway.
-        Train train = station.getPresentTrain();
-        if (player != null && train != null && !depot(stack).isEmpty() && !player.isShiftKeyDown()) {
-            TimetableConductorInteraction.enroll(player, train, stack, level.isClientSide);
-            return InteractionResult.sidedSuccess(level.isClientSide);
-        }
-
         if (!level.isClientSide && player != null) {
             stack.getOrCreateTag()
                 .putString(NBT_STATION, station.name);
@@ -55,6 +48,14 @@ public class TransitTimetableItem extends Item {
                 Component.translatable(LANG_BOUND, Component.literal(station.name)), true);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    /** A timetable already bound to a bay, so the key stays spelled in one place. */
+    public static ItemStack of(String depot) {
+        ItemStack stack = CtItems.TRANSIT_TIMETABLE.asStack();
+        stack.getOrCreateTag()
+            .putString(NBT_STATION, depot);
+        return stack;
     }
 
     /** The bound bay, or blank while unbound. */
