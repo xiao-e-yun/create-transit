@@ -6,13 +6,11 @@
   "refmap": "create_transit.refmap.json",
   "mixins": [
     "ChainConveyorRoutingTableMixin",
-    "FetchPackagesInstructionMixin",
     "GlobalStationMixin",
     "LogisticsManagerMixin",
     "PackageItemMixin",
     "PackageRepackageHelperMixin",
-    "PackagerBlockEntityMixin",
-    "ScheduleMixin"
+    "PackagerBlockEntityMixin"
   ],
   "client": [
     "client.FrogportRendererMixin",
@@ -20,8 +18,7 @@
     "client.PackagePortBlockEntityMixin",
     "client.PackagePortScreenMixin",
     "client.PackagerRendererMixin",
-    "client.PostboxRendererMixin",
-    "client.TransitScheduleScreenMixin"
+    "client.PostboxRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

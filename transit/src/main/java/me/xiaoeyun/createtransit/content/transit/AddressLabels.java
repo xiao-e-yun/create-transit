@@ -2,7 +2,6 @@ package me.xiaoeyun.createtransit.content.transit;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -84,14 +83,6 @@ public final class AddressLabels {
         if (end == -1)
             return address;
         return trimLeading(address.substring(end));
-    }
-
-    /** A regex matching any address with head label {@code name}, for Create's retrieval; {@link Pattern#quote} because the label delimiters are regex syntax. */
-    public static String headLabelRegex(String name) {
-        String sanitized = sanitizeName(name);
-        if (sanitized.isEmpty() || WILDCARD.equals(sanitized))
-            return Pattern.quote(OPEN) + ".*?" + Pattern.quote(CLOSE) + ".*";
-        return Pattern.quote(OPEN + sanitized + CLOSE) + ".*";
     }
 
     /** Prefixes a label onto an address. A blank name is pure forwarding. */

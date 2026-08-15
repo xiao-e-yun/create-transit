@@ -129,9 +129,7 @@ dependencies {
     // bumped by editing digits -- see the README row for where it comes from.
     runtimeOnly(fg.deobf("curse.maven:jei-integration-${jei_integration_project}:${jei_integration_file}"))
 
-    // Route, schedule and network glue: transit's Itinerary reads RouteStore
-    // directly and the schedule screen's transit-train button shares the
-    // screen route's mixin hangs its layout on.
+    // A product-line dependency, not a code one -- see mods.toml.
     implementation project(':route')
 }
 
