@@ -9,6 +9,10 @@ plugins {
 mixin {
     add sourceSets.main, "${mod_id}.refmap.json"
     config "${mod_id}.mixins.json"
+    // The dev runs load route from source, and mixin configs are registered per
+    // project -- without this line route's mixins silently never apply in a
+    // transit run and its Create accessors fail as ClassCastException.
+    config 'create_routes.mixins.json'
 }
 
 version = mod_version
