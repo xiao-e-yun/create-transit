@@ -57,8 +57,8 @@ public class TransitDispatch {
         Train train = runtime.train;
         sweep(level);
 
-        // A conductor can be broken off mid-run, so the door check alone is not enough.
-        if (!train.hasForwardConductor() || !train.hasBackwardConductor()) {
+        // Upstream's own bar: any conductor drives; whether a route needs both ends is the pathfinder's verdict.
+        if (!train.hasForwardConductor() && !train.hasBackwardConductor()) {
             train.status.missingConductor();
             ORDERS.remove(train.id);
             return null;
