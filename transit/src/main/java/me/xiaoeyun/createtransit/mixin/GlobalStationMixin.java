@@ -38,7 +38,7 @@ public abstract class GlobalStationMixin {
 
     @Inject(method = "trainDeparted", at = @At("TAIL"), remap = false)
     private void createTransit$bayFreed(Train train, CallbackInfo ci) {
-        TransitDispatch.bayFreed((GlobalStation) (Object) this);
+        TransitDispatch.bayFreed((GlobalStation) (Object) this, train);
     }
 
 }

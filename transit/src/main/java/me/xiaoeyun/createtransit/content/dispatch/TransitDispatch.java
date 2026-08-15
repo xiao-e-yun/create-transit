@@ -160,24 +160,36 @@ public class TransitDispatch {
     }
 
     /**
-     * A bay just opened: wake one train queued for a taken bay of the same name.
-     * Navigation never re-plans on its own, so a train that settled for the queue
-     * when everything was full would otherwise hold the yard's throat forever;
-     * cancelling re-polls it, and selection then finds this bay free.
+     * A bay just opened: wake the most-stuck homebound train queued for a taken bay
+     * of the same name. Navigation never re-plans on its own, so a train that settled
+     * for the queue when everything was full would otherwise hold the yard's throat
+     * forever; cancelling re-polls it, and selection then finds this bay free.
+     * Disassembling a parked train frees its bay without a departure — that one waits
+     * for the next real departure.
      */
-    public static void bayFreed(GlobalStation bay) {
+    public static void bayFreed(GlobalStation bay, Train departed) {
+        if (bay.getNearestTrain() != null)
+            return;
+        Train best = null;
         for (Train other : Create.RAILWAYS.trains.values()) {
+            // Paused runtimes never reach the re-poll, so a cancel would strand them where they roll out.
+            if (other == departed || other.runtime.paused)
+                continue;
             GlobalStation target = other.navigation.destination;
             if (target == null || target == bay || !bay.name.equals(target.name))
                 continue;
-            if (TransitTimetableInstruction.depotOf(other.runtime.getSchedule()) == null)
+            // Its own depot only, so a delivery leg to a same-named stop is never yanked mid-journey.
+            if (!bay.name.equals(TransitTimetableInstruction.depotOf(other.runtime.getSchedule())))
                 continue;
             Train holder = target.getNearestTrain();
             if (holder == null || holder == other)
                 continue;
-            other.navigation.cancelNavigation();
-            return;
+            if (best == null
+                || other.navigation.ticksWaitingForSignal > best.navigation.ticksWaitingForSignal)
+                best = other;
         }
+        if (best != null)
+            best.navigation.cancelNavigation();
     }
 
     /** Orders whose train is gone or whose time is up; checked lazily since the map is fleet-sized. */
