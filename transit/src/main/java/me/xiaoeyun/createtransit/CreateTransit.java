@@ -12,7 +12,6 @@ import me.xiaoeyun.createtransit.registry.CtBlocks;
 import me.xiaoeyun.createtransit.registry.CtItems;
 import me.xiaoeyun.createtransit.registry.CtCreativeTab;
 import me.xiaoeyun.createtransit.registry.CtPartialModels;
-import me.xiaoeyun.createtransit.registry.CtSchedule;
 import net.createmod.catnip.lang.FontHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
@@ -58,8 +57,6 @@ public class CreateTransit {
 
     private static void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(CtPackets::register);
-        // Schedule types are looked up by id from NBT, so they must be in Create's table before any world loads.
-        event.enqueueWork(CtSchedule::register);
     }
 
     public static CreateRegistrate registrate() {

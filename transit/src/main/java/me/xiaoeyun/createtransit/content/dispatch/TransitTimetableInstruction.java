@@ -15,6 +15,7 @@ import me.xiaoeyun.createtransit.CreateTransit;
 import me.xiaoeyun.createtransit.registry.CtItems;
 import net.createmod.catnip.data.Pair;
 import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -73,6 +74,16 @@ public class TransitTimetableInstruction extends TextScheduleInstruction {
         Schedule schedule = new Schedule();
         schedule.entries.add(entry);
         return schedule;
+    }
+
+    /** Mirrors {@code ScheduleInstruction.fromTag}'s tail, which our unregistered id never reaches. */
+    public static TransitTimetableInstruction read(CompoundTag tag) {
+        TransitTimetableInstruction instruction = new TransitTimetableInstruction();
+        instruction.readAdditional(tag);
+        CompoundTag data = tag.getCompound("Data");
+        instruction.readAdditional(data);
+        instruction.data = data;
+        return instruction;
     }
 
     /** Whether the schedule came from a timetable item, which is what makes handing one back not an item dupe. */

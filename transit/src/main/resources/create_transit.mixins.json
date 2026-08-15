@@ -12,6 +12,7 @@
     "PackageItemMixin",
     "PackageRepackageHelperMixin",
     "PackagerBlockEntityMixin",
+    "ScheduleInstructionMixin",
     "ScheduleRuntimeMixin"
   ],
   "client": [
