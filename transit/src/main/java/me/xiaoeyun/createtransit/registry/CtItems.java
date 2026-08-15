@@ -15,7 +15,6 @@ public class CtItems {
 
     public static final ItemEntry<TransitTimetableItem> TRANSIT_TIMETABLE =
         registrate().item("transit_timetable", TransitTimetableItem::new)
-            .properties(p -> p.stacksTo(1))
             .register();
 
     /**
