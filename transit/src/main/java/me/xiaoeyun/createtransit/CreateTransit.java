@@ -5,16 +5,20 @@ import com.simibubi.create.AllCreativeModeTabs;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.foundation.item.ItemDescription;
 
+import me.xiaoeyun.createtransit.content.dispatch.TimetableConductorInteraction;
 import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.registry.CtBlockEntities;
 import me.xiaoeyun.createtransit.registry.CtBlocks;
 import me.xiaoeyun.createtransit.registry.CtItems;
 import me.xiaoeyun.createtransit.registry.CtCreativeTab;
 import me.xiaoeyun.createtransit.registry.CtPartialModels;
+import me.xiaoeyun.createtransit.registry.CtSchedule;
 import net.createmod.catnip.lang.FontHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -50,10 +54,16 @@ public class CreateTransit {
         // Create's creative tab is filled from Create's own registrate, which
         // never sees an addon's entries, so our blocks have to add themselves.
         modEventBus.addListener(CtCreativeTab::onBuildContents);
+        // HIGH, because an enrolled train's empty-hand tap must return the
+        // timetable before Create's handler turns it into a schedule item.
+        MinecraftForge.EVENT_BUS.addListener(EventPriority.HIGH, false,
+            TimetableConductorInteraction::interactWithConductor);
     }
 
     private static void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(CtPackets::register);
+        // Schedule types are looked up by id from NBT, so they must be in Create's table before any world loads.
+        event.enqueueWork(CtSchedule::register);
     }
 
     public static CreateRegistrate registrate() {

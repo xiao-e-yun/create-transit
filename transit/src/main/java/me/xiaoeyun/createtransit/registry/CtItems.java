@@ -8,9 +8,15 @@ import java.util.List;
 import com.simibubi.create.content.logistics.box.PackageStyles.PackageStyle;
 import com.tterrag.registrate.util.entry.ItemEntry;
 
+import me.xiaoeyun.createtransit.content.dispatch.TransitTimetableItem;
 import me.xiaoeyun.createtransit.content.transit.TransitPackageItem;
 
 public class CtItems {
+
+    public static final ItemEntry<TransitTimetableItem> TRANSIT_TIMETABLE =
+        registrate().item("transit_timetable", TransitTimetableItem::new)
+            .properties(p -> p.stacksTo(1))
+            .register();
 
     /**
      * One box per standard Create size, in {@code PackageStyles.STYLES} order.

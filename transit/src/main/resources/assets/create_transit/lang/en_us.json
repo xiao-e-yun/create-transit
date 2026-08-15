@@ -9,6 +9,16 @@
   "create_transit.package_port.endpoint_off": "The address is an ordinary local one",
   "create_transit.package_port.endpoint_on": "The address is a foreign package's transit label (blank = default lane, * = any)",
   "create_transit.package_port.transit_endpoint": "Transit Endpoint",
+  "create_transit.schedule.instruction.timetable": "Transport Timetable",
+  "create_transit.schedule.instruction.timetable.depot": "Parking Bay Station",
+  "create_transit.schedule.instruction.timetable.depot_1": "The exact station name of this train's own bay",
+  "create_transit.schedule.instruction.timetable.summary": "Serves the dispatcher, parking at:",
+  "create_transit.timetable.bind_first": "Set a parking bay first: right-click its train station",
+  "create_transit.timetable.bind_hint": "Right-click a train station to set the parking bay",
+  "create_transit.timetable.bound": "Parking bay: %s",
+  "create_transit.timetable.enrolled": "Train enrolled, parking bay: %s",
+  "create_transit.timetable.needs_conductors": "Transit duty needs a conductor at both ends",
+  "create_transit.timetable.retired": "Train retired from transit duty",
   "create_transit.transit_gate.goggles.adopted": "Transit label adopted from the sign at %s, %s, %s",
   "create_transit.transit_gate.goggles.any": "Strips any transit label from passing packages; stamps none on departure",
   "create_transit.transit_gate.goggles.strips": "Strips the %s transit label from passing packages",
@@ -20,5 +30,7 @@
   "create_transit.transit_ticker.goggles.cycle": "Warning: proxy cycle detected, contributing empty stock",
   "create_transit.transit_ticker.goggles.disconnected": "Child network not reachable (unbound or unloaded)",
   "create_transit.transit_ticker.goggles.mount_conflict": "Warning: a Stock Link and a Transit Link are both mounted; transit requests are starved",
-  "item.create_transit.transit_package": "Transit Package"
+  "item.create_transit.transit_package": "Transit Package",
+  "item.create_transit.transit_timetable": "Transport Timetable",
+  "item.create_transit.transit_timetable.tooltip.summary": "_Donates_ a train to the network: bind its _parking bay_, then hand this to a _conductor_. The dispatcher does the rest."
 }

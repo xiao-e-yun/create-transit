@@ -2,6 +2,7 @@ package me.xiaoeyun.createtransit.registry;
 
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.AllCreativeModeTabs;
+import com.simibubi.create.AllItems;
 import com.simibubi.create.content.logistics.box.PackageStyles;
 import com.tterrag.registrate.util.entry.ItemEntry;
 
@@ -52,6 +53,9 @@ public final class CtCreativeTab {
                 TabVisibility.PARENT_AND_SEARCH_TABS);
         event.getEntries()
             .putAfter(AllBlocks.STOCK_TICKER.asStack(), CtBlocks.TRANSIT_TICKER.asStack(),
+                TabVisibility.PARENT_AND_SEARCH_TABS);
+        event.getEntries()
+            .putAfter(AllItems.SCHEDULE.asStack(), CtItems.TRANSIT_TIMETABLE.asStack(),
                 TabVisibility.PARENT_AND_SEARCH_TABS);
 
         // The packages ride with Create's own boxes, which sit in the tab in

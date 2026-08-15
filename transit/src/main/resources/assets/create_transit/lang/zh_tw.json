@@ -9,6 +9,16 @@
   "create_transit.package_port.endpoint_off": "地址是一般的域內地址",
   "create_transit.package_port.endpoint_on": "地址是跨境包裹的轉運標籤（留空＝預設轉運，* ＝全部）",
   "create_transit.package_port.transit_endpoint": "跨境端點",
+  "create_transit.schedule.instruction.timetable": "運輸時刻表",
+  "create_transit.schedule.instruction.timetable.depot": "停車位車站",
+  "create_transit.schedule.instruction.timetable.depot_1": "本車車庫的確切站名",
+  "create_transit.schedule.instruction.timetable.summary": "聽候調度器差遣，停車位：",
+  "create_transit.timetable.bind_first": "請先右鍵車站，綁定停車位",
+  "create_transit.timetable.bind_hint": "右鍵車站以綁定停車位",
+  "create_transit.timetable.bound": "停車位：%s",
+  "create_transit.timetable.enrolled": "列車已報到，停車位：%s",
+  "create_transit.timetable.needs_conductors": "轉運勤務需要兩端都有列車長",
+  "create_transit.timetable.retired": "列車已退出轉運勤務",
   "create_transit.transit_gate.goggles.adopted": "轉運標籤取自 %s, %s, %s 的告示牌",
   "create_transit.transit_gate.goggles.any": "剝除通過包裹的任何轉運標籤；出境不蓋標籤",
   "create_transit.transit_gate.goggles.strips": "剝除通過包裹的 %s 轉運標籤",
@@ -20,5 +30,7 @@
   "create_transit.transit_ticker.goggles.cycle": "警告：偵測到代理循環，此路徑貢獻空庫存",
   "create_transit.transit_ticker.goggles.disconnected": "子網路未連接（未綁定或未載入）",
   "create_transit.transit_ticker.goggles.mount_conflict": "警告：同時掛載庫存鏈路與跨境鏈路，跨境請求將取不到庫存",
-  "item.create_transit.transit_package": "跨境包裹"
+  "item.create_transit.transit_package": "跨境包裹",
+  "item.create_transit.transit_timetable": "運輸時刻表",
+  "item.create_transit.transit_timetable.tooltip.summary": "把列車_捐給網路_：綁定_停車位_，再把時刻表遞給_列車長_，其餘交給調度器。"
 }
