@@ -169,10 +169,12 @@ public class TransitDispatch {
         }
     }
 
-    /** An enrolled, unpaused, empty double-header with no order — the train worth saving the job for. */
+    /** An enrolled, unpaused, empty double-header with no order and not mid-journey — able to take the job now, not eventually. */
     private static boolean idleDoubleHeader(Train self) {
         for (Train other : Create.RAILWAYS.trains.values()) {
             if (other == self || ORDERS.containsKey(other.id) || other.runtime.paused)
+                continue;
+            if (other.navigation.destination != null)
                 continue;
             if (!other.hasForwardConductor() || !other.hasBackwardConductor())
                 continue;
