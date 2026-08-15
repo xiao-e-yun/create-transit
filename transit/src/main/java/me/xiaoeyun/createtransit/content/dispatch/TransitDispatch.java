@@ -130,7 +130,16 @@ public class TransitDispatch {
             train.status.failedNavigationNoTarget(depot);
             return null;
         }
-        DiscoveredPath path = train.navigation.findPathTo(home, Double.MAX_VALUE);
+        // Same-named bays spread by skipping ones another train has eyes on: Create re-reserves its
+        // nearestTrain slot every navigation tick, in the same server tick a path starts, so a whole
+        // batch released together still picks distinct bays. All taken -> queue like before.
+        ArrayList<GlobalStation> free = new ArrayList<>();
+        for (GlobalStation bay : home) {
+            Train eyeing = bay.getNearestTrain();
+            if (eyeing == null || eyeing == train)
+                free.add(bay);
+        }
+        DiscoveredPath path = train.navigation.findPathTo(free.isEmpty() ? home : free, Double.MAX_VALUE);
         if (path == null)
             train.status.failedNavigation();
         return path;
