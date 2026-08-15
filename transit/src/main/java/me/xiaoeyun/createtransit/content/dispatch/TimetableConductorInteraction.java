@@ -64,9 +64,25 @@ public class TimetableConductorInteraction {
             enroll(event, player, train, held);
             return;
         }
-        if (event.getHand() == InteractionHand.MAIN_HAND && held.isEmpty()
-            && TransitTimetableInstruction.depotOf(train.runtime.getSchedule()) != null)
+        if (event.getHand() != InteractionHand.MAIN_HAND || !held.isEmpty())
+            return;
+        // Manual controls pause the runtime, and this tap is Create's only cure — stand aside for it.
+        if (train.runtime.paused && !train.runtime.completed)
+            return;
+        if (enrolledByItem(train))
             retire(event, player, train);
+    }
+
+    /** Whether the schedule came from a timetable item, which is what makes handing one back not an item dupe. */
+    private static boolean enrolledByItem(Train train) {
+        var schedule = train.runtime.getSchedule();
+        if (schedule == null)
+            return false;
+        for (ScheduleEntry entry : schedule.entries)
+            if (entry.instruction instanceof TransitTimetableInstruction timetable)
+                return timetable.getData()
+                    .getBoolean("FromItem");
+        return false;
     }
 
     private static void enroll(EntityInteractSpecific event, Player player, Train train, ItemStack held) {
@@ -96,6 +112,8 @@ public class TimetableConductorInteraction {
             TransitTimetableInstruction instruction = new TransitTimetableInstruction();
             instruction.getData()
                 .putString("Text", depot);
+            instruction.getData()
+                .putBoolean("FromItem", true);
             ScheduleEntry entry = new ScheduleEntry();
             entry.instruction = instruction;
             schedule.entries.add(entry);

@@ -89,12 +89,14 @@ public class TransitTimetableInstruction extends TextScheduleInstruction {
     @Override
     @Nullable
     public DiscoveredPath start(ScheduleRuntime runtime, Level level) {
-        // Create re-runs the live entry on assembly; answered with null so a journey is never abandoned mid-trip.
+        // Assembly mode re-runs the live entry; null lets Create cancel and cleanly re-plan next tick.
         if (runtime.train.navigation.destination != null)
             return null;
 
+        // Unconditional, and doing double duty: it breaks the already-there hot loop, and since travel
+        // never consumes it, the leftover count is a free dwell of extra mail cycles after every arrival.
         runtime.startCooldown();
-        return null;
+        return TransitDispatch.nextLeg(runtime, level, depot());
     }
 
 }
