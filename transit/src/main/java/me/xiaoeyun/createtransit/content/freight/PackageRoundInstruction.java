@@ -242,7 +242,7 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
         clearRound();
     }
 
-    /** Stations another train is already heading to; a train's own destination is its claim, so no separate claim table is needed. */
+    /** Stations another train is heading to or standing at; the destination claim vanishes on arrival, so the platform itself claims until departure. */
     private static Set<GlobalStation> spokenFor(Train self) {
         Set<GlobalStation> taken = new HashSet<>();
         for (Train other : Create.RAILWAYS.trains.values()) {
@@ -251,6 +251,9 @@ public class PackageRoundInstruction extends TextScheduleInstruction implements 
             GlobalStation heading = other.navigation.destination;
             if (heading != null)
                 taken.add(heading);
+            GlobalStation standing = other.getCurrentStation();
+            if (standing != null)
+                taken.add(standing);
         }
         return taken;
     }
