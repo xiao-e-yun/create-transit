@@ -61,6 +61,17 @@ public class TransitTimetableInstruction extends TextScheduleInstruction {
         return null;
     }
 
+    /** Whether the schedule came from a timetable item, which is what makes handing one back not an item dupe. */
+    public static boolean fromItem(@Nullable Schedule schedule) {
+        if (schedule == null)
+            return false;
+        for (ScheduleEntry entry : schedule.entries)
+            if (entry.instruction instanceof TransitTimetableInstruction timetable)
+                return timetable.getData()
+                    .getBoolean("FromItem");
+        return false;
+    }
+
     @Override
     public ItemStack getSecondLineIcon() {
         return CtItems.TRANSIT_TIMETABLE.asStack();

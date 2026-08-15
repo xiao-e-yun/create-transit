@@ -17,7 +17,6 @@
   "create_transit.timetable.bind_hint": "右鍵車站以綁定停車位",
   "create_transit.timetable.bound": "停車位：%s",
   "create_transit.timetable.enrolled": "列車已報到，停車位：%s",
-  "create_transit.timetable.retired": "列車已退出轉運勤務",
   "create_transit.transit_gate.goggles.adopted": "轉運標籤取自 %s, %s, %s 的告示牌",
   "create_transit.transit_gate.goggles.any": "剝除通過包裹的任何轉運標籤；出境不蓋標籤",
   "create_transit.transit_gate.goggles.strips": "剝除通過包裹的 %s 轉運標籤",

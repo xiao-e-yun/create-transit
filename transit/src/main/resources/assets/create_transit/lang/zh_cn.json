@@ -17,7 +17,6 @@
   "create_transit.timetable.bind_hint": "右键车站以绑定停车位",
   "create_transit.timetable.bound": "停车位：%s",
   "create_transit.timetable.enrolled": "列车已报到，停车位：%s",
-  "create_transit.timetable.retired": "列车已退出转运勤务",
   "create_transit.transit_gate.goggles.adopted": "转运标签取自 %s, %s, %s 的告示牌",
   "create_transit.transit_gate.goggles.any": "剥除通过包裹的任何转运标签；出境不盖标签",
   "create_transit.transit_gate.goggles.strips": "剥除通过包裹的 %s 转运标签",

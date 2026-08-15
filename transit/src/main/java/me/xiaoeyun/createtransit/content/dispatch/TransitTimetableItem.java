@@ -2,6 +2,7 @@ package me.xiaoeyun.createtransit.content.dispatch;
 
 import java.util.List;
 
+import com.simibubi.create.content.trains.entity.Train;
 import com.simibubi.create.content.trains.station.GlobalStation;
 import com.simibubi.create.content.trains.station.StationBlockEntity;
 
@@ -40,6 +41,13 @@ public class TransitTimetableItem extends Item {
             return InteractionResult.PASS;
 
         Player player = context.getPlayer();
+        // A bound timetable enrolls the waiting train instead; sneak to rebind anyway.
+        Train train = station.getPresentTrain();
+        if (player != null && train != null && !depot(stack).isEmpty() && !player.isShiftKeyDown()) {
+            TimetableConductorInteraction.enroll(player, train, stack, level.isClientSide);
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
+
         if (!level.isClientSide && player != null) {
             stack.getOrCreateTag()
                 .putString(NBT_STATION, station.name);

@@ -10,7 +10,8 @@
     "LogisticsManagerMixin",
     "PackageItemMixin",
     "PackageRepackageHelperMixin",
-    "PackagerBlockEntityMixin"
+    "PackagerBlockEntityMixin",
+    "ScheduleRuntimeMixin"
   ],
   "client": [
     "client.FrogportRendererMixin",

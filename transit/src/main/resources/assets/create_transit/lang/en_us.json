@@ -17,7 +17,6 @@
   "create_transit.timetable.bind_hint": "Right-click a train station to set the parking bay",
   "create_transit.timetable.bound": "Parking bay: %s",
   "create_transit.timetable.enrolled": "Train enrolled, parking bay: %s",
-  "create_transit.timetable.retired": "Train retired from transit duty",
   "create_transit.transit_gate.goggles.adopted": "Transit label adopted from the sign at %s, %s, %s",
   "create_transit.transit_gate.goggles.any": "Strips any transit label from passing packages; stamps none on departure",
   "create_transit.transit_gate.goggles.strips": "Strips the %s transit label from passing packages",

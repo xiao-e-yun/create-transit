@@ -18,7 +18,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -54,10 +53,7 @@ public class CreateTransit {
         // Create's creative tab is filled from Create's own registrate, which
         // never sees an addon's entries, so our blocks have to add themselves.
         modEventBus.addListener(CtCreativeTab::onBuildContents);
-        // HIGH, because an enrolled train's empty-hand tap must return the
-        // timetable before Create's handler turns it into a schedule item.
-        MinecraftForge.EVENT_BUS.addListener(EventPriority.HIGH, false,
-            TimetableConductorInteraction::interactWithConductor);
+        MinecraftForge.EVENT_BUS.addListener(TimetableConductorInteraction::interactWithConductor);
     }
 
     private static void commonSetup(FMLCommonSetupEvent event) {
