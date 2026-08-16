@@ -405,6 +405,44 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         return mount && transit;
     }
 
+    /**
+     * The parent networks this mounting lends the child's stock to. Flattened
+     * mounting lends through shadow links rather than through a summary, which
+     * is why its branch here is the inverse of {@link #getAvailableItems}'s.
+     */
+    private Set<UUID> lentTo() {
+        Set<UUID> mounts = collectAdjacentMountFrequencies();
+        if (!mounts.isEmpty())
+            return mounts;
+        if (collectAdjacentTransitLabels().isEmpty())
+            return Set.of();
+        return collectAdjacentParentFrequencies();
+    }
+
+    /** Every network mounted beneath {@code freq}, transitively. */
+    public static Set<UUID> collectMountedFrequencies(UUID freq) {
+        Set<UUID> mounted = new HashSet<>();
+        collectMountedFrequencies(freq, mounted);
+        return mounted;
+    }
+
+    // ponytail: one getAllPresent walk per arrival diff per layer, uncached.
+    // Wrap in a TickBasedCache(20) keyed by frequency if a large network shows it.
+    private static void collectMountedFrequencies(UUID freq, Set<UUID> out) {
+        for (LogisticallyLinkedBehaviour link : LogisticallyLinkedBehaviour.getAllPresent(freq, false)) {
+            if (!(link.blockEntity instanceof PackagerLinkBlockEntity plbe))
+                continue;
+            if (!(plbe.getPackager() instanceof TransitTickerBlockEntity ticker))
+                continue;
+            if (!ticker.lentTo()
+                .contains(freq))
+                continue;
+            UUID childFreqId = ticker.childLink.freqId;
+            if (out.add(childFreqId))
+                collectMountedFrequencies(childFreqId, out);
+        }
+    }
+
     // Cycle guard helpers
 
     private static Set<UUID> enterNetworks(Set<UUID> visited, UUID childFreqId, Set<UUID> parentFreqs) {

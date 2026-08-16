@@ -1,6 +1,8 @@
 package me.xiaoeyun.createtransit.mixin;
 
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -8,13 +10,17 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import com.simibubi.create.AllBlocks;
+import com.simibubi.create.Create;
 import com.simibubi.create.content.logistics.packager.PackagerBlockEntity;
 import com.simibubi.create.content.logistics.packager.PackagingRequest;
+import com.simibubi.create.content.logistics.packagerLink.RequestPromiseQueue;
 import com.tterrag.registrate.util.entry.BlockEntry;
 
+import me.xiaoeyun.createtransit.content.ticker.TransitTickerBlockEntity;
 import me.xiaoeyun.createtransit.content.transit.TransitPackaging;
 import me.xiaoeyun.createtransit.registry.CtBlocks;
 import net.minecraft.world.item.ItemStack;
@@ -52,6 +58,33 @@ public class PackagerBlockEntityMixin {
         // answering yes there would make it consume the direction and skip the
         // link check entirely.
         return queried.has(adjacent) || queried == AllBlocks.STOCK_LINK && CtBlocks.TRANSIT_LINK.has(adjacent);
+    }
+
+    /**
+     * Vanilla credits an arrival to the adjacent link's frequency alone, which
+     * is complete only while network membership means physical adjacency. A
+     * ticker exists to break that, so a factory panel in a child network that
+     * ships its output up held a promise nothing could ever retire — and the
+     * default clearing interval expires none.
+     *
+     * <p>At the {@code hasQueuedPromises} call rather than after it, because
+     * that guard skips a link whose own network promised nothing, which is the
+     * case being fixed. Downward only: hierarchical addressing binds a panel to
+     * the network it stands in.
+     */
+    @ModifyExpressionValue(
+        method = "submitNewArrivals(Lcom/simibubi/create/content/logistics/packager/InventorySummary;"
+            + "Lcom/simibubi/create/content/logistics/packager/InventorySummary;)V",
+        at = @At(value = "INVOKE",
+            target = "Lcom/simibubi/create/content/logistics/packagerLink/GlobalLogisticsManager;"
+                + "hasQueuedPromises(Ljava/util/UUID;)Z"))
+    private boolean createTransit$arrivalsCreditTheNetworksBelow(boolean hasQueuedPromises,
+        @Local(name = "freqId") UUID freqId,
+        @Local(name = "promiseQueues") Set<RequestPromiseQueue> promiseQueues) {
+        for (UUID childFreqId : TransitTickerBlockEntity.collectMountedFrequencies(freqId))
+            if (Create.LOGISTICS.hasQueuedPromises(childFreqId))
+                promiseQueues.add(Create.LOGISTICS.getQueuedPromises(childFreqId));
+        return hasQueuedPromises;
     }
 
     /**
