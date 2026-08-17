@@ -38,7 +38,7 @@ import net.minecraftforge.items.IItemHandlerModifiable;
 public class TransitDispatch {
 
     /** A claim on one station's outgoing transit mail; expiry is the only failure handling an order needs. */
-    private record Order(String station, long deadline) {}
+    private record Order(UUID graph, String station, long deadline) {}
 
     /** Generous because it covers the whole trip out plus loading; a stuck train forfeits, and the mail gets re-claimed. */
     private static final long ORDER_TIMEOUT = 20 * 60 * 5;
@@ -106,17 +106,18 @@ public class TransitDispatch {
         if (aboard.isEmpty() && hasRoom(train) && !(oneWay && idleDoubleHeader(train))) {
             ArrayList<GlobalStation> backlog = new ArrayList<>();
             for (GlobalStation station : train.graph.getPoints(EdgePointType.STATION))
-                if (!claimed(station.name) && hasWaitingMail(server, station))
+                if (!claimed(train.graph.id, station.name) && hasWaitingMail(server, station))
                     backlog.add(station);
             if (!backlog.isEmpty()) {
                 if (here != null && backlog.contains(here)) {
-                    ORDERS.put(train.id, new Order(here.name, level.getGameTime() + ORDER_TIMEOUT));
+                    ORDERS.put(train.id,
+                        new Order(train.graph.id, here.name, level.getGameTime() + ORDER_TIMEOUT));
                     return null;
                 }
                 DiscoveredPath path = train.navigation.findPathTo(backlog, Double.MAX_VALUE);
                 if (path != null) {
-                    ORDERS.put(train.id,
-                        new Order(path.destination.name, level.getGameTime() + ORDER_TIMEOUT));
+                    ORDERS.put(train.id, new Order(train.graph.id, path.destination.name,
+                        level.getGameTime() + ORDER_TIMEOUT));
                     return path;
                 }
             }
@@ -219,9 +220,10 @@ public class TransitDispatch {
         return false;
     }
 
-    private static boolean claimed(String station) {
+    /** Per graph, since two networks may both have a "Factory" and neither claim should shadow the other. */
+    private static boolean claimed(UUID graph, String station) {
         for (Order order : ORDERS.values())
-            if (order.station.equals(station))
+            if (order.graph.equals(graph) && order.station.equals(station))
                 return true;
         return false;
     }
