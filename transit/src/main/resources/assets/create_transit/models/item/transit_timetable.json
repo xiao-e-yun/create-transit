@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "create:item/schedule"
+    "layer0": "create_transit:item/transit_timetable"
   }
 }
