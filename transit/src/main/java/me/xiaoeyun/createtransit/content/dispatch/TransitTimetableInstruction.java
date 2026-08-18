@@ -30,11 +30,15 @@ import net.minecraft.world.level.Level;
  */
 public class TransitTimetableInstruction extends TextScheduleInstruction {
 
-    // Spelled out, not built from a prefix, so scripts/lang_audit.py can see these keys.
-    private static final String LANG_NAME = "create_transit.schedule.instruction.timetable";
-    private static final String LANG_SUMMARY = "create_transit.schedule.instruction.timetable.summary";
-    private static final String LANG_DEPOT = "create_transit.schedule.instruction.timetable.depot";
-    private static final String LANG_DEPOT_1 = "create_transit.schedule.instruction.timetable.depot_1";
+    /*
+     * The display overrides below are English literals rather than lang keys, because
+     * nothing a player can do reaches them. They exist for ScheduleScreen, and this
+     * instruction never appears there: it is unregistered, so the editor's list cannot
+     * offer it, and ScheduleRuntimeMixin hands back the timetable item instead of a
+     * schedule, so an enrolled train's schedule cannot be opened either. The only way
+     * left is a schedule whose FromItem flag was edited away by hand, and that does not
+     * earn three translations -- it earns something readable.
+     */
 
     @Override
     public ResourceLocation getId() {
@@ -104,21 +108,21 @@ public class TransitTimetableInstruction extends TextScheduleInstruction {
 
     @Override
     public Pair<ItemStack, Component> getSummary() {
-        return Pair.of(getSecondLineIcon(), Component.translatable(LANG_NAME));
+        return Pair.of(getSecondLineIcon(), Component.literal("Transport Timetable"));
     }
 
     /** Overridden because the inherited one looks up a key under Create's own namespace, not ours. */
     @Override
     public List<Component> getTitleAs(String type) {
-        return ImmutableList.of(Component.translatable(LANG_SUMMARY)
+        return ImmutableList.of(Component.literal("Serves the dispatcher, parking at:")
             .withStyle(ChatFormatting.GOLD),
             Component.translatable("create.generic.in_quotes", Component.literal(depot())));
     }
 
     @Override
     public List<Component> getSecondLineTooltip(int slot) {
-        return ImmutableList.of(Component.translatable(LANG_DEPOT),
-            Component.translatable(LANG_DEPOT_1)
+        return ImmutableList.of(Component.literal("Parking Bay Station"),
+            Component.literal("The exact station name of this train's own bay")
                 .withStyle(ChatFormatting.GRAY));
     }
 
