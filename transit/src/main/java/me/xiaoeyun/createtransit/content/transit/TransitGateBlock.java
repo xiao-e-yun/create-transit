@@ -1,11 +1,16 @@
 package me.xiaoeyun.createtransit.content.transit;
 
+import com.simibubi.create.AllSoundEvents;
 import com.simibubi.create.foundation.block.IBE;
 import com.simibubi.create.foundation.block.WrenchableDirectionalBlock;
 
 import me.xiaoeyun.createtransit.registry.CtBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -17,6 +22,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.pathfinder.PathComputationType;
+import net.minecraft.world.phys.BlockHitResult;
 
 public class TransitGateBlock extends WrenchableDirectionalBlock implements IBE<TransitGateBlockEntity> {
 
@@ -41,6 +47,30 @@ public class TransitGateBlock extends WrenchableDirectionalBlock implements IBE<
             .getOpposite())
             .setValue(POWERED, context.getLevel()
                 .hasNeighborSignal(context.getClickedPos()));
+    }
+
+    /**
+     * A box the gate has sent out but nothing collected sits in {@code heldBox}
+     * with no other way out, so hand it back the way the Packager this borrows
+     * its model from does. Outward only: a gate takes packages from the
+     * container it faces, never from a hand, so with nothing to give it stays
+     * out of the way of whatever the player is actually holding.
+     */
+    @Override
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
+        BlockHitResult hit) {
+        return onBlockEntityUse(level, pos, be -> {
+            if (be.heldBox.isEmpty() || be.animationTicks > 0)
+                return InteractionResult.PASS;
+            if (!level.isClientSide()) {
+                player.getInventory()
+                    .placeItemBackInInventory(be.heldBox.copy());
+                AllSoundEvents.playItemPickup(player);
+                be.heldBox = ItemStack.EMPTY;
+                be.notifyUpdate();
+            }
+            return InteractionResult.SUCCESS;
+        });
     }
 
     /**
