@@ -15,7 +15,7 @@ Transit labels nest, and the first one is what the network reads as the address.
 
 ### Transit Ticker
 
-Mounts another logistics network onto this one, so its stock can answer requests made here. Attach a Stock Link and the whole of it serves local requests, as if the two were one warehouse; attach a Transit Link instead and it becomes foreign territory, reachable through a border.
+Opens one network up to another. Bind the ticker to the network being offered, then mount a link belonging to the network that should reach it: with a Stock Link the whole of its stock serves that network's requests, as if the two were one warehouse; with a Transit Link it becomes foreign territory instead, reached through a border. Access runs one way — the network offered up cannot reach back.
 
 ### Transit Link
 
