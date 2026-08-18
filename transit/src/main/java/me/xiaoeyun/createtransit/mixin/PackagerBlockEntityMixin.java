@@ -63,14 +63,15 @@ public class PackagerBlockEntityMixin {
     /**
      * Vanilla credits an arrival to the adjacent link's frequency alone, which
      * is complete only while network membership means physical adjacency. A
-     * ticker exists to break that, so a factory panel in a child network that
-     * ships its output up held a promise nothing could ever retire — and the
-     * default clearing interval expires none.
+     * ticker exists to break that: the network this one is mounted onto browses
+     * its stock without ever touching it, so a factory panel bound up there held
+     * a promise no arrival down here could retire, and the default clearing
+     * interval expires none.
      *
      * <p>At the {@code hasQueuedPromises} call rather than after it, because
      * that guard skips a link whose own network promised nothing, which is the
-     * case being fixed. Downward only: hierarchical addressing binds a panel to
-     * the network it stands in.
+     * case being fixed. Upward only, because mounting is one-way: an arrival
+     * here raises what a parent sees and nothing of what a child sees.
      */
     @ModifyExpressionValue(
         method = "submitNewArrivals(Lcom/simibubi/create/content/logistics/packager/InventorySummary;"
@@ -78,12 +79,12 @@ public class PackagerBlockEntityMixin {
         at = @At(value = "INVOKE",
             target = "Lcom/simibubi/create/content/logistics/packagerLink/GlobalLogisticsManager;"
                 + "hasQueuedPromises(Ljava/util/UUID;)Z"))
-    private boolean createTransit$arrivalsCreditTheNetworksBelow(boolean hasQueuedPromises,
+    private boolean createTransit$arrivalsCreditTheNetworksAbove(boolean hasQueuedPromises,
         @Local(name = "freqId") UUID freqId,
         @Local(name = "promiseQueues") Set<RequestPromiseQueue> promiseQueues) {
-        for (UUID childFreqId : TransitTickerBlockEntity.collectMountedFrequencies(freqId))
-            if (Create.LOGISTICS.hasQueuedPromises(childFreqId))
-                promiseQueues.add(Create.LOGISTICS.getQueuedPromises(childFreqId));
+        for (UUID parentFreqId : TransitTickerBlockEntity.collectMountingFrequencies(freqId))
+            if (Create.LOGISTICS.hasQueuedPromises(parentFreqId))
+                promiseQueues.add(Create.LOGISTICS.getQueuedPromises(parentFreqId));
         return hasQueuedPromises;
     }
 

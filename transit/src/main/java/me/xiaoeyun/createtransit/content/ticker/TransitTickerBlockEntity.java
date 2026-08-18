@@ -419,27 +419,23 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         return collectAdjacentParentFrequencies();
     }
 
-    /** Every network mounted beneath {@code freq}, transitively. */
-    public static Set<UUID> collectMountedFrequencies(UUID freq) {
-        Set<UUID> mounted = new HashSet<>();
-        collectMountedFrequencies(freq, mounted);
-        return mounted;
+    /** Every network this one is mounted onto, transitively -- those whose stock includes it. */
+    public static Set<UUID> collectMountingFrequencies(UUID freq) {
+        Set<UUID> mounting = new HashSet<>();
+        collectMountingFrequencies(freq, mounting);
+        return mounting;
     }
 
     // ponytail: one getAllPresent walk per arrival diff per layer, uncached.
     // Wrap in a TickBasedCache(20) keyed by frequency if a large network shows it.
-    private static void collectMountedFrequencies(UUID freq, Set<UUID> out) {
+    private static void collectMountingFrequencies(UUID freq, Set<UUID> out) {
         for (LogisticallyLinkedBehaviour link : LogisticallyLinkedBehaviour.getAllPresent(freq, false)) {
-            if (!(link.blockEntity instanceof PackagerLinkBlockEntity plbe))
+            // A ticker's own behaviour is its childLink, so meeting one here means freq is its child.
+            if (!(link.blockEntity instanceof TransitTickerBlockEntity ticker))
                 continue;
-            if (!(plbe.getPackager() instanceof TransitTickerBlockEntity ticker))
-                continue;
-            if (!ticker.lentTo()
-                .contains(freq))
-                continue;
-            UUID childFreqId = ticker.childLink.freqId;
-            if (out.add(childFreqId))
-                collectMountedFrequencies(childFreqId, out);
+            for (UUID parentFreqId : ticker.lentTo())
+                if (out.add(parentFreqId))
+                    collectMountingFrequencies(parentFreqId, out);
         }
     }
 
