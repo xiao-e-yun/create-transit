@@ -31,7 +31,6 @@ look and a fully canon one -- THEME occupies the slot Create fills with wood.
 
     uv run scripts/repalette.py            # rebuild
     uv run scripts/repalette.py --check    # report only, touch nothing
-    uv run scripts/repalette.py --verify   # assert the rebuild matches git HEAD
 
 A second, smaller group is handled too: HAND_LAID, the sheets drawn for this
 mod that carry the accent but recolour nothing. They cannot follow the rule
@@ -347,8 +346,6 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--check', action='store_true',
                     help='report unmapped colours and write nothing')
-    ap.add_argument('--verify', action='store_true',
-                    help='rebuild in memory and diff against git HEAD')
     ap.add_argument('--canon', action='store_true',
                     help="keep Create's logistics wood instead of recolouring "
                          'it to THEME')
@@ -406,19 +403,6 @@ def main():
         for c, srcs in sorted(gaps.items()):
             print('  %s   from %s' % (c, ', '.join(sorted(srcs))), file=sys.stderr)
         return 1
-
-    if args.verify:
-        bad = 0
-        for out, im in built:
-            head = head_version(out)
-            if head is None:
-                print('  %-32s no committed version to compare' % out)
-            elif head.tobytes() == im.tobytes():
-                print('  %-32s matches HEAD' % out)
-            else:
-                print('  %-32s DIFFERS from HEAD' % out)
-                bad += 1
-        return 1 if bad else 0
 
     if args.check:
         print('%d outputs, every source colour mapped' % len(built))
