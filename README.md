@@ -5,39 +5,34 @@
 [![Modrinth](https://img.shields.io/modrinth/dt/create-transit?logo=modrinth&label=&suffix=%20&style=flat-square&color=242629&labelColor=5CA424&logoColor=1C1C1C)](https://modrinth.com/mod/create-transit)
 [![CurseForge](https://img.shields.io/curseforge/dt/1634308?logo=curseforge&label=&suffix=%20&style=flat-square&color=242629&labelColor=F16436&logoColor=1C1C1C)](https://www.curseforge.com/minecraft/mc-mods/create-transit)
 
-Welcome to Create: Transit, an addon that links separate logistics networks into a supply chain, letting one draw stock from another without merging the two.
+Welcome to Create: Transit, advanced logistics for Create.
 
-> [!WARNING]  
-> Early release: the core loop is playable and save-stable, but expect rough edges.
+## Crossing networks
 
 Networks stay sovereign here, and freight moves between them the way it crosses a border. A shipment leaves carrying a transit label naming the gate it has to clear, the gate strips that label off the package as it passes, and what continues on the far side is an ordinary local delivery. Where the borders run, which lanes exist and what is allowed to clear them are yours to lay out.
 
-## The three blocks
+Transit labels nest, and the first one is what the network reads as the address. Each border strips exactly one layer, so regional hubs, national trunk networks and local depots compose the way real freight does.
 
-| Block | What it does |
-| --- | --- |
-| **Transit Ticker** | Mounts a whole child network onto this one. Attach a Stock Link and the child's entire stock serves local requests, as if it were one big warehouse. Attach a Transit Link instead and the child becomes foreign territory reachable through a border. |
-| **Transit Link** | Declares a border on this network. Set its transit label, and every shipment it forwards is stamped with the name of the gate it has to clear. A link with no label is simply disabled — clearing the label is how you close a border. |
-| **Transit Gate** | Customs. Arriving packages have one transit label stripped; the parts of a declared order wait for each other and leave merged as a single delivery. Unrelated traffic passes straight through. |
+### Transit Ticker
 
-Borders nest. A shipment can carry several labels and clear several gates — each border strips exactly one layer, so regional hubs, national networks and local depots compose the way real freight does. Stations, trains, chain conveyors and every vanilla logistics block work unmodified on each side.
+Mounts another logistics network onto this one, so its stock can answer requests made here. Attach a Stock Link and the whole of it serves local requests, as if the two were one warehouse; attach a Transit Link instead and it becomes foreign territory, reachable through a border.
 
-## Upstream sources
+### Transit Link
 
-This mod is built against these projects at these branches. See [CLAUDE.md](CLAUDE.md) for how to read them.
+Declares a border. Every shipment it forwards is stamped with its transit label — and a link with no label declares no border, which is how you close one.
 
-| Module | Repository | Branch | Version used here |
-| --- | --- | --- | --- |
-| Create | <https://github.com/Creators-of-Create/Create> | `mc1.20.1/dev` | `create_version=6.0.8-289` |
-| Flywheel | <https://github.com/Engine-Room/Flywheel> | `1.20.1/dev` | `flywheel_version=1.0.5` |
-| Minecraft Forge | <https://github.com/MinecraftForge/MinecraftForge> | `1.20.1` | `forge_version=47.4.22` |
+### Transit Gate
+
+Customs. Strips one transit label from each package passing through, and holds the parts of a declared order until they can leave merged as a single delivery.
+
+## Train dispatch
+
+Transit freight moves by rail only on trains carrying a **Transport Timetable**. The timetable donates a train to the network — bind its parking bay, hand it to a conductor — and the dispatcher does the rest.
+
+## Related
+
+**[Create: Routes](route/README.md)** — Write once, follow anywhere.
 
 ## Development
 
-```bash
-./gradlew build        # package the mod
-./gradlew runClient    # launch the development client
-```
-
-All resource JSONs (models, recipes, lang) are hand-authored under
-`*/src/main/resources` — there is no datagen, so `runData` does nothing here.
+[DEVELOPMENT.md](DEVELOPMENT.md)
