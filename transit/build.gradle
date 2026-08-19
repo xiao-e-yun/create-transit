@@ -3,7 +3,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '7.1.38'
+    id 'net.neoforged.moddev' version '2.0.144'
 }
 
 version = mod_version
@@ -26,62 +26,48 @@ sourceSets.main.resources {
 // mappings, so mixin targets in the config match the runtime names as written.
 // The config is declared in META-INF/neoforge.mods.toml, not the jar manifest.
 
+neoForge {
+    version = neo_version
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+
+    runs {
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+
+        client {
+            client()
+            gameDirectory = project.file('run/client')
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        server {
+            server()
+            gameDirectory = project.file('run/server')
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            programArgument '--nogui'
+        }
+
+        data {
+            data()
+            gameDirectory = project.file('run/data')
+            programArguments.addAll '--mod', project.mod_id, '--all',
+                    '--output', file('src/generated/resources/').getAbsolutePath(),
+                    '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+    }
+}
+
 // 'localRuntime' is for dev-client-only mods: present when running from the
 // IDE, never published as a dependency of this mod.
 configurations {
     runtimeClasspath.extendsFrom localRuntime
-
-    // Route's jar alone, kept off every other classpath so that :transit:build
-    // never has to compile route.
-    routeMod {
-        canBeConsumed = false
-        transitive = false
-    }
-}
-
-// Default run configurations.
-runs {
-    // applies to all the run configs below
-    configureEach {
-        systemProperty 'forge.logging.markers', 'REGISTRIES'
-        systemProperty 'forge.logging.console.level', 'debug'
-
-        workingDirectory project.layout.projectDirectory.dir('run').dir(name)
-
-        modSource project.sourceSets.main
-    }
-
-    // A dev client for this mod is a dev client for route too: the two load as
-    // one game, and route's mixins (the schedule screen's editor entry point)
-    // have nothing to attach to without it. Unlike the 1.20.1 branch no mixin
-    // config has to be named -- NeoForge reads each mod's config from its own
-    // neoforge.mods.toml.
-    //
-    // Route's jar goes on the run's classpath and NOT in a run-scoped
-    // 'dependencies { runtime ... }' block: that block becomes NeoForge's
-    // legacyClassPath, whose entries are resolved into the game module layer
-    // before mod discovery starts and are therefore claimed as plain libraries
-    // for good. Route's transitive Create/Ponder/Flywheel/Registrate would be
-    // silenced along with it, which is what kept Create out of the dev client.
-    // A modSource is likewise no option: it would have this project resolve
-    // another one's source-set classpath, which Gradle forbids while storing
-    // the configuration cache.
-    client {
-        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        runtimeClasspath.from configurations.routeMod
-    }
-
-    server {
-        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        argument '--nogui'
-        runtimeClasspath.from configurations.routeMod
-    }
-
-    data {
-        arguments.addAll '--mod', project.mod_id, '--all',
-                '--output', file('src/generated/resources/').getAbsolutePath(),
-                '--existing', file('src/main/resources/').getAbsolutePath()
-    }
 }
 
 repositories {
@@ -94,8 +80,6 @@ repositories {
 }
 
 dependencies {
-    implementation "net.neoforged:neoforge:${neo_version}"
-
     // Create and its libraries (https://wiki.createmod.net/developers/depend-on-create/neoforge-1.21.1)
     implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
     implementation("net.createmod.ponder:ponder-neoforge:${ponder_version}")
@@ -107,7 +91,15 @@ dependencies {
     // as on the 1.20.1 branch: the mod itself never touches it.
     localRuntime("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
 
-    routeMod project(':route')
+    // A dev run of this mod is a dev run of route too: the two load as one game,
+    // and route's mixins (the schedule screen's editor entry point) have nothing
+    // to attach to without it. Its jar alone, because a transitive project
+    // dependency would drag a second copy of Create's whole graph behind it.
+    //
+    // Not additionalRuntimeClasspath: that one extends the run's legacyClasspath,
+    // whose entries FML resolves into the game layer before mod discovery and
+    // then skips -- it is where a plain library goes, not a mod.
+    localRuntime(project(':route')) { transitive = false }
 }
 
 // Expand declared properties into the mod metadata. A missing property fails
