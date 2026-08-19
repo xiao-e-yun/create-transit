@@ -6,9 +6,9 @@ import com.simibubi.create.AllKeys;
 import com.simibubi.create.content.trains.station.GlobalStation;
 import com.simibubi.create.content.trains.station.StationBlockEntity;
 
+import me.xiaoeyun.createtransit.registry.CtDataComponents;
 import me.xiaoeyun.createtransit.registry.CtItems;
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
@@ -21,8 +21,6 @@ import net.minecraft.world.level.Level;
 
 /** Donates a train to the dispatcher: right-click a station to name its parking bay, then hand this to a conductor. */
 public class TransitTimetableItem extends Item {
-
-    private static final String NBT_STATION = "Station";
 
     // Spelled out, not built from a prefix, so scripts/lang_audit.py can see these keys.
     private static final String LANG_BOUND = "create_transit.timetable.bound";
@@ -44,8 +42,7 @@ public class TransitTimetableItem extends Item {
 
         Player player = context.getPlayer();
         if (!level.isClientSide && player != null) {
-            stack.getOrCreateTag()
-                .putString(NBT_STATION, station.name);
+            stack.set(CtDataComponents.TIMETABLE_DEPOT.get(), station.name);
             player.displayClientMessage(
                 Component.translatable(LANG_BOUND, Component.literal(station.name)), true);
         }
@@ -55,19 +52,18 @@ public class TransitTimetableItem extends Item {
     /** A timetable already bound to a bay, so the key stays spelled in one place. */
     public static ItemStack of(String depot) {
         ItemStack stack = CtItems.TRANSIT_TIMETABLE.asStack();
-        stack.getOrCreateTag()
-            .putString(NBT_STATION, depot);
+        stack.set(CtDataComponents.TIMETABLE_DEPOT.get(), depot);
         return stack;
     }
 
     /** The bound bay, or blank while unbound. */
     public static String depot(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
-        return tag == null ? "" : tag.getString(NBT_STATION);
+        return stack.getOrDefault(CtDataComponents.TIMETABLE_DEPOT.get(), "");
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip,
+        TooltipFlag flag) {
         // Create's description block owns the Shift view.
         if (AllKeys.shiftDown())
             return;

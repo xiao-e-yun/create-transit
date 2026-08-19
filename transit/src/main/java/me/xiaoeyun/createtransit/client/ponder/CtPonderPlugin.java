@@ -12,7 +12,7 @@ import net.createmod.ponder.api.registration.PonderSceneRegistrationHelper;
 import net.createmod.ponder.api.registration.PonderTagRegistrationHelper;
 import net.createmod.ponder.foundation.PonderIndex;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
 /**
  * Ponder scenes for the three border blocks. Scene ids are namespaced to this mod by Ponder
@@ -33,7 +33,7 @@ public class CtPonderPlugin implements PonderPlugin {
 
     @Override
     public void registerScenes(PonderSceneRegistrationHelper<ResourceLocation> helper) {
-        PonderSceneRegistrationHelper<ItemProviderEntry<?>> scenes = helper.withKeyFunction(RegistryEntry::getId);
+        PonderSceneRegistrationHelper<ItemProviderEntry<?, ?>> scenes = helper.withKeyFunction(RegistryEntry::getId);
 
         scenes.forComponents(CtBlocks.TRANSIT_LINK)
             .addStoryBoard("transit_link", TransitLinkScenes::transitLink, TRANSIT);
@@ -57,7 +57,7 @@ public class CtPonderPlugin implements PonderPlugin {
             .description("Components which let freight cross between logistics networks")
             .register();
 
-        PonderTagRegistrationHelper<RegistryEntry<?>> tags = helper.withKeyFunction(RegistryEntry::getId);
+        PonderTagRegistrationHelper<RegistryEntry<?, ?>> tags = helper.withKeyFunction(RegistryEntry::getId);
         tags.addToTag(TRANSIT)
             .add(CtBlocks.TRANSIT_TICKER)
             .add(CtBlocks.TRANSIT_LINK)

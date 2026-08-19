@@ -7,7 +7,6 @@ import com.simibubi.create.foundation.block.WrenchableDirectionalBlock;
 import me.xiaoeyun.createtransit.registry.CtBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -54,7 +53,7 @@ public class TransitGateBlock extends WrenchableDirectionalBlock implements IBE<
      * so with nothing to give it passes rather than swallowing the click.
      */
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
         BlockHitResult hit) {
         return onBlockEntityUse(level, pos, be -> {
             if (be.heldBox.isEmpty() || be.animationTicks > 0)

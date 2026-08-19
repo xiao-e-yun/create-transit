@@ -11,6 +11,7 @@ import com.simibubi.create.content.trains.schedule.ScheduleRuntime;
 
 import me.xiaoeyun.createtransit.content.dispatch.TransitTimetableInstruction;
 import me.xiaoeyun.createtransit.content.dispatch.TransitTimetableItem;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.ItemStack;
 
 /** A train carrying a timetable hands that item back, not Create's schedule item, wherever Create returns one. */
@@ -27,8 +28,10 @@ public abstract class ScheduleRuntimeMixin {
     @Shadow
     public abstract void discardSchedule();
 
-    @Inject(method = "returnSchedule", at = @At("HEAD"), cancellable = true)
-    private void createTransit$returnTimetable(CallbackInfoReturnable<ItemStack> cir) {
+    @Inject(method = "returnSchedule(Lnet/minecraft/core/HolderLookup$Provider;)Lnet/minecraft/world/item/ItemStack;",
+        at = @At("HEAD"), cancellable = true)
+    private void createTransit$returnTimetable(HolderLookup.Provider registries,
+        CallbackInfoReturnable<ItemStack> cir) {
         // An auto schedule was never paid for with an item, so minting one would be a dupe.
         if (isAutoSchedule)
             return;

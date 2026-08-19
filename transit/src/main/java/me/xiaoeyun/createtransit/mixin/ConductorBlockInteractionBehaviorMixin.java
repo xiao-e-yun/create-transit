@@ -16,6 +16,7 @@ import me.xiaoeyun.createtransit.content.dispatch.TimetableConductorInteraction;
 import me.xiaoeyun.createtransit.content.dispatch.TransitTimetableInstruction;
 import me.xiaoeyun.createtransit.content.dispatch.TransitTimetableItem;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -40,11 +41,12 @@ public abstract class ConductorBlockInteractionBehaviorMixin {
     @WrapOperation(method = "handlePlayerInteraction",
         at = @At(value = "INVOKE",
             target = "Lcom/simibubi/create/content/trains/schedule/ScheduleItem;"
-                + "getSchedule(Lnet/minecraft/world/item/ItemStack;)"
+                + "getSchedule(Lnet/minecraft/core/HolderLookup$Provider;Lnet/minecraft/world/item/ItemStack;)"
                 + "Lcom/simibubi/create/content/trains/schedule/Schedule;"))
-    private Schedule createTransit$readTimetable(ItemStack held, Operation<Schedule> original) {
+    private Schedule createTransit$readTimetable(HolderLookup.Provider registries, ItemStack held,
+        Operation<Schedule> original) {
         if (!(held.getItem() instanceof TransitTimetableItem))
-            return original.call(held);
+            return original.call(registries, held);
 
         return TransitTimetableInstruction.schedule(TransitTimetableItem.depot(held));
     }
@@ -57,7 +59,7 @@ public abstract class ConductorBlockInteractionBehaviorMixin {
     @Inject(method = "handlePlayerInteraction",
         at = @At(value = "INVOKE",
             target = "Lcom/simibubi/create/content/trains/schedule/ScheduleItem;"
-                + "getSchedule(Lnet/minecraft/world/item/ItemStack;)"
+                + "getSchedule(Lnet/minecraft/core/HolderLookup$Provider;Lnet/minecraft/world/item/ItemStack;)"
                 + "Lcom/simibubi/create/content/trains/schedule/Schedule;"),
         cancellable = true)
     private void createTransit$denyUnboundTimetable(Player player, InteractionHand activeHand, BlockPos localPos,

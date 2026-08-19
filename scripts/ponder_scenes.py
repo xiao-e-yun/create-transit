@@ -11,7 +11,7 @@ whose eight blocks point at their corner. Written by hand that is eight chances
 to typo a coordinate; written here it is a loop, and moving a machine one cell
 is a one-line diff instead of a re-export of an opaque gzip.
 
-The format is a vanilla 1.20.1 StructureTemplate: gzipped NBT, five keys, no
+The format is a vanilla 1.21.1 StructureTemplate: gzipped NBT, five keys, no
 DataFixer. Ponder's PonderSceneRegistry.loadSchematic reads it with NbtIo.read,
 then StructureTemplate.placeInWorld places it -- and calls blockEntity.load(nbt)
 only for entries that carry an `nbt` compound. So a block entity with no payload
@@ -51,7 +51,7 @@ from nbtlib.tag import Byte, Compound, Int, List, String
 
 OUT = Path(__file__).resolve().parents[1] / "transit/src/main/resources/assets/create_transit/ponder"
 
-DATA_VERSION = 3465       # 1.20.1
+DATA_VERSION = 3955       # 1.21.1, from the client jar's version.json world_version
 
 # The one word the border scenes are about. The gate's sign says it and the
 # captions say it; one definition, no chance to drift.
@@ -153,7 +153,7 @@ def vault(scene, corner, size=2, length=2):
 
 
 def sign(text):
-    """1.20.1 sign: four lines per face, each a JSON text component string."""
+    """Sign: four lines per face, each a JSON text component string."""
     def face(lines):
         return Compound({
             "has_glowing_text": Byte(0),

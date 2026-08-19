@@ -2,6 +2,8 @@ package me.xiaoeyun.createtransit.registry;
 
 import java.util.List;
 
+import com.mojang.serialization.Codec;
+
 import me.xiaoeyun.createtransit.CreateTransit;
 import me.xiaoeyun.createtransit.content.transit.TransitCustoms;
 import net.minecraft.core.component.DataComponentType;
@@ -26,6 +28,12 @@ public class CtDataComponents {
         REGISTER.registerComponentType("transit_customs", b -> b
             .persistent(TransitCustoms.CODEC.listOf())
             .networkSynchronized(ByteBufCodecs.fromCodec(TransitCustoms.CODEC.listOf())));
+
+    /** The parking bay a timetable is bound to; blank is the unbound item, which never carries the component. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> TIMETABLE_DEPOT =
+        REGISTER.registerComponentType("timetable_depot", b -> b
+            .persistent(Codec.STRING)
+            .networkSynchronized(ByteBufCodecs.STRING_UTF8));
 
     public static void register(IEventBus modEventBus) {
         REGISTER.register(modEventBus);

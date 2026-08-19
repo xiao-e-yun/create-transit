@@ -36,21 +36,27 @@ runs {
         workingDirectory project.layout.projectDirectory.dir('run').dir(name)
 
         modSource project.sourceSets.main
-        // A dev client for this mod is a dev client for route too: the two load
-        // as one game, and route's mixins (the schedule screen's editor entry
-        // point) have nothing to attach to without it. Unlike the 1.20.1 branch
-        // no mixin config has to be named here -- NeoForge reads each mod's
-        // config from its own neoforge.mods.toml.
-        modSource project(':route').sourceSets.main
     }
 
+    // A dev client for this mod is a dev client for route too: the two load as
+    // one game, and route's mixins (the schedule screen's editor entry point)
+    // have nothing to attach to without it. Unlike the 1.20.1 branch no mixin
+    // config has to be named -- NeoForge reads each mod's config from its own
+    // neoforge.mods.toml.
+    //
+    // Named on the runs themselves rather than in configureEach, which would
+    // also reach the generated test task -- and a route classpath inside a task
+    // :transit:build resolves is both a configuration-cache error and the
+    // coupling a release of this mod must not have.
     client {
         systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        modSource project(':route').sourceSets.main
     }
 
     server {
         systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         argument '--nogui'
+        modSource project(':route').sourceSets.main
     }
 
     data {
