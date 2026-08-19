@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "me.xiaoeyun.createroutes.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "create_routes.refmap.json",
+  "mixins": [
+    "HeldItemGhostItemMenuMixin",
+    "ScheduleRuntimeMixin"
+  ],
+  "client": [
+    "client.ModularGuiLineBuilderAccessor",
+    "client.ScheduleScreenAccessor",
+    "client.ScheduleScreenTableMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

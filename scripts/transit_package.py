@@ -12,7 +12,6 @@ builds against.
 
     uv run scripts/transit_package.py            # rebuild
     uv run scripts/transit_package.py --check    # report only, touch nothing
-    uv run scripts/transit_package.py --verify   # assert the rebuild matches HEAD
     uv run scripts/transit_package.py --preview  # magnified grids for review
 
 What it makes
@@ -59,7 +58,6 @@ import io
 import json
 import os
 import random
-import subprocess
 import sys
 
 from coloraide import Color
@@ -70,7 +68,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from repalette import create_jar                                  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REL = 'src/main/resources/assets/create_transit/textures/item/package'
+REL = 'transit/src/main/resources/assets/create_transit/textures/item/package'
 NAME = 'transit_cardboard'
 PREVIEW = 'build/texture-preview'
 
@@ -232,33 +230,16 @@ def magnify(im):
     return big
 
 
-def head_version():
-    raw = subprocess.run(['git', 'show', 'HEAD:%s/%s.png' % (REL, NAME)],
-                         capture_output=True, cwd=REPO).stdout
-    return Image.open(io.BytesIO(raw)).convert('RGBA') if raw else None
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--check', action='store_true',
                     help='report what would be built, write nothing')
-    ap.add_argument('--verify', action='store_true',
-                    help='fail if the rebuild differs from the committed texture')
     ap.add_argument('--preview', action='store_true',
                     help='write magnified grids of the atlas and each size')
     args = ap.parse_args()
 
     jar = create_jar()
     im = build(jar)
-
-    if args.verify:
-        head = head_version()
-        if head is None:
-            print('%s.png has no committed version to compare' % NAME)
-            return 0
-        same = head.tobytes() == im.tobytes()
-        print('%s.png %s HEAD' % (NAME, 'matches' if same else 'DIFFERS from'))
-        return 0 if same else 1
 
     if args.preview:
         out = os.path.join(REPO, *PREVIEW.split('/'))

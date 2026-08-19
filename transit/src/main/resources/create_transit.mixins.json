@@ -1,0 +1,29 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "me.xiaoeyun.createtransit.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "create_transit.refmap.json",
+  "mixins": [
+    "ChainConveyorRoutingTableMixin",
+    "ConductorBlockInteractionBehaviorMixin",
+    "GlobalStationMixin",
+    "LogisticsManagerMixin",
+    "PackageItemMixin",
+    "PackageRepackageHelperMixin",
+    "PackagerBlockEntityMixin",
+    "ScheduleInstructionMixin",
+    "ScheduleRuntimeMixin"
+  ],
+  "client": [
+    "client.FrogportRendererMixin",
+    "client.LinkBulbRendererMixin",
+    "client.PackagePortBlockEntityMixin",
+    "client.PackagePortScreenMixin",
+    "client.PackagerRendererMixin",
+    "client.PostboxRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

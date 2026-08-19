@@ -83,8 +83,8 @@ def load_scenes(path):
 
 def build_assets(props, extra_jars):
     mod_id = props.get('mod_id', 'create_transit')
-    roots = [os.path.join(REPO, 'src', 'main', 'resources', 'assets', mod_id),
-             os.path.join(REPO, 'src', 'generated', 'resources', 'assets', mod_id)]
+    roots = [os.path.join(REPO, 'transit', 'src', 'main', 'resources', 'assets', mod_id),
+             os.path.join(REPO, 'transit', 'src', 'generated', 'resources', 'assets', mod_id)]
     jars = list(extra_jars)
     jars += find_jars('create', props.get('create_version'))
     jars += find_jars('flywheel-forge', props.get('flywheel_version'))

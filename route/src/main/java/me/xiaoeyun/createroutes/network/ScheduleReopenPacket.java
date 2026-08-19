@@ -1,0 +1,35 @@
+package me.xiaoeyun.createroutes.network;
+
+import java.util.function.Supplier;
+
+import com.simibubi.create.content.trains.schedule.ScheduleItem;
+
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkHooks;
+
+/** Puts the player back on the schedule they were holding, by reopening whatever {@code ScheduleItem} is in their main hand; closes quietly if there is none. */
+public class ScheduleReopenPacket {
+
+    public ScheduleReopenPacket() {}
+
+    public ScheduleReopenPacket(FriendlyByteBuf buffer) {}
+
+    public void encode(FriendlyByteBuf buffer) {}
+
+    public void handle(Supplier<NetworkEvent.Context> context) {
+        ServerPlayer sender = context.get()
+            .getSender();
+        if (sender == null)
+            return;
+
+        ItemStack held = sender.getMainHandItem();
+        if (held.getItem() instanceof ScheduleItem schedule)
+            NetworkHooks.openScreen(sender, schedule, buffer -> buffer.writeItem(held));
+        else
+            sender.closeContainer();
+    }
+
+}
