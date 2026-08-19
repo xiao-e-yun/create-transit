@@ -193,12 +193,14 @@ public class TransitDispatch {
             best.navigation.cancelNavigation();
     }
 
-    /** Orders whose train is gone or whose time is up; checked lazily since the map is fleet-sized. */
+    /** Orders whose train is gone, no longer enrolled, or out of time. */
     private static void sweep(Level level) {
         long now = level.getGameTime();
         for (var iterator = ORDERS.entrySet().iterator(); iterator.hasNext();) {
             Entry<UUID, Order> entry = iterator.next();
-            if (entry.getValue().deadline < now || !Create.RAILWAYS.trains.containsKey(entry.getKey()))
+            Train train = Create.RAILWAYS.trains.get(entry.getKey());
+            if (train == null || entry.getValue().deadline < now
+                || TransitTimetableInstruction.depotOf(train.runtime.getSchedule()) == null)
                 iterator.remove();
         }
     }
