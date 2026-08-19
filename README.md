@@ -18,7 +18,7 @@ Transit freight moves by rail only on trains carrying a **Transport Timetable**.
 
 ## Credits
 
-Textures derived from the [Create Mod](https://www.curseforge.com/minecraft/mc-mods/create)'s own, used with its artists' permission. That art keeps Create's terms rather than this project's MIT grant — see [LICENSE](LICENSE).
+Original textures from the [Create Mod](https://www.curseforge.com/minecraft/mc-mods/create), recoloured or drawn over for this project. That art keeps Create's terms rather than this project's MIT grant — see [LICENSE](LICENSE).
 
 ## Development
 
