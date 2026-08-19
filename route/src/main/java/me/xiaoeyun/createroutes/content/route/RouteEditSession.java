@@ -96,12 +96,13 @@ public class RouteEditSession {
 
         route.defaults = Route.readConditions(defaults);
         store.setDirty();
-        store.syncNames();
-        tell(player, "create_routes.route.save.done", ChatFormatting.GREEN, route.name);
 
         // Refused rather than silently kept: two routes with the same name would make typing one ambiguous.
         if (!route.name.equals(name) && !store.rename(id, name))
             tell(player, "create_routes.route.rename.taken", ChatFormatting.RED, name);
+
+        store.syncNames();
+        tell(player, "create_routes.route.save.done", ChatFormatting.GREEN, route.name);
     }
 
     /** Said in chat because the screen it would belong on has already closed. */
