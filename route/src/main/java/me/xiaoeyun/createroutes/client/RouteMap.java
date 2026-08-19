@@ -49,13 +49,11 @@ public class RouteMap {
     /** The ground under the map, dark enough that a rail is the brightest thing on it — Create draws no terrain, so without this the checkered field would show through. */
     private static final int GROUND = 0xB3000000;
 
-    /** Vanilla's map markers: sprite zero of sixteen, eight square on a 128 sheet. */
+    /** Vanilla's player marker. 1.21 broke the old 128 sheet up, so this is a whole texture. */
     private static final ResourceLocation MAP_ICONS =
-        ResourceLocation.fromNamespaceAndPath("minecraft", "textures/map/map_icons.png");
+        ResourceLocation.fromNamespaceAndPath("minecraft", "textures/map/decorations/player.png");
 
     private static final int MAP_ICON = 8;
-
-    private static final int MAP_SHEET = 128;
 
     private final RouteHost host;
 
@@ -280,8 +278,8 @@ public class RouteMap {
         pose.pushPose();
         pose.translate(x, z, 0);
         pose.mulPose(Axis.ZP.rotationDegrees(facing + 180));
-        graphics.blit(MAP_ICONS, -MAP_ICON / 2, -MAP_ICON / 2, MAP_ICON, MAP_ICON, 0, 0, MAP_ICON,
-            MAP_ICON, MAP_SHEET, MAP_SHEET);
+        graphics.blit(MAP_ICONS, -MAP_ICON / 2, -MAP_ICON / 2, 0, 0, MAP_ICON, MAP_ICON, MAP_ICON,
+            MAP_ICON);
         pose.popPose();
     }
 
