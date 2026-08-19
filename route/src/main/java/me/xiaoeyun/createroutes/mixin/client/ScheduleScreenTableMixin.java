@@ -34,13 +34,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
+import net.createmod.catnip.platform.services.NetworkHelper;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.simple.SimpleChannel;
 
 /** Hangs the route layout on Create's schedule screen. Every injection but {@code createTransit$hideBorrowedConditions} does nothing unless a {@link RouteView} is up. */
-// remap = false: a Create class, so its names are never obfuscated — except members inherited
-// from Minecraft (init, removed, mouse/key handlers), which carry SRG names in production and
-// mark remap = true individually.
+// remap = false: NeoForge runs on official mappings, so nothing here is ever obfuscated -- the
+// members inherited from Minecraft included. The Forge branch had to opt those back in, because
+// production carried SRG names there and these ones alone would have needed translating.
 @Mixin(value = ScheduleScreen.class, remap = false)
 public abstract class ScheduleScreenTableMixin implements RouteScreen {
 
@@ -57,7 +58,7 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     protected abstract void startEditing(IScheduleInput field, Consumer<Boolean> onClose,
         boolean allowDeletion);
 
-    @Shadow(remap = true)
+    @Shadow
     protected abstract void init();
 
     @Shadow
@@ -133,7 +134,7 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     }
 
     /** The panel texture, which a layout using the whole screen has no use for. */
-    @Redirect(method = "renderBg", remap = true, at = @At(value = "INVOKE", ordinal = 0, remap = false,
+    @Redirect(method = "renderBg", at = @At(value = "INVOKE", ordinal = 0,
         target = "Lcom/simibubi/create/foundation/gui/AllGuiTextures;render(Lnet/minecraft/client/gui/GuiGraphics;II)V"))
     private void createTransit$panel(AllGuiTextures texture, GuiGraphics graphics, int x, int y) {
         if (createTransit$view == null)
@@ -164,21 +165,22 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
             cir.setReturnValue(createTransit$view.action(graphics, mouseX, mouseY, click));
     }
 
-    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, remap = true)
+    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void createTransit$grabMap(double mouseX, double mouseY, int button,
         CallbackInfoReturnable<Boolean> cir) {
         if (createTransit$view != null && createTransit$view.grab(mouseX, mouseY, button))
             cir.setReturnValue(true);
     }
 
-    @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true, remap = true)
-    private void createTransit$wheel(double mouseX, double mouseY, double delta,
+    // 1.21 splits the wheel in two; the view only ever read the vertical one.
+    @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
+    private void createTransit$wheel(double mouseX, double mouseY, double scrollX, double scrollY,
         CallbackInfoReturnable<Boolean> cir) {
-        if (createTransit$view != null && createTransit$view.wheel(mouseX, mouseY, delta))
+        if (createTransit$view != null && createTransit$view.wheel(mouseX, mouseY, scrollY))
             cir.setReturnValue(true);
     }
 
-    @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true, remap = true)
+    @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void createTransit$closeConditions(int keyCode, int scanCode, int modifiers,
         CallbackInfoReturnable<Boolean> cir) {
         if (createTransit$view != null && createTransit$view.escape(keyCode))
@@ -186,13 +188,14 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     }
 
     /** Create's own {@code removed()} always sends {@code ScheduleEditPacket}, which would write the route's stops into whatever the player is holding; redirected to our own save for a route. */
-    @Redirect(method = "removed", remap = true, at = @At(value = "INVOKE", remap = false,
-        target = "Lnet/minecraftforge/network/simple/SimpleChannel;sendToServer(Ljava/lang/Object;)V"))
-    private void createTransit$saveRoute(SimpleChannel channel, Object message) {
+    @Redirect(method = "removed", at = @At(value = "INVOKE",
+        target = "Lnet/createmod/catnip/platform/services/NetworkHelper;"
+            + "sendToServer(Lnet/minecraft/network/protocol/common/custom/CustomPacketPayload;)V"))
+    private void createTransit$saveRoute(NetworkHelper network, CustomPacketPayload message) {
         if (createTransit$view != null)
             createTransit$view.close();
         else
-            channel.sendToServer(message);
+            network.sendToServer(message);
     }
 
     @Inject(method = "getExtraAreas", at = @At("HEAD"), cancellable = true)
@@ -219,7 +222,7 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     }
 
     /** Drops the buttons that only mean something to a train's own schedule — a route is not cyclic, and progress belongs to each train following it. */
-    @Inject(method = "init", at = @At("TAIL"), remap = true)
+    @Inject(method = "init", at = @At("TAIL"))
     private void createTransit$dropScheduleControls(CallbackInfo ci) {
         ItemStack stack = createTransit$editorStack();
         if (stack.isEmpty())

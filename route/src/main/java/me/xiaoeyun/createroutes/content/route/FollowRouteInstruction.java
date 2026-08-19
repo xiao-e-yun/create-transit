@@ -28,7 +28,6 @@ import me.xiaoeyun.createroutes.client.RouteTrail;
 import me.xiaoeyun.createroutes.schedule.Repeats;
 import me.xiaoeyun.createroutes.mixin.client.ModularGuiLineBuilderAccessor;
 import me.xiaoeyun.createroutes.mixin.client.ScheduleScreenAccessor;
-import me.xiaoeyun.createroutes.network.CrPackets;
 import me.xiaoeyun.createroutes.network.RouteEditPacket;
 import net.createmod.catnip.data.Pair;
 import net.createmod.catnip.gui.element.ScreenElement;
@@ -41,8 +40,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * One schedule entry standing for a whole {@link Route}; extends {@link DestinationInstruction} because
@@ -228,7 +228,7 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
             RouteTrail.push(from);
         else
             RouteTrail.fromSchedule();
-        CrPackets.CHANNEL.sendToServer(new RouteEditPacket(reference.route()));
+        PacketDistributor.sendToServer(new RouteEditPacket(reference.route()));
     }
 
     /** Points this entry at one of the picker's routes and labels it with that route's name; out of range clears both. */
@@ -258,7 +258,8 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
 
         getData().putString(NBT_TEXT, route.name);
 
-        List<ScheduleEntry> stops = route.flatten(store::get, reference.reversed(), reference.skipTerminus());
+        List<ScheduleEntry> stops =
+            route.flatten(level.registryAccess(), store::get, reference.reversed(), reference.skipTerminus());
         int progress = getData().getInt(NBT_PROGRESS);
 
         // Create re-runs the live entry mid-journey and on assembly, not just on departure — answered for the stop already under way.

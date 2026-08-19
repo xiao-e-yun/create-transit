@@ -20,11 +20,11 @@ import com.simibubi.create.foundation.utility.CreateLang;
 import me.xiaoeyun.createroutes.content.route.Route;
 import me.xiaoeyun.createroutes.content.route.RouteEditSession;
 import me.xiaoeyun.createroutes.content.route.RouteReference;
-import me.xiaoeyun.createroutes.network.CrPackets;
 import me.xiaoeyun.createroutes.network.RouteEditPacket;
 import me.xiaoeyun.createroutes.network.RouteSavePacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -35,6 +35,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /** The route editor's main interface: three windows across the whole screen, in place of Create's card list. */
 public class RouteView {
@@ -205,8 +206,13 @@ public class RouteView {
         this.host = host;
         this.route = RouteEditSession.routeOf(stack);
         this.name = RouteEditSession.nameOf(stack);
-        this.defaults = RouteEditSession.defaultsOf(stack);
+        this.defaults = RouteEditSession.defaultsOf(registries(), stack);
         this.map = new RouteMap(host);
+    }
+
+    /** 1.21 reads and writes schedule NBT against the registries; a screen is only ever up with a level behind it. */
+    private static HolderLookup.Provider registries() {
+        return Minecraft.getInstance().level.registryAccess();
     }
 
     /** Which route this is, which is what a reference must not be allowed to reach. */
@@ -218,8 +224,9 @@ public class RouteView {
     public void close() {
         Schedule schedule = new Schedule();
         schedule.entries = host.entries();
-        CrPackets.CHANNEL.sendToServer(
-            new RouteSavePacket(route, schedule.write(), name, Route.writeConditions(defaults)));
+        HolderLookup.Provider registries = registries();
+        PacketDistributor.sendToServer(new RouteSavePacket(route, schedule.write(registries), name,
+            Route.writeConditions(registries, defaults)));
     }
 
     /** Three windows: where the route runs, what the route is, and what it does. */
@@ -367,7 +374,7 @@ public class RouteView {
             case 0 -> nested == null ? conditionsOf(entry, index) : open(nested.route());
             case 1 -> (graphics, mouseX, mouseY, click) -> {
                 if (click == 0) {
-                    entries.add(index + 1, entry.clone());
+                    entries.add(index + 1, entry.clone(registries()));
                     host.rebuild();
                 } else if (click != 1)
                     tip(graphics, mouseX, mouseY, "gui.schedule.duplicate");
@@ -506,7 +513,7 @@ public class RouteView {
         return (graphics, mouseX, mouseY, click) -> {
             if (click == 0) {
                 RouteTrail.push(route);
-                CrPackets.CHANNEL.sendToServer(new RouteEditPacket(nested));
+                PacketDistributor.sendToServer(new RouteEditPacket(nested));
             } else if (click != 1)
                 tipOf(graphics, mouseX, mouseY, "create_routes.route.list.open");
             return true;

@@ -4,9 +4,9 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.UUID;
 
-import me.xiaoeyun.createroutes.network.CrPackets;
 import me.xiaoeyun.createroutes.network.RouteEditPacket;
 import me.xiaoeyun.createroutes.network.ScheduleReopenPacket;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /** How the editor got to the route it is on. */
 public class RouteTrail {
@@ -33,13 +33,13 @@ public class RouteTrail {
     public static boolean leave() {
         UUID opener = TRAIL.poll();
         if (opener != null) {
-            CrPackets.CHANNEL.sendToServer(new RouteEditPacket(opener));
+            PacketDistributor.sendToServer(new RouteEditPacket(opener));
             return true;
         }
         if (!schedule)
             return false;
         schedule = false;
-        CrPackets.CHANNEL.sendToServer(new ScheduleReopenPacket());
+        PacketDistributor.sendToServer(new ScheduleReopenPacket());
         return true;
     }
 

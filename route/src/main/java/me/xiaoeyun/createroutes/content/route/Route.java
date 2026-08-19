@@ -14,6 +14,7 @@ import com.simibubi.create.content.trains.schedule.condition.ScheduleWaitConditi
 import com.simibubi.create.content.trains.schedule.condition.ScheduledDelay;
 
 import net.createmod.catnip.nbt.NBTHelper;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -64,16 +65,17 @@ public class Route {
      *
      * @param lookup resolves a referenced route; null for a deleted route, which contributes nothing
      */
-    public List<ScheduleEntry> flatten(Function<UUID, Route> lookup, boolean reversed, boolean skipTerminus) {
+    public List<ScheduleEntry> flatten(HolderLookup.Provider registries, Function<UUID, Route> lookup,
+        boolean reversed, boolean skipTerminus) {
         List<ScheduleEntry> out = new ArrayList<>();
-        collect(out, lookup, reversed, new HashSet<>(), 0);
+        collect(registries, out, lookup, reversed, new HashSet<>(), 0);
         if (skipTerminus && !out.isEmpty())
             out.remove(out.size() - 1);
         return out;
     }
 
-    private void collect(List<ScheduleEntry> out, Function<UUID, Route> lookup, boolean reversed,
-        Set<UUID> visiting, int depth) {
+    private void collect(HolderLookup.Provider registries, List<ScheduleEntry> out,
+        Function<UUID, Route> lookup, boolean reversed, Set<UUID> visiting, int depth) {
         if (depth > MAX_DEPTH || !visiting.add(id))
             return;
 
@@ -82,7 +84,7 @@ public class Route {
             RouteReference reference = RouteReference.of(entry.instruction);
 
             if (reference == null) {
-                out.add(withInheritedConditions(entry));
+                out.add(withInheritedConditions(registries, entry));
                 continue;
             }
 
@@ -91,7 +93,7 @@ public class Route {
                 continue;
 
             int before = out.size();
-            nested.collect(out, lookup, reference.reversed() != reversed, visiting, depth + 1);
+            nested.collect(registries, out, lookup, reference.reversed() != reversed, visiting, depth + 1);
             // The omitted terminus sits at the head of the contribution when the enclosing direction is reversed.
             if (reference.skipTerminus() && out.size() > before)
                 out.remove(reversed ? before : out.size() - 1);
@@ -101,19 +103,20 @@ public class Route {
     }
 
     /** Deep-copies inherited conditions, since the result is written into a running train's schedule and must not alias the route's own. */
-    private ScheduleEntry withInheritedConditions(ScheduleEntry entry) {
-        ScheduleEntry copy = entry.clone();
+    private ScheduleEntry withInheritedConditions(HolderLookup.Provider registries, ScheduleEntry entry) {
+        ScheduleEntry copy = entry.clone(registries);
         if (copy.conditions.isEmpty())
-            copy.conditions = copyConditions(defaults);
+            copy.conditions = copyConditions(registries, defaults);
         return copy;
     }
 
-    private static List<List<ScheduleWaitCondition>> copyConditions(List<List<ScheduleWaitCondition>> source) {
+    private static List<List<ScheduleWaitCondition>> copyConditions(HolderLookup.Provider registries,
+        List<List<ScheduleWaitCondition>> source) {
         List<List<ScheduleWaitCondition>> out = new ArrayList<>(source.size());
         for (List<ScheduleWaitCondition> column : source) {
             List<ScheduleWaitCondition> copy = new ArrayList<>(column.size());
             for (ScheduleWaitCondition condition : column)
-                copy.add(ScheduleWaitCondition.fromTag(condition.write()));
+                copy.add(ScheduleWaitCondition.fromTag(registries, condition.write(registries)));
             out.add(copy);
         }
         return out;
@@ -145,40 +148,44 @@ public class Route {
         return false;
     }
 
-    public static ListTag writeConditions(List<List<ScheduleWaitCondition>> columns) {
+    public static ListTag writeConditions(HolderLookup.Provider registries,
+        List<List<ScheduleWaitCondition>> columns) {
         ListTag out = new ListTag();
         for (List<ScheduleWaitCondition> column : columns)
-            out.add(NBTHelper.writeCompoundList(column, ScheduleWaitCondition::write));
+            out.add(NBTHelper.writeCompoundList(column, condition -> condition.write(registries)));
         return out;
     }
 
-    public static List<List<ScheduleWaitCondition>> readConditions(ListTag columns) {
+    public static List<List<ScheduleWaitCondition>> readConditions(HolderLookup.Provider registries,
+        ListTag columns) {
         List<List<ScheduleWaitCondition>> out = new ArrayList<>();
         for (Tag column : columns)
             if (column instanceof ListTag list)
-                out.add(NBTHelper.readCompoundList(list, ScheduleWaitCondition::fromTag));
+                out.add(NBTHelper.readCompoundList(list, tag -> ScheduleWaitCondition.fromTag(registries, tag)));
         return out;
     }
 
-    public CompoundTag write() {
+    public CompoundTag write(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
         tag.putUUID(NBT_ID, id);
         tag.putString(NBT_NAME, name);
-        tag.put(NBT_ENTRIES, NBTHelper.writeCompoundList(entries, ScheduleEntry::write));
-        tag.put(NBT_DEFAULTS, writeConditions(defaults));
+        tag.put(NBT_ENTRIES, NBTHelper.writeCompoundList(entries, entry -> entry.write(registries)));
+        tag.put(NBT_DEFAULTS, writeConditions(registries, defaults));
         return tag;
     }
 
     @Nullable
-    public static Route read(CompoundTag tag) {
+    public static Route read(HolderLookup.Provider registries, CompoundTag tag) {
         String name = tag.getString(NBT_NAME);
         if (name.isBlank())
             return null;
         // A hand-written route may leave the id out; it gets one here and keeps it from the next save on.
         Route route = tag.hasUUID(NBT_ID) ? new Route(tag.getUUID(NBT_ID), name) : new Route(name);
-        route.entries = NBTHelper.readCompoundList(tag.getList(NBT_ENTRIES, Tag.TAG_COMPOUND), ScheduleEntry::fromTag);
+        route.entries = NBTHelper.readCompoundList(tag.getList(NBT_ENTRIES, Tag.TAG_COMPOUND),
+            entry -> ScheduleEntry.fromTag(registries, entry));
         // Held to the invariant here too: defaults must never end up empty, or these trains never leave the platform.
-        List<List<ScheduleWaitCondition>> defaults = readConditions(tag.getList(NBT_DEFAULTS, Tag.TAG_LIST));
+        List<List<ScheduleWaitCondition>> defaults =
+            readConditions(registries, tag.getList(NBT_DEFAULTS, Tag.TAG_LIST));
         if (!defaults.isEmpty())
             route.defaults = defaults;
         return route;

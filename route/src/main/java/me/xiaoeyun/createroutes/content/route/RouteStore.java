@@ -13,13 +13,14 @@ import com.simibubi.create.content.trains.schedule.destination.DestinationInstru
 
 import me.xiaoeyun.createroutes.network.CrPackets;
 import me.xiaoeyun.createroutes.network.RouteListPacket;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /** Every route in the world, in one place — the overworld's save data, since a route named in one dimension means the same everywhere. */
 public class RouteStore extends SavedData {
@@ -32,7 +33,7 @@ public class RouteStore extends SavedData {
     public static RouteStore get(MinecraftServer server) {
         return server.overworld()
             .getDataStorage()
-            .computeIfAbsent(RouteStore::load, RouteStore::new, ID);
+            .computeIfAbsent(new SavedData.Factory<>(RouteStore::new, RouteStore::load), ID);
     }
 
     @Nullable
@@ -55,11 +56,11 @@ public class RouteStore extends SavedData {
 
     /** Tells every client which routes exist and where they go. */
     public void syncNames() {
-        CrPackets.CHANNEL.send(PacketDistributor.ALL.noArg(), lines());
+        PacketDistributor.sendToAllPlayers(lines());
     }
 
     public static void syncNamesTo(ServerPlayer player) {
-        CrPackets.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), get(player.server).lines());
+        PacketDistributor.sendToPlayer(player, get(player.server).lines());
     }
 
     /** Every route as a name, the stations it stops at, and the routes it follows. */
@@ -104,18 +105,18 @@ public class RouteStore extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
         for (Route route : routes.values())
-            list.add(route.write());
+            list.add(route.write(registries));
         tag.put(NBT_ROUTES, list);
         return tag;
     }
 
-    private static RouteStore load(CompoundTag tag) {
+    private static RouteStore load(CompoundTag tag, HolderLookup.Provider registries) {
         RouteStore store = new RouteStore();
         for (Tag entry : tag.getList(NBT_ROUTES, Tag.TAG_COMPOUND)) {
-            Route route = Route.read((CompoundTag) entry);
+            Route route = Route.read(registries, (CompoundTag) entry);
             if (route != null)
                 store.routes.put(route.id, route);
         }

@@ -1,18 +1,20 @@
 package me.xiaoeyun.createroutes.network;
 
 import java.util.UUID;
-import java.util.function.Supplier;
 
+import me.xiaoeyun.createroutes.CreateRoutes;
 import me.xiaoeyun.createroutes.content.route.Route;
 import me.xiaoeyun.createroutes.content.route.RouteStore;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /** Creates, renames, or deletes a route. */
-public class RouteManagePacket {
+public record RouteManagePacket(Action action, UUID route, String name) implements CustomPacketPayload {
 
     public enum Action {
         NEW, RENAME, DELETE
@@ -21,19 +23,12 @@ public class RouteManagePacket {
     /** Carried by the one action that names no route, so the shape stays fixed. */
     private static final UUID NONE = new UUID(0, 0);
 
-    private final Action action;
+    public static final Type<RouteManagePacket> TYPE = new Type<>(CreateRoutes.asResource("route_manage"));
 
-    /** Which route, for the two actions that act on one. */
-    private final UUID route;
-
-    /** What to call it, for the two that name one. */
-    private final String name;
-
-    private RouteManagePacket(Action action, UUID route, String name) {
-        this.action = action;
-        this.route = route;
-        this.name = name;
-    }
+    // Written out rather than composed: readEnum and the name's length cap have
+    // no ByteBufCodecs spelling as compact as the calls themselves.
+    public static final StreamCodec<FriendlyByteBuf, RouteManagePacket> STREAM_CODEC =
+        StreamCodec.of(RouteManagePacket::write, RouteManagePacket::read);
 
     public static RouteManagePacket create(String name) {
         return new RouteManagePacket(Action.NEW, NONE, name);
@@ -47,28 +42,30 @@ public class RouteManagePacket {
         return new RouteManagePacket(Action.DELETE, route, "");
     }
 
-    public RouteManagePacket(FriendlyByteBuf buffer) {
-        action = buffer.readEnum(Action.class);
-        route = buffer.readUUID();
-        name = buffer.readUtf(Route.MAX_NAME_LENGTH);
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
-    public void encode(FriendlyByteBuf buffer) {
-        buffer.writeEnum(action);
-        buffer.writeUUID(route);
-        buffer.writeUtf(name, Route.MAX_NAME_LENGTH);
+    private static void write(FriendlyByteBuf buffer, RouteManagePacket packet) {
+        buffer.writeEnum(packet.action);
+        buffer.writeUUID(packet.route);
+        buffer.writeUtf(packet.name, Route.MAX_NAME_LENGTH);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> context) {
-        ServerPlayer sender = context.get()
-            .getSender();
-        if (sender == null)
+    private static RouteManagePacket read(FriendlyByteBuf buffer) {
+        return new RouteManagePacket(buffer.readEnum(Action.class), buffer.readUUID(),
+            buffer.readUtf(Route.MAX_NAME_LENGTH));
+    }
+
+    public static void handle(RouteManagePacket packet, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer sender))
             return;
         RouteStore store = RouteStore.get(sender.server);
 
-        switch (action) {
+        switch (packet.action) {
             case NEW -> {
-                String wanted = name.trim();
+                String wanted = packet.name.trim();
                 if (wanted.isEmpty())
                     return;
                 if (store.byName(wanted) != null) {
@@ -79,11 +76,11 @@ public class RouteManagePacket {
                 store.syncNames();
             }
             case RENAME -> {
-                if (!store.rename(route, name.trim()))
-                    taken(sender, name.trim());
+                if (!store.rename(packet.route, packet.name.trim()))
+                    taken(sender, packet.name.trim());
             }
             case DELETE -> {
-                if (store.remove(route))
+                if (store.remove(packet.route))
                     store.syncNames();
             }
         }

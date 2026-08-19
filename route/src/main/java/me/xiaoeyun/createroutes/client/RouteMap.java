@@ -159,7 +159,7 @@ public class RouteMap {
         // Nearest-neighbour, since everything on this map is a pixel drawing
         // that linear filtering would turn to a smear.
         int away = Integer.MIN_VALUE / 2;
-        TrainMapManager.renderAndPick(graphics, away, away, partialTicks, false,
+        TrainMapManager.renderAndPick(graphics, away, away, false,
             new Rect2i((int) (mapX - halfWidth), (int) (mapZ - halfHeight), (int) (halfWidth * 2),
                 (int) (halfHeight * 2)));
 

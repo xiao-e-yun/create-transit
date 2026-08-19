@@ -1,64 +1,64 @@
 package me.xiaoeyun.createroutes.network;
 
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import com.simibubi.create.content.trains.schedule.Schedule;
 
+import me.xiaoeyun.createroutes.CreateRoutes;
 import me.xiaoeyun.createroutes.content.route.Route;
 import me.xiaoeyun.createroutes.content.route.RouteEditSession;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /** A route editor's whole close, in one message; self-names its route since the server keeps no record of who is editing what. */
-public class RouteSavePacket {
+public record RouteSavePacket(UUID route, CompoundTag schedule, String name, ListTag defaults)
+    implements CustomPacketPayload {
 
     /** One key, because a buffer writes a compound and the payload is a list. */
     private static final String NBT_DEFAULTS = "Defaults";
 
-    private final UUID route;
+    public static final Type<RouteSavePacket> TYPE = new Type<>(CreateRoutes.asResource("route_save"));
 
-    private final CompoundTag schedule;
+    public static final StreamCodec<FriendlyByteBuf, RouteSavePacket> STREAM_CODEC =
+        StreamCodec.of(RouteSavePacket::write, RouteSavePacket::read);
 
-    private final String name;
-
-    private final ListTag defaults;
-
-    public RouteSavePacket(UUID route, CompoundTag schedule, String name, ListTag defaults) {
-        this.route = route;
-        this.schedule = schedule;
-        this.name = name;
-        this.defaults = defaults;
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
-    public RouteSavePacket(FriendlyByteBuf buffer) {
-        route = buffer.readUUID();
-        schedule = buffer.readNbt();
-        name = buffer.readUtf(Route.MAX_NAME_LENGTH);
-        CompoundTag tag = buffer.readNbt();
-        defaults = tag == null ? new ListTag() : tag.getList(NBT_DEFAULTS, Tag.TAG_LIST);
-    }
-
-    public void encode(FriendlyByteBuf buffer) {
-        buffer.writeUUID(route);
-        buffer.writeNbt(schedule);
-        buffer.writeUtf(name, Route.MAX_NAME_LENGTH);
+    private static void write(FriendlyByteBuf buffer, RouteSavePacket packet) {
+        buffer.writeUUID(packet.route);
+        buffer.writeNbt(packet.schedule);
+        buffer.writeUtf(packet.name, Route.MAX_NAME_LENGTH);
         CompoundTag tag = new CompoundTag();
-        tag.put(NBT_DEFAULTS, defaults);
+        tag.put(NBT_DEFAULTS, packet.defaults);
         buffer.writeNbt(tag);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> context) {
-        ServerPlayer sender = context.get()
-            .getSender();
-        if (sender == null)
+    private static RouteSavePacket read(FriendlyByteBuf buffer) {
+        UUID route = buffer.readUUID();
+        CompoundTag schedule = buffer.readNbt();
+        String name = buffer.readUtf(Route.MAX_NAME_LENGTH);
+        CompoundTag tag = buffer.readNbt();
+        return new RouteSavePacket(route, schedule, name,
+            tag == null ? new ListTag() : tag.getList(NBT_DEFAULTS, Tag.TAG_LIST));
+    }
+
+    public static void handle(RouteSavePacket packet, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer sender))
             return;
-        Schedule edited = Schedule.fromTag(schedule == null ? new CompoundTag() : schedule);
-        RouteEditSession.save(sender, route, edited, name, defaults);
+        // Create reads a schedule against the registries on 1.21; the sender's
+        // are the same ones the editor wrote it with.
+        Schedule edited = Schedule.fromTag(sender.registryAccess(),
+            packet.schedule == null ? new CompoundTag() : packet.schedule);
+        RouteEditSession.save(sender, packet.route, edited, packet.name, packet.defaults);
     }
 
 }

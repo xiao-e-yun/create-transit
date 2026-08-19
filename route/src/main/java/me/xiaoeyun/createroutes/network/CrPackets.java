@@ -1,45 +1,20 @@
 package me.xiaoeyun.createroutes.network;
 
-import me.xiaoeyun.createroutes.CreateRoutes;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public class CrPackets {
 
-    private static final String VERSION = "1";
-
-    public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(CreateRoutes.asResource("main"),
-        () -> VERSION, VERSION::equals, VERSION::equals);
-
-    public static void register() {
-        int id = 0;
-        CHANNEL.messageBuilder(RouteListPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-            .encoder(RouteListPacket::encode)
-            .decoder(RouteListPacket::new)
-            .consumerMainThread(RouteListPacket::handle)
-            .add();
-        CHANNEL.messageBuilder(RouteEditPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(RouteEditPacket::encode)
-            .decoder(RouteEditPacket::new)
-            .consumerMainThread(RouteEditPacket::handle)
-            .add();
-        CHANNEL.messageBuilder(RouteManagePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(RouteManagePacket::encode)
-            .decoder(RouteManagePacket::new)
-            .consumerMainThread(RouteManagePacket::handle)
-            .add();
-        CHANNEL.messageBuilder(RouteSavePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(RouteSavePacket::encode)
-            .decoder(RouteSavePacket::new)
-            .consumerMainThread(RouteSavePacket::handle)
-            .add();
-        // Appended, not reordered: an id is a position in this list, so moving one renames every message after it.
-        CHANNEL.messageBuilder(ScheduleReopenPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(ScheduleReopenPacket::encode)
-            .decoder(ScheduleReopenPacket::new)
-            .consumerMainThread(ScheduleReopenPacket::handle)
-            .add();
+    // No integer ids any more: a payload is identified by its own Type, so
+    // order here is nothing but reading order.
+    public static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar("1");
+        registrar.playToClient(RouteListPacket.TYPE, RouteListPacket.STREAM_CODEC, RouteListPacket::handle);
+        registrar.playToServer(RouteEditPacket.TYPE, RouteEditPacket.STREAM_CODEC, RouteEditPacket::handle);
+        registrar.playToServer(RouteManagePacket.TYPE, RouteManagePacket.STREAM_CODEC, RouteManagePacket::handle);
+        registrar.playToServer(RouteSavePacket.TYPE, RouteSavePacket.STREAM_CODEC, RouteSavePacket::handle);
+        registrar.playToServer(ScheduleReopenPacket.TYPE, ScheduleReopenPacket.STREAM_CODEC,
+            ScheduleReopenPacket::handle);
     }
 
 }

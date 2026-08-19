@@ -13,7 +13,6 @@ import com.simibubi.create.foundation.gui.AllIcons;
 
 import me.xiaoeyun.createroutes.content.route.ClientRoutes;
 import me.xiaoeyun.createroutes.content.route.Route;
-import me.xiaoeyun.createroutes.network.CrPackets;
 import me.xiaoeyun.createroutes.network.RouteEditPacket;
 import me.xiaoeyun.createroutes.network.RouteManagePacket;
 import net.minecraft.client.gui.Font;
@@ -22,6 +21,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /** Every route in the world, and the four things you can do to the set of them. */
 public class RouteListScreen extends Screen {
@@ -97,7 +97,7 @@ public class RouteListScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        renderBackground(graphics);
+        renderBackground(graphics, mouseX, mouseY, partialTicks);
 
         CtSkin.schedulePanel(graphics, font, title, width, height, mouseX, mouseY);
 
@@ -191,7 +191,7 @@ public class RouteListScreen extends Screen {
                 case 0 -> (graphics, mouseX, mouseY, click) -> {
                     // The trail is left as it is: this route takes the place of
                     // whichever one was open when the list was reached.
-                    CrPackets.CHANNEL.sendToServer(new RouteEditPacket(route));
+                    PacketDistributor.sendToServer(new RouteEditPacket(route));
                     return true;
                 };
                 case 1 -> (graphics, mouseX, mouseY, click) -> {
@@ -199,7 +199,7 @@ public class RouteListScreen extends Screen {
                         confirming = route;
                         return true;
                     }
-                    CrPackets.CHANNEL.sendToServer(RouteManagePacket.delete(route));
+                    PacketDistributor.sendToServer(RouteManagePacket.delete(route));
                     confirming = null;
                     return true;
                 };
@@ -252,7 +252,7 @@ public class RouteListScreen extends Screen {
     private void start(UUID route, String value) {
         editing = route;
         field.setValue(value);
-        field.moveCursorToEnd();
+        field.moveCursorToEnd(false);
         field.visible = true;
         setFocused(field);
         field.setFocused(true);
@@ -270,10 +270,10 @@ public class RouteListScreen extends Screen {
             return;
 
         if (NEW.equals(route))
-            CrPackets.CHANNEL.sendToServer(RouteManagePacket.create(wanted));
+            PacketDistributor.sendToServer(RouteManagePacket.create(wanted));
         else if (!wanted.equals(ClientRoutes.all()
             .get(route)))
-            CrPackets.CHANNEL.sendToServer(RouteManagePacket.rename(route, wanted));
+            PacketDistributor.sendToServer(RouteManagePacket.rename(route, wanted));
     }
 
     @Override
@@ -296,8 +296,8 @@ public class RouteListScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        return scroll.wheel(delta) || super.mouseScrolled(mouseX, mouseY, delta);
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        return scroll.wheel(scrollY) || super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     /** Back to whatever led here, if anything did. */

@@ -1,33 +1,37 @@
 package me.xiaoeyun.createroutes.network;
 
-import java.util.function.Supplier;
-
 import com.simibubi.create.content.trains.schedule.ScheduleItem;
 
-import net.minecraft.network.FriendlyByteBuf;
+import me.xiaoeyun.createroutes.CreateRoutes;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.NetworkHooks;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /** Puts the player back on the schedule they were holding, by reopening whatever {@code ScheduleItem} is in their main hand; closes quietly if there is none. */
-public class ScheduleReopenPacket {
+public record ScheduleReopenPacket() implements CustomPacketPayload {
 
-    public ScheduleReopenPacket() {}
+    public static final Type<ScheduleReopenPacket> TYPE = new Type<>(CreateRoutes.asResource("schedule_reopen"));
 
-    public ScheduleReopenPacket(FriendlyByteBuf buffer) {}
+    /** The message is its own content: asking is the whole payload. */
+    public static final StreamCodec<RegistryFriendlyByteBuf, ScheduleReopenPacket> STREAM_CODEC =
+        StreamCodec.unit(new ScheduleReopenPacket());
 
-    public void encode(FriendlyByteBuf buffer) {}
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
 
-    public void handle(Supplier<NetworkEvent.Context> context) {
-        ServerPlayer sender = context.get()
-            .getSender();
-        if (sender == null)
+    public static void handle(ScheduleReopenPacket packet, IPayloadContext context) {
+        if (!(context.player() instanceof ServerPlayer sender))
             return;
 
         ItemStack held = sender.getMainHandItem();
         if (held.getItem() instanceof ScheduleItem schedule)
-            NetworkHooks.openScreen(sender, schedule, buffer -> buffer.writeItem(held));
+            // Create's own ScheduleItem.use opens it exactly this way.
+            sender.openMenu(schedule, buffer -> ItemStack.STREAM_CODEC.encode(buffer, held));
         else
             sender.closeContainer();
     }

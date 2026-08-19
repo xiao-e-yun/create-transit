@@ -16,12 +16,12 @@ import net.minecraft.world.item.ItemStack;
  * Keeps a route's borrowed schedule screen open: Create's own check is instance equality against a hotbar slot
  * — {@code return playerInventory.getSelected() == contentHolder;} — and a route's stack is in no inventory.
  */
-// remap = false: a Create class, so its names are never obfuscated — but stillValid overrides
-// vanilla AbstractContainerMenu and carries an SRG name in production, so it remaps itself.
+// remap = false: NeoForge runs on official mappings, so even stillValid -- inherited from vanilla
+// AbstractContainerMenu -- is spelled the same in production as it is here.
 @Mixin(value = HeldItemGhostItemMenu.class, remap = false)
 public class HeldItemGhostItemMenuMixin {
 
-    @Inject(method = "stillValid", at = @At("HEAD"), cancellable = true, remap = true)
+    @Inject(method = "stillValid", at = @At("HEAD"), cancellable = true)
     private void createTransit$keepRouteEditorOpen(Player player, CallbackInfoReturnable<Boolean> cir) {
         if (((MenuBase<?>) (Object) this).contentHolder instanceof ItemStack stack
             && RouteEditSession.isEditor(stack))
