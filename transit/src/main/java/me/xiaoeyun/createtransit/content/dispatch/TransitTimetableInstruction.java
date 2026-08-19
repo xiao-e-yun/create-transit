@@ -1,10 +1,7 @@
 package me.xiaoeyun.createtransit.content.dispatch;
 
-import java.util.List;
-
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableList;
 import com.simibubi.create.content.trains.graph.DiscoveredPath;
 import com.simibubi.create.content.trains.schedule.Schedule;
 import com.simibubi.create.content.trains.schedule.ScheduleEntry;
@@ -14,7 +11,6 @@ import com.simibubi.create.content.trains.schedule.destination.TextScheduleInstr
 import me.xiaoeyun.createtransit.CreateTransit;
 import me.xiaoeyun.createtransit.registry.CtItems;
 import net.createmod.catnip.data.Pair;
-import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -30,19 +26,14 @@ import net.minecraft.world.level.Level;
  */
 public class TransitTimetableInstruction extends TextScheduleInstruction {
 
-    /*
-     * The display overrides below are English literals rather than lang keys, because
-     * nothing a player can do reaches them. They exist for ScheduleScreen, and this
-     * instruction never appears there: it is unregistered, so the editor's list cannot
-     * offer it, and ScheduleRuntimeMixin hands back the timetable item instead of a
-     * schedule, so an enrolled train's schedule cannot be opened either. The only way
-     * left is a schedule whose FromItem flag was edited away by hand, and that does not
-     * earn three translations -- it earns something readable.
-     */
+    public static final ResourceLocation ID = CreateTransit.asResource("timetable");
+
+    /** The id as it is spelled in NBT; the mixin that reads a tag back compares against this, not a literal. */
+    public static final String ID_TAG = ID.toString();
 
     @Override
     public ResourceLocation getId() {
-        return CreateTransit.asResource("timetable");
+        return ID;
     }
 
     @Override
@@ -71,8 +62,6 @@ public class TransitTimetableInstruction extends TextScheduleInstruction {
         TransitTimetableInstruction instruction = new TransitTimetableInstruction();
         instruction.getData()
             .putString("Text", depot);
-        instruction.getData()
-            .putBoolean("FromItem", true);
         ScheduleEntry entry = new ScheduleEntry();
         entry.instruction = instruction;
         Schedule schedule = new Schedule();
@@ -90,40 +79,10 @@ public class TransitTimetableInstruction extends TextScheduleInstruction {
         return instruction;
     }
 
-    /** Whether the schedule came from a timetable item, which is what makes handing one back not an item dupe. */
-    public static boolean fromItem(@Nullable Schedule schedule) {
-        if (schedule == null)
-            return false;
-        for (ScheduleEntry entry : schedule.entries)
-            if (entry.instruction instanceof TransitTimetableInstruction timetable)
-                return timetable.getData()
-                    .getBoolean("FromItem");
-        return false;
-    }
-
-    @Override
-    public ItemStack getSecondLineIcon() {
-        return CtItems.TRANSIT_TIMETABLE.asStack();
-    }
-
+    /** Abstract in IScheduleInput, so it must exist; nothing a player can do renders it. */
     @Override
     public Pair<ItemStack, Component> getSummary() {
-        return Pair.of(getSecondLineIcon(), Component.literal("Transport Timetable"));
-    }
-
-    /** Overridden because the inherited one looks up a key under Create's own namespace, not ours. */
-    @Override
-    public List<Component> getTitleAs(String type) {
-        return ImmutableList.of(Component.literal("Serves the dispatcher, parking at:")
-            .withStyle(ChatFormatting.GOLD),
-            Component.translatable("create.generic.in_quotes", Component.literal(depot())));
-    }
-
-    @Override
-    public List<Component> getSecondLineTooltip(int slot) {
-        return ImmutableList.of(Component.literal("Parking Bay Station"),
-            Component.literal("The exact station name of this train's own bay")
-                .withStyle(ChatFormatting.GRAY));
+        return Pair.of(CtItems.TRANSIT_TIMETABLE.asStack(), Component.literal("Transport Timetable"));
     }
 
     @Override

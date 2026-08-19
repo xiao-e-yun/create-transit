@@ -34,7 +34,7 @@ public abstract class ScheduleRuntimeMixin {
             return;
 
         String depot = TransitTimetableInstruction.depotOf(schedule);
-        if (depot == null || !TransitTimetableInstruction.fromItem(schedule))
+        if (depot == null)
             return;
 
         discardSchedule();

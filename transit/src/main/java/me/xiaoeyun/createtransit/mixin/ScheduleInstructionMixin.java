@@ -22,7 +22,7 @@ public abstract class ScheduleInstructionMixin {
     @Inject(method = "fromTag", at = @At("HEAD"), cancellable = true)
     private static void createTransit$readTimetable(CompoundTag tag,
         CallbackInfoReturnable<ScheduleInstruction> cir) {
-        if ("create_transit:timetable".equals(tag.getString("Id")))
+        if (TransitTimetableInstruction.ID_TAG.equals(tag.getString("Id")))
             cir.setReturnValue(TransitTimetableInstruction.read(tag));
     }
 
