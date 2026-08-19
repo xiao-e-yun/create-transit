@@ -221,7 +221,7 @@ public class RouteTable {
 
     /** The three things a row can have done to it, drawn as Create's own card glyphs since these are Create's own operations. */
     private static void buttons(GuiGraphics graphics, Font font, ScheduleEntry entry, int x, int y) {
-        Strip strip = Strip.endingAt(graphics, x + Strip.width(SLOTS), y, SLOTS);
+        Strip strip = Strip.startingAt(graphics, x, y);
 
         // A nested route has no conditions of its own, so its slot opens the
         // route instead; an instruction with none leaves the slot blank so the

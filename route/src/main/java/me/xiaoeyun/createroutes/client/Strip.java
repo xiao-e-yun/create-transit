@@ -45,9 +45,9 @@ public class Strip {
         this.y = y;
     }
 
-    /** A strip of {@code slots} whose last slot ends at {@code right}. */
-    public static Strip endingAt(GuiGraphics graphics, int right, int y, int slots) {
-        return new Strip(graphics, right - width(slots), y);
+    /** A strip whose first slot starts at {@code left}, which is the same number {@link #slotAt} reads from. */
+    public static Strip startingAt(GuiGraphics graphics, int left, int y) {
+        return new Strip(graphics, left, y);
     }
 
     /** One button, its glyph centred in the slot. */

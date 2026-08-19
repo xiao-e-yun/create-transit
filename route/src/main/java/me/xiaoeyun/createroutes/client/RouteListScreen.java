@@ -156,7 +156,7 @@ public class RouteListScreen extends Screen {
             if (NEW.equals(route))
                 return;
 
-            Strip buttons = Strip.endingAt(graphics, at.right(), at.y(), SLOTS);
+            Strip buttons = Strip.startingAt(graphics, strip, at.y());
 
             int slot = hovered ? Strip.slotAt(strip, SLOTS, mouseX) : -1;
             boolean armed = route.equals(confirming);
