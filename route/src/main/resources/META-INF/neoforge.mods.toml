@@ -35,11 +35,14 @@ config="create_routes.mixins.json"
 # Flywheel and Ponder need no rows of their own: Create mandates both, so any
 # world where this loads already has them.
 #
-# The floor is the Create this branch is ported against; older 6.0.x on 1.21.1
-# have the same internal drift that made [6.0.0,) a false promise on 1.20.1.
+# Everything this mod binds -- ScheduleRuntime, ScheduleScreen's private fields,
+# ModularGuiLineBuilder, TrainMapManager -- is already the shape it targets by
+# 6.0.6, but 6.0.7 is the first Create release with a tag to point at and the
+# first this range was checked against. The cap is there because Create reshapes
+# internals in patch releases, which a mixin against them cannot ride out.
 [[dependencies.${mod_id}]]
     modId="create"
     type="required"
-    versionRange="[6.0.10,)"
+    versionRange="[6.0.7,6.1.0)"
     ordering="AFTER"
     side="BOTH"
