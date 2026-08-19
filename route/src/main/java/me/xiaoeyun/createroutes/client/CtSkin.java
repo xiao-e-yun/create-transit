@@ -182,15 +182,19 @@ public class CtSkin {
             graphics.fill(x, y, x + width, y + height, ROW_BAND);
     }
 
+    /** The same text, cut to a width with a mark where it was cut, keeping whatever style it had. */
+    public static Component clip(Font font, Component text, int width) {
+        if (font.width(text) <= width)
+            return text;
+        String cut = font.plainSubstrByWidth(text.getString(), width - font.width(ELLIPSIS));
+        return Component.literal(cut + ELLIPSIS)
+            .withStyle(text.getStyle());
+    }
+
     /** Text in a column that ends, with a mark where it was cut. */
     public static void clipped(GuiGraphics graphics, Font font, Component text, int x, int y, int width,
         int colour) {
-        if (font.width(text) <= width) {
-            graphics.drawString(font, text, x, y, colour, false);
-            return;
-        }
-        String cut = font.plainSubstrByWidth(text.getString(), width - font.width(ELLIPSIS));
-        graphics.drawString(font, cut + ELLIPSIS, x, y, colour, false);
+        graphics.drawString(font, clip(font, text, width), x, y, colour, false);
     }
 
     /** Ours, in the same voice as Create's own hints. */

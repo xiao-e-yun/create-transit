@@ -21,6 +21,7 @@ import com.simibubi.create.content.trains.schedule.destination.DestinationInstru
 import com.simibubi.create.content.trains.station.GlobalStation;
 
 import me.xiaoeyun.createroutes.CreateRoutes;
+import me.xiaoeyun.createroutes.client.CtSkin;
 import me.xiaoeyun.createroutes.client.RouteListScreen;
 import me.xiaoeyun.createroutes.client.RouteScreen;
 import me.xiaoeyun.createroutes.client.RouteTrail;
@@ -32,7 +33,6 @@ import me.xiaoeyun.createroutes.network.RouteEditPacket;
 import net.createmod.catnip.data.Pair;
 import net.createmod.catnip.gui.element.ScreenElement;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -180,24 +180,13 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
             picker[0] = input;
             input.forOptions(names)
                 // .format must come after forOptions, which resets it to the option's own text.
-                .format(index -> clipped(names.get(index), PICKER - 12))
+                .format(index -> CtSkin.clip(Minecraft.getInstance().font, names.get(index), PICKER - 12))
                 .titled(Component.translatable(LANG_SUMMARY))
                 .calling(index -> {
                     if (index < ids.size())
                         select(ids, index);
                 });
         }, NBT_INDEX);
-    }
-
-    /** Same text, clipped to a width with a mark showing it was cut. */
-    @OnlyIn(Dist.CLIENT)
-    private static Component clipped(Component text, int width) {
-        Font font = Minecraft.getInstance().font;
-        String value = text.getString();
-        if (font.width(value) <= width)
-            return text;
-        return Component.literal(font.plainSubstrByWidth(value, width - font.width("…")) + "…")
-            .withStyle(text.getStyle());
     }
 
     /** Written directly to the entry's data rather than through the line's save system, which only knows a text box and a scroll input. */
