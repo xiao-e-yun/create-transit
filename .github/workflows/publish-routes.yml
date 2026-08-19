@@ -18,23 +18,31 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # The tag carries the mod version and the game version; gradle.properties
+      # holds only the first. Disagreeing means shipping a jar labelled as a
+      # version it is not, which mc-publish would do without complaint.
+      - name: Version from tag
+        id: version
+        run: |
+          V="${GITHUB_REF_NAME#routes-v}"
+          echo "store=$V" >> "$GITHUB_OUTPUT"
+          grep -qx "mod_version=${V%%-mc*}" route/gradle.properties
+
       # This mod alone. The other one failing to compile is not a reason a
       # release here cannot go out.
       - name: Build
         run: ./gradlew :route:build
-
-      # mc-publish reads the version off the tag and strips a leading r or v as a
-      # version prefix, so routes-v0.1.0-mc1.20.1 published as outes-v0.1.0-mc1.20.1.
-      - name: Version from tag
-        id: version
-        run: echo "value=${GITHUB_REF_NAME#routes-v}" >> "$GITHUB_OUTPUT"
 
       - name: Publish
         uses: Kira-NT/mc-publish@v3.3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-tag: ${{ github.ref_name }}
-          version: ${{ steps.version.outputs.value }}
+          # Both mods share one release list, so the GitHub title has to say
+          # which one it is; the store pages already know.
+          github-name: "Create: Routes ${{ steps.version.outputs.store }}"
+          name: ${{ steps.version.outputs.store }}
+          version: ${{ steps.version.outputs.store }}
           modrinth-id: njXnqD1w
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           curseforge-id: 1657654
