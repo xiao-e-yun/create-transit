@@ -2,12 +2,14 @@ package me.xiaoeyun.createtransit.content.dispatch;
 
 import java.util.List;
 
+import com.simibubi.create.AllKeys;
 import com.simibubi.create.content.trains.station.GlobalStation;
 import com.simibubi.create.content.trains.station.StationBlockEntity;
 
 import me.xiaoeyun.createtransit.registry.CtItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -66,6 +68,10 @@ public class TransitTimetableItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
+        // Create's description block owns the Shift view.
+        if (AllKeys.shiftDown())
+            return;
+        tooltip.add(CommonComponents.SPACE);
         String depot = depot(stack);
         if (depot.isEmpty())
             tooltip.add(Component.translatable(LANG_BIND_HINT)
