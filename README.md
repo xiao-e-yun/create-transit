@@ -13,25 +13,24 @@ Networks stay sovereign here, and freight moves between them the way it crosses 
 
 Transit labels nest, and the first one is what the network reads as the address. Each border strips exactly one layer, so regional hubs, national trunk networks and local depots compose the way real freight does.
 
-### Transit Ticker
+## Features
 
-Opens one network up to another. Bind the ticker to the network being offered, then mount a link belonging to the network that should reach it: with a Stock Link the whole of its stock serves that network's requests, as if the two were one warehouse; with a Transit Link it becomes foreign territory instead, reached through a border. Access runs one way — the network offered up cannot reach back.
+- **Transit Ticker** — opens one network up to another, one way.
+- **Transit Link** — declares a border, and stamps what leaves through it.
+- **Transit Gate** — customs: strips a label, and merges a declared order back into one delivery.
+- **Transport Timetable** — hands a train to the network, and a dispatcher runs it.
 
-### Transit Link
+Ponder covers each of them in game, which is where the mechanics are documented.
 
-Declares a border. Every shipment it forwards leaves stamped with its transit label, and an unnamed link stamps the default lane — so it works the moment you place it. Full redstone takes it out of service, as with any Stock Link.
+## Requires
 
-### Transit Gate
+[Create](https://modrinth.com/mod/create) 6.0.7 or newer, for Minecraft 1.20.1 on Forge.
 
-Customs. Strips one transit label from each package passing through, and holds the parts of a declared order until they can leave merged as a single delivery.
+**[Create: Routes](route/README.md)** is a separate mod built in this repository, not a dependency — Transit neither requires nor uses it. Write a route once and have many trains follow it.
 
-## Train dispatch
+## Credits
 
-Transit freight moves by rail only on trains carrying a **Transport Timetable**. The timetable donates a train to the network — bind its parking bay, hand it to a conductor — and the dispatcher does the rest.
-
-## Related
-
-**[Create: Routes](route/README.md)** — Write once, follow anywhere.
+Original textures from the [Create Mod](https://www.curseforge.com/minecraft/mc-mods/create), used with its artists' permission and recoloured or drawn over for both mods here. See [LICENSE](LICENSE) for how that art is licensed — it is theirs, not ours, and the MIT grant does not extend to it.
 
 ## Development
 
