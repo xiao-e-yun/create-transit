@@ -23,20 +23,16 @@ import net.minecraft.world.item.Items;
 /**
  * What a Transit Link declares that a Stock Link does not.
  *
- * Caption strings are literals, and Ponder numbers them positionally: it counts
- * the {@code text(...)} calls in execution order into
- * {@code create_transit.ponder.<scene>.text_N}. So they stay one per beat at the
- * top level of their storyboard, never in a loop, a branch or a shared helper,
- * and the storyboards stay in scene order with the helpers last.
- * {@link TransitScenes} carries the rest: why every trigger is scripted, and
- * where the freight comes from.
+ * {@link TransitScenes} carries the rules every storyboard here follows: why
+ * each trigger is scripted, where the freight comes from, and why a caption can
+ * never move into a helper.
  */
 public class TransitLinkScenes {
 
     /** transit_link's own border, named after the warehouse the link stands on. */
-    private static final String WAREHOUSE = "Warehouse";
+    private static final String WAREHOUSE = "warehouse";
     /** Where this scene's shipments are headed. Local to it: the other scenes deliver to a drawer. */
-    private static final String FACTORY = "Factory";
+    private static final String FACTORY = "factory";
 
     public static void transitLink(SceneBuilder builder, SceneBuildingUtil util) {
         CreateSceneBuilder scene = new CreateSceneBuilder(builder);
@@ -62,6 +58,8 @@ public class TransitLinkScenes {
             .fromTo(4, 1, 4, 5, 2, 5);
         Selection chests = util.select()
             .fromTo(2, 1, 4, 2, 1, 5);
+        BlockPos lever = util.grid()
+            .at(1, 2, 3);
 
         // The label is never drawn in a Ponder world -- no renderer reads
         // TransitLinkBlockEntity.getLabel -- so it is not baked into the
@@ -135,10 +133,11 @@ public class TransitLinkScenes {
         PonderHilo.linkEffect(scene, defaultLink);
         PonderHilo.packagerCreate(scene, namedPackager, namedBox);
         PonderHilo.packagerCreate(scene, defaultPackager, defaultBox);
-        scene.effects().indicateSuccess(namedPackager);
-        scene.effects().indicateSuccess(defaultPackager);
+        scene.effects()
+            .indicateSuccess(namedPackager);
+        scene.effects()
+            .indicateSuccess(defaultPackager);
         scene.idle(25);
-
 
         scene.overlay()
             .showText(50)
@@ -166,14 +165,14 @@ public class TransitLinkScenes {
         scene.idle(10);
         ElementLink<WorldSectionElement> leverL = scene.world()
             .showIndependentSection(util.select()
-                .position(1, 2, 3), Direction.DOWN);
+                .position(lever), Direction.DOWN);
         scene.idle(20);
 
         scene.world()
             .toggleRedstonePower(util.select()
-                .fromTo(1, 2, 3, 2, 2, 3));
+                .fromTo(lever, defaultLink));
         scene.effects()
-            .indicateRedstone(defaultLink.west());
+            .indicateRedstone(lever);
         scene.idle(10);
         scene.overlay()
             .showControls(util.vector()
@@ -193,7 +192,7 @@ public class TransitLinkScenes {
 
         scene.world()
             .toggleRedstonePower(util.select()
-                .fromTo(1, 2, 3, 2, 2, 3));
+                .fromTo(lever, defaultLink));
         scene.idle(10);
         scene.world()
             .hideIndependentSection(leverL, Direction.SOUTH);

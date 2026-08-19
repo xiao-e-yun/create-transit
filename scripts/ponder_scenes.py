@@ -374,8 +374,7 @@ def transit_ticker_scene():
     not show is dead weight in the schematic. The ticker still needs something
     to pack from -- it is a Packager underneath and takes its stock from
     oppositeOfBlockFacing -- so a single chest sits in that cell and comes up
-    with the ticker. The border scene wants the same corner for its gate,
-    funnel and outbound belt, and reuses this stack as-is.
+    with the ticker.
     """
     s = {}
     floor(s)

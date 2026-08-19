@@ -39,14 +39,9 @@ import net.minecraft.world.item.Items;
  * {@link Lane} and the beats that take one belong to the first; the second
  * addresses its blocks outright.
  *
- * Caption strings are literals, and Ponder numbers them positionally: it counts
- * the {@code text(...)} calls in execution order into
- * {@code create_transit.ponder.<scene>.text_N}. So they stay one per beat at the
- * top level of their storyboard, never in a loop, a branch or a shared helper --
- * which is the one thing none of the helpers below may ever grow -- and the
- * storyboards stay in scene order with the helpers last.
- * {@link TransitScenes} carries the rest: why every trigger is scripted, and
- * where the freight comes from.
+ * {@link TransitScenes} carries the rules every storyboard here follows: why
+ * each trigger is scripted, where the freight comes from, and why a caption can
+ * never move into a helper.
  */
 public class TransitGateScenes {
 
