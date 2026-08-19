@@ -90,6 +90,10 @@ FORMAT_ARG = re.compile(r"%(?:\d+\$)?s")
 # Files that mention keys for reasons other than using them.
 NOT_A_KEY = (".json", ".png", ".mixins", ".refmap")
 
+# Create's ItemDescription builds these off a registry entry and reads them
+# through I18n, so no source file ever spells one out.
+TOOLTIP_SUFFIX = re.compile(r"\.tooltip\.(summary|condition\d+|behaviour\d+|control\d+|action\d+)$")
+
 # A Java string literal, escapes and all, for the Ponder patterns below.
 LITERAL = r'"((?:[^"\\]|\\.)*)"'
 
@@ -188,7 +192,7 @@ def is_mentioned(key: str, blob: str, mod_id: str, derived: dict[str, tuple[str,
     # an instruction's dropdown entry by pasting its ResourceLocation together,
     # so the only thing our source ever spells is the path.
     if key.startswith(REGISTRY_PREFIXES) or key.startswith(f"{mod_id}.schedule."):
-        return key.rsplit(".", 1)[-1] in blob
+        return TOOLTIP_SUFFIX.sub("", key).rsplit(".", 1)[-1] in blob
     return False
 
 
