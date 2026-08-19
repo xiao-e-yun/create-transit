@@ -1,0 +1,45 @@
+modLoader="javafml" #mandatory
+# FML language loader version, versioned independently of NeoForge itself.
+loaderVersion="${loader_version_range}" #mandatory
+license="${mod_license}"
+issueTrackerURL="https://github.com/xiao-e-yun/create-transit/issues"
+
+[[mods]] #mandatory
+modId="${mod_id}" #mandatory
+version="${mod_version}" #mandatory
+displayName="${mod_name}" #mandatory
+displayURL="https://github.com/xiao-e-yun/create-transit"
+authors="${mod_authors}"
+logoFile="logo.png"
+description='''${mod_description}'''
+
+# Unlike Forge 1.20.1, NeoForge reads the mixin config from here rather than
+# from a MixinGradle-written jar manifest attribute.
+[[mixins]]
+config="create_routes.mixins.json"
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="${neo_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+# Flywheel and Ponder need no rows of their own: Create mandates both, so any
+# world where this loads already has them.
+#
+# The floor is the Create this branch is ported against; older 6.0.x on 1.21.1
+# have the same internal drift that made [6.0.0,) a false promise on 1.20.1.
+[[dependencies.${mod_id}]]
+    modId="create"
+    type="required"
+    versionRange="[6.0.10,)"
+    ordering="AFTER"
+    side="BOTH"

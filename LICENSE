@@ -1,3 +1,9 @@
+# License Overview
+
+## Code License (MIT)
+
+Applies to every file except those covered by the Artwork section below.
+
 MIT License
 
 Copyright (c) 2026 xiao-e-yun
@@ -19,3 +25,21 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## Artwork
+
+Applies to this project's artwork, wherever it lives.
+
+Artwork derived from Create's — recoloured, or drawn over a Create texture as a
+base — carries Create's terms, not these. Create licenses its assets All Rights
+Reserved:
+
+    Copyright (c) The Create Team / The Creators of Create
+
+Copyright in the underlying art stays with them, and the MIT grant above does
+not extend to it. Original artwork is MIT like everything else.
+
+Create's artists permit addons to build on that art, asking in return that
+Create be credited and linked. The README carries that credit.

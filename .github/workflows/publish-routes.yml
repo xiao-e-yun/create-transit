@@ -1,0 +1,52 @@
+name: Publish Routes
+
+on:
+  push:
+    tags: ["routes-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # The tag is the only place a release version is written. gradle.properties
+      # carries one for dev builds, and the build here is told to ignore it.
+      - name: Version from tag
+        id: version
+        run: |
+          V="${GITHUB_REF_NAME#routes-v}"
+          echo "store=$V" >> "$GITHUB_OUTPUT"
+          echo "mod=${V%%-mc*}" >> "$GITHUB_OUTPUT"
+
+      # This mod alone. The other one failing to compile is not a reason a
+      # release here cannot go out.
+      - name: Build
+        run: ./gradlew :route:build -Pmod_version=${{ steps.version.outputs.mod }}
+
+      - name: Publish
+        uses: Kira-NT/mc-publish@v3.3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-tag: ${{ github.ref_name }}
+          # Both mods share one release list, so the GitHub title has to say
+          # which one it is; the store pages already know.
+          github-name: "Create: Routes ${{ steps.version.outputs.store }}"
+          name: ${{ steps.version.outputs.store }}
+          version: ${{ steps.version.outputs.store }}
+          modrinth-id: njXnqD1w
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: 1657654
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          environment: client | server
+          # A re-pushed tag should not die on Modrinth's "version already exists".
+          modrinth-fail-mode: warn
+          files: route/build/libs/*.jar

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "create:schedule"
+    },
+    {
+      "item": "create:transmitter"
+    }
+  ],
+  "result": {
+    "id": "create_transit:transit_timetable"
+  },
+  "show_notification": true
+}

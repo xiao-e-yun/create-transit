@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "me.xiaoeyun.createroutes.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "HeldItemGhostItemMenuMixin",
+    "ScheduleRuntimeMixin"
+  ],
+  "client": [
+    "client.ModularGuiLineBuilderAccessor",
+    "client.ScheduleScreenAccessor",
+    "client.ScheduleScreenTableMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

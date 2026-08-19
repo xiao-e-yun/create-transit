@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "create_transit:transit_timetable"
+    }
+  ],
+  "result": {
+    "id": "create_transit:transit_timetable"
+  }
+}

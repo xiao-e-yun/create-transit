@@ -1,0 +1,109 @@
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.gradle.userdev' version '7.1.38'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = "${mod_id.replace('_', '-')}-mc${minecraft_version}"
+}
+
+// Mojang ships Java 21 to end users in 1.21.1, so mods should target Java 21.
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+// No mixin plugin and no refmap on this branch: NeoForge runs on official
+// mappings, so mixin targets in the config match the runtime names as written.
+// The config is declared in META-INF/neoforge.mods.toml, not the jar manifest.
+
+// Default run configurations. A route-only run is a legitimate thing to want --
+// the mod stands alone -- but the everyday dev run is transit's, which loads
+// this project as a second mod.
+runs {
+    configureEach {
+        systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'debug'
+
+        workingDirectory project.layout.projectDirectory.dir('run').dir(name)
+
+        modSource project.sourceSets.main
+    }
+
+    client {
+        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+    }
+
+    server {
+        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        argument '--nogui'
+    }
+}
+
+repositories {
+    // Create, Ponder, Flywheel
+    maven { url = "https://maven.createmod.net" }
+    // Registrate
+    maven { url = "https://maven.ithundxr.dev/snapshots" }
+}
+
+dependencies {
+    implementation "net.neoforged:neoforge:${neo_version}"
+
+    // Create and its libraries (https://wiki.createmod.net/developers/depend-on-create/neoforge-1.21.1)
+    implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
+    implementation("net.createmod.ponder:ponder-neoforge:${ponder_version}")
+    compileOnly("dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}")
+    runtimeOnly("dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}")
+    // Not called directly, but Create's own registry entries (AllItems.SCHEDULE,
+    // AllBlocks.TRACK_STATION, AllMenuTypes.SCHEDULE) are typed as Registrate's
+    // ItemEntry/BlockEntry/MenuEntry, so referencing them at all needs it resolvable.
+    implementation("com.tterrag.registrate:Registrate:${registrate_version}")
+}
+
+// Expand declared properties into the mod metadata. A missing property fails
+// the build rather than shipping an unexpanded placeholder.
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id, mod_name: mod_name,
+            mod_license            : mod_license, mod_version: mod_version,
+            mod_authors            : mod_authors, mod_description: mod_description,
+    ]
+    inputs.properties replaceProperties
+
+    // Tooling state written under the resource tree is invisible to git status
+    // (it is ignored globally) but is not invisible to the jar.
+    exclude '**/.omc/**'
+
+    // No [project: project] here: the metadata uses no ${project.*} keys, and
+    // handing the project object to an execution-time closure is exactly what
+    // Gradle 9's configuration cache forbids.
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/mcmodsrepo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
