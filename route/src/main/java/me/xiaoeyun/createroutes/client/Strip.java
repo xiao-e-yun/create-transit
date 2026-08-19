@@ -1,10 +1,7 @@
 package me.xiaoeyun.createroutes.client;
 
-import java.util.List;
-
 import com.simibubi.create.foundation.gui.AllGuiTextures;
 
-import net.createmod.catnip.gui.TextureSheetSegment;
 import net.createmod.catnip.gui.element.ScreenElement;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -53,11 +50,10 @@ public class Strip {
         return new Strip(graphics, right - width(slots), y);
     }
 
-    /** One button, its glyph centred at whatever size the sheet says it is. */
+    /** One button, its glyph centred in the slot. */
     public Strip button(ScreenElement glyph) {
-        int size = glyph instanceof TextureSheetSegment sheet ? sheet.getWidth() : ICON;
         int x = left + slot * SLOT;
-        int inset = (SLOT - size) / 2;
+        int inset = (SLOT - ICON) / 2;
 
         glyph.render(graphics, x + inset, y + inset);
         return blank();

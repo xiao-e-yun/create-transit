@@ -3,8 +3,6 @@ package me.xiaoeyun.createroutes.client;
 import java.util.List;
 import java.util.function.Predicate;
 
-import org.lwjgl.glfw.GLFW;
-
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.simibubi.create.compat.trainmap.TrainMapManager;
@@ -12,7 +10,6 @@ import com.simibubi.create.content.trains.schedule.ScheduleEntry;
 import com.simibubi.create.content.trains.schedule.destination.DestinationInstruction;
 import com.simibubi.create.foundation.gui.AllGuiTextures;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.Rect2i;
@@ -220,7 +217,8 @@ public class RouteMap {
             marker(graphics, screenX(at, station.x()), screenY(at, station.z()),
                 (int) Math.ceil(reach() * scale));
             mapTip = List.of(Component.literal(station.name()), CommonComponents.EMPTY,
-                hint("create_routes.route.map.add"), hint("create_routes.route.map.copy"));
+                CtSkin.hint("create_routes.route.map.add"),
+                CtSkin.hint("create_routes.route.map.copy"));
         }
         graphics.disableScissor();
     }
@@ -320,10 +318,8 @@ public class RouteMap {
 
     /** A ring around the station a click would mean. */
     private static void marker(GuiGraphics graphics, int x, int y, int reach) {
-        graphics.fill(x - reach, y - reach, x + reach + 1, y - reach + 1, MARKER);
-        graphics.fill(x - reach, y + reach, x + reach + 1, y + reach + 1, MARKER);
-        graphics.fill(x - reach, y - reach, x - reach + 1, y + reach + 1, MARKER);
-        graphics.fill(x + reach, y - reach, x + reach + 1, y + reach + 1, MARKER);
+        int size = reach * 2 + 1;
+        graphics.renderOutline(x - reach, y - reach, size, size, MARKER);
     }
 
     /** The box every station a filter means stands in, in blocks, or null when it means none — zero sized for a single station, which still has a middle. */
@@ -371,14 +367,11 @@ public class RouteMap {
             .anyMatch(filter -> filter.test(name)));
     }
 
-    /** Pans while the button is held; {@code ScheduleScreen} declares no {@code mouseDragged}, so this is measured while drawing instead. */
+    /** Pans while the button is held. */
     private void drag(double mouseX, double mouseY) {
         if (!panning)
             return;
-        long window = Minecraft.getInstance()
-            .getWindow()
-            .getWindow();
-        if (GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) != GLFW.GLFW_PRESS) {
+        if (!Action.held()) {
             panning = false;
             return;
         }
@@ -386,12 +379,6 @@ public class RouteMap {
         mapZ -= (mouseY - grabY) / scale;
         grabX = mouseX;
         grabY = mouseY;
-    }
-
-    /** Ours, in the same voice as Create's own hints. */
-    private static Component hint(String key) {
-        return Component.translatable(key)
-            .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC);
     }
 
 }

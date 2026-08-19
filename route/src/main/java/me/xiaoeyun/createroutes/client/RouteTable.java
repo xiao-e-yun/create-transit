@@ -92,19 +92,13 @@ public class RouteTable {
     /** How far the route window holds its content off its own edges: the name chip either side, and the band's content at both ends. */
     private static final int INSET = 4;
 
-    /** Create's scroll arrows, 4 by 8. */
-    private static final int ARROW_WIDTH = 4;
+    /** Create's scroll arrows; the two are the same size, so either measures both. */
+    private static final AllGuiTextures ARROW = AllGuiTextures.SCHEDULE_SCROLL_LEFT;
 
-    private static final int ARROW_HEIGHT = 8;
-
-    /** One more condition this column must also wait for, and one more column — their sizes are written out because {@code AllGuiTextures} keeps its own private. */
+    /** One more condition this column must also wait for, and one more column. */
     private static final AllGuiTextures APPEND = AllGuiTextures.SCHEDULE_CONDITION_APPEND;
 
-    private static final int APPEND_WIDTH = 10;
-
     private static final AllGuiTextures NEW = AllGuiTextures.SCHEDULE_CONDITION_NEW;
-
-    private static final int NEW_WIDTH = 19;
 
     /** Where 8 pixels of text sit in a row taller than they are. */
     public static final int TEXT = (CtSkin.ROW_HEIGHT - 8) / 2;
@@ -153,12 +147,10 @@ public class RouteTable {
         Action grip(int index, ScrollTable rows);
 
         /** Said as a row is drawn under the cursor, so that the map can mark the stations it means. */
-        default void over(int index) {}
+        void over(int index);
 
         /** Whether the map's cursor is on a station this stop means. */
-        default boolean lit(int index) {
-            return false;
-        }
+        boolean lit(int index);
     }
 
     /** One drawn rectangle and what answers for it. */
@@ -323,8 +315,8 @@ public class RouteTable {
         int inner = cardWidth - CONTENT - 16;
         int clipped = cardX + CONTENT - 3;
         band(graphics, font, columns, of, cardX + CONTENT, cardY + 29, inner, cardHeight - 29, 0,
-            new Arrows(clipped - 5 - ARROW_WIDTH, clipped + 3 + inner,
-                cardY + (HEADER + cardHeight - ARROW_HEIGHT) / 2),
+            new Arrows(clipped - 5 - ARROW.getWidth(), clipped + 3 + inner,
+                cardY + (HEADER + cardHeight - ARROW.getHeight()) / 2),
             new Box(x + CtSkin.LIST_AT, y + CtSkin.LIST_AT, CtSkin.LIST_WIDTH, CtSkin.LIST_HEIGHT), across,
             lines);
         fades(graphics, cardX + CONTENT, inner, cardY + HEADER + 2, cardY + cardHeight - 2, FADE_CARD,
@@ -372,7 +364,7 @@ public class RouteTable {
         // with the rest.
         int rowTop = top + CONDITION_ROW + 4;
         band(graphics, font, columns, of, bandX, rowTop, band, tall, INSET,
-            new Arrows(x, x + width - ARROW_WIDTH, (y + bottom - ARROW_HEIGHT) / 2),
+            new Arrows(x, x + width - ARROW.getWidth(), (y + bottom - ARROW.getHeight()) / 2),
             new Box(x, y, width, bottom - y), across, lines);
         fades(graphics, bandX, band, y, bottom, FADE_BAND, across);
 
@@ -404,13 +396,13 @@ public class RouteTable {
         // way Create's own do — the rest scrolled in with the arrows.
         int[] widths = new int[columns.size()];
         int[] starts = new int[columns.size()];
-        int spread = NEW_WIDTH;
+        int spread = NEW.getWidth();
         for (int column = 0; column < columns.size(); column++) {
             int wide = CHIP_MIN;
             for (ScheduleWaitCondition condition : columns.get(column))
                 wide = Math.max(wide, fieldWidth(font, condition.getSummary(), CHIP_MIN, CHIP_MAX));
             widths[column] = wide;
-            starts[column] = spread - NEW_WIDTH;
+            starts[column] = spread - NEW.getWidth();
             spread += wide + COLUMN_GAP;
         }
 
@@ -426,7 +418,7 @@ public class RouteTable {
         graphics.enableScissor(bandX - 3, rowTop, bandX + band, rowTop + tall);
         int columnX = bandX + pad - sideways;
         for (int column = 0; column < slots; column++) {
-            int wide = column < columns.size() ? widths[column] : NEW_WIDTH;
+            int wide = column < columns.size() ? widths[column] : NEW.getWidth();
             // Scrolled out of the band: not drawn, and — because this is the
             // same pass — not clickable either.
             if (columnX + wide <= bandX || columnX >= bandX + band) {
@@ -453,7 +445,7 @@ public class RouteTable {
             }
 
             int appendY = rowTop + conditions.size() * CONDITION_ROW;
-            APPEND.render(graphics, columnX + (wide - APPEND_WIDTH) / 2, appendY);
+            APPEND.render(graphics, columnX + (wide - APPEND.getWidth()) / 2, appendY);
             // Clickable across the whole column, not just the glyph: nothing
             // else is on that line, and a 10 pixel target is a 10 pixel miss.
             record(lines, cut, columnX, appendY, wide, of.add(column));
@@ -602,7 +594,7 @@ public class RouteTable {
         // its own arrows before the columns.
         int pad = 3;
         int from = back ? x - pad : x;
-        lines.add(0, new Line(from, y - 4, ARROW_WIDTH + pad, ARROW_HEIGHT + 8, action));
+        lines.add(0, new Line(from, y - 4, glyph.getWidth() + pad, glyph.getHeight() + 8, action));
     }
 
     /** The nearest column edge behind where we are, or the very start. */

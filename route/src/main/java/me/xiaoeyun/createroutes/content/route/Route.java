@@ -31,12 +31,10 @@ public class Route {
 
     private static final String NBT_ID = "Id";
     private static final String NBT_NAME = "Name";
-    private static final String NBT_COLOR = "Color";
     private static final String NBT_ENTRIES = "Entries";
     private static final String NBT_DEFAULTS = "Defaults";
 
     public String name;
-    public int color;
 
     /** The stops, in the order a train following this route forwards visits them. */
     public List<ScheduleEntry> entries;
@@ -51,7 +49,6 @@ public class Route {
     private Route(UUID id, String name) {
         this.id = id;
         this.name = name;
-        this.color = 0;
         this.entries = new ArrayList<>();
         this.defaults = seed();
     }
@@ -168,7 +165,6 @@ public class Route {
         CompoundTag tag = new CompoundTag();
         tag.putUUID(NBT_ID, id);
         tag.putString(NBT_NAME, name);
-        tag.putInt(NBT_COLOR, color);
         tag.put(NBT_ENTRIES, NBTHelper.writeCompoundList(entries, ScheduleEntry::write));
         tag.put(NBT_DEFAULTS, writeConditions(defaults));
         return tag;
@@ -181,7 +177,6 @@ public class Route {
             return null;
         // A hand-written route may leave the id out; it gets one here and keeps it from the next save on.
         Route route = tag.hasUUID(NBT_ID) ? new Route(tag.getUUID(NBT_ID), name) : new Route(name);
-        route.color = tag.getInt(NBT_COLOR);
         route.entries = NBTHelper.readCompoundList(tag.getList(NBT_ENTRIES, Tag.TAG_COMPOUND), ScheduleEntry::fromTag);
         // Held to the invariant here too: defaults must never end up empty, or these trains never leave the platform.
         List<List<ScheduleWaitCondition>> defaults = readConditions(tag.getList(NBT_DEFAULTS, Tag.TAG_LIST));

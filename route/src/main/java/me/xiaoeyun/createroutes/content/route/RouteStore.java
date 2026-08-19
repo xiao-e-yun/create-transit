@@ -1,7 +1,6 @@
 package me.xiaoeyun.createroutes.content.route;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,10 +47,6 @@ public class RouteStore extends SavedData {
             if (route.name.equals(name))
                 return route;
         return null;
-    }
-
-    public Collection<Route> all() {
-        return routes.values();
     }
 
     public void put(Route route) {

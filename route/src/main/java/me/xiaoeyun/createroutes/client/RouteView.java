@@ -55,9 +55,6 @@ public class RouteView {
     /** How many stops are on screen at once; everything else is measured from it. */
     private static final int ROWS = 11;
 
-    /** Where a table's first row starts, below the plaque and the headings. */
-    private static final int LIST_AT = CtSkin.BODY_TOP + RouteTable.HEADING;
-
     /** The two columns, sized to hold whole rows rather than cut to them. */
     private static final int BODY =
         CtSkin.windowHeight(RouteTable.HEADING + ROWS * CtSkin.ROW_HEIGHT);
@@ -448,14 +445,11 @@ public class RouteView {
         };
     }
 
-    /** Keeps a held press going, since {@code ScheduleScreen} declares no {@code mouseDragged} and a mixin cannot inject into a method its target does not declare. */
+    /** Keeps a held press going. */
     private void carry(double mouseX, double mouseY) {
         if (dragging == null)
             return;
-        long window = Minecraft.getInstance()
-            .getWindow()
-            .getWindow();
-        if (GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) != GLFW.GLFW_PRESS) {
+        if (!Action.held()) {
             dragging = null;
             return;
         }
@@ -658,17 +652,11 @@ public class RouteView {
         // Only a stop is carried anywhere; a condition sits in its column with
         // no order of its own to change.
         if (draggable)
-            tooltip.add(hint("create_routes.route.reorder"));
+            tooltip.add(CtSkin.hint("create_routes.route.reorder"));
         if (deletable)
             tooltip.add(createHint("gui.schedule.rmb_remove"));
         graphics.renderTooltip(Minecraft.getInstance().font, tooltip, Optional.empty(), (int) mouseX,
             (int) mouseY);
-    }
-
-    /** Ours, in the same voice as Create's own hints. */
-    private static Component hint(String key) {
-        return Component.translatable(key)
-            .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC);
     }
 
     private static Component createHint(String key) {

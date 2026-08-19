@@ -3,6 +3,7 @@ package me.xiaoeyun.createroutes.client;
 import com.simibubi.create.foundation.gui.AllGuiTextures;
 import com.simibubi.create.foundation.gui.AllIcons;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -45,9 +46,6 @@ public class CtSkin {
      * y12, its shadow y13, black y14, the field border y15, checker from y16.
      */
     public static final int PLAQUE_HEIGHT = 13;
-
-    /** The first usable row inside a window whose frame starts at y. */
-    public static final int BODY_TOP = PLAQUE_HEIGHT + 1;
 
     /** Where things sit on {@code AllGuiTextures.SCHEDULE} — Create's numbers, taken from {@code ScheduleScreen}, not measured off the picture. */
     static final int LIST_AT = 16;
@@ -193,6 +191,12 @@ public class CtSkin {
         }
         String cut = font.plainSubstrByWidth(text.getString(), width - font.width(ELLIPSIS));
         graphics.drawString(font, cut + ELLIPSIS, x, y, colour, false);
+    }
+
+    /** Ours, in the same voice as Create's own hints. */
+    public static Component hint(String key) {
+        return Component.translatable(key)
+            .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC);
     }
 
     /** The line under a table's headings, which is all a heading row gets. */

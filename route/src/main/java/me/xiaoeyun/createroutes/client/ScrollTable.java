@@ -15,9 +15,7 @@ public final class ScrollTable {
             double mouseY);
 
         /** Who answers for a click in a row, given the same box it was drawn in. */
-        default Action hit(ScrollTable rows, int index, Box at, double x, double y) {
-            return null;
-        }
+        Action hit(ScrollTable rows, int index, Box at, double x, double y);
     }
 
     private final int rowHeight;
@@ -52,10 +50,6 @@ public final class ScrollTable {
     public ScrollTable lit(IntPredicate lit) {
         this.lit = lit;
         return this;
-    }
-
-    public Box box() {
-        return box;
     }
 
     /** Pure arithmetic over the offered box, so it may be called before a frame is drawn — Create sets a button's position in {@code init()}. */
