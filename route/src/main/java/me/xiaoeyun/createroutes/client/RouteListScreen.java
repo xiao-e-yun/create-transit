@@ -95,16 +95,25 @@ public class RouteListScreen extends Screen {
         addRenderableWidget(field);
     }
 
+    /**
+     * The panel and the list are background, not foreground: 1.21's Screen.render draws the
+     * background and then the widgets, so drawing them in render() ahead of super would put the
+     * blur back on top of them -- and drawing them after would bury the rename box.
+     */
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        renderBackground(graphics, mouseX, mouseY, partialTicks);
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        super.renderBackground(graphics, mouseX, mouseY, partialTicks);
 
         CtSkin.schedulePanel(graphics, font, title, width, height, mouseX, mouseY);
 
         list(graphics, listX(), listY(), CtSkin.LIST_WIDTH, listY() + CtSkin.LIST_HEIGHT, mouseX, mouseY);
+    }
 
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         super.render(graphics, mouseX, mouseY, partialTicks);
 
+        // Set by the list while it drew, which super.render has already done.
         if (hovered != null)
             graphics.renderTooltip(font, Component.translatable(hovered), mouseX, mouseY);
     }
