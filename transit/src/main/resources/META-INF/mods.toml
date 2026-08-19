@@ -44,12 +44,3 @@ description='''${mod_description}'''
     versionRange="[6.0.7,)"
     ordering="AFTER"
     side="BOTH"
-
-# A product-line dependency, not a code one: almost every player wanting
-# transit already wants routes, and the launcher installs it automatically.
-[[dependencies.${mod_id}]]
-    modId="create_routes"
-    mandatory=true
-    versionRange="[0.1.0,)"
-    ordering="AFTER"
-    side="BOTH"
