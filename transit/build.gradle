@@ -26,6 +26,19 @@ sourceSets.main.resources {
 // mappings, so mixin targets in the config match the runtime names as written.
 // The config is declared in META-INF/neoforge.mods.toml, not the jar manifest.
 
+// 'localRuntime' is for dev-client-only mods: present when running from the
+// IDE, never published as a dependency of this mod.
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+
+    // Route's jar alone, kept off every other classpath so that :transit:build
+    // never has to compile route.
+    routeMod {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
 // Default run configurations.
 runs {
     // applies to all the run configs below
@@ -44,25 +57,24 @@ runs {
     // config has to be named -- NeoForge reads each mod's config from its own
     // neoforge.mods.toml.
     //
-    // Route arrives as its jar on a run-scoped configuration, the way JEI below
-    // does, rather than as a modSource. A modSource would have this project
-    // resolve another one's source-set classpath, which Gradle forbids while
-    // storing the configuration cache -- and putting it on runtimeClasspath
-    // instead would make :transit:build need route to compile, which a release
-    // of this mod must never need.
+    // Route's jar goes on the run's classpath and NOT in a run-scoped
+    // 'dependencies { runtime ... }' block: that block becomes NeoForge's
+    // legacyClassPath, whose entries are resolved into the game module layer
+    // before mod discovery starts and are therefore claimed as plain libraries
+    // for good. Route's transitive Create/Ponder/Flywheel/Registrate would be
+    // silenced along with it, which is what kept Create out of the dev client.
+    // A modSource is likewise no option: it would have this project resolve
+    // another one's source-set classpath, which Gradle forbids while storing
+    // the configuration cache.
     client {
         systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        dependencies {
-            runtime project(':route')
-        }
+        runtimeClasspath.from configurations.routeMod
     }
 
     server {
         systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         argument '--nogui'
-        dependencies {
-            runtime project(':route')
-        }
+        runtimeClasspath.from configurations.routeMod
     }
 
     data {
@@ -70,12 +82,6 @@ runs {
                 '--output', file('src/generated/resources/').getAbsolutePath(),
                 '--existing', file('src/main/resources/').getAbsolutePath()
     }
-}
-
-// 'localRuntime' is for dev-client-only mods: present when running from the
-// IDE, never published as a dependency of this mod.
-configurations {
-    runtimeClasspath.extendsFrom localRuntime
 }
 
 repositories {
@@ -100,6 +106,8 @@ dependencies {
     // JEI, so the development client can look up recipes. Dev-only, same terms
     // as on the 1.20.1 branch: the mod itself never touches it.
     localRuntime("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
+
+    routeMod project(':route')
 }
 
 // Expand declared properties into the mod metadata. A missing property fails
