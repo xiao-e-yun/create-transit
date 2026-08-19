@@ -174,7 +174,7 @@ public class TransitDispatch {
         Train best = null;
         for (Train other : Create.RAILWAYS.trains.values()) {
             // Paused runtimes never reach the re-poll, so a cancel would strand them where they roll out.
-            if (other == departed || other.runtime.paused)
+            if (other == departed || other.graph != departed.graph || other.runtime.paused)
                 continue;
             GlobalStation target = other.navigation.destination;
             if (target == null || target == bay || !bay.name.equals(target.name))
@@ -206,7 +206,8 @@ public class TransitDispatch {
     /** An enrolled, unpaused, empty double-header with no order and not mid-journey — able to take the job now, not eventually. */
     private static boolean idleDoubleHeader(Train self) {
         for (Train other : Create.RAILWAYS.trains.values()) {
-            if (other == self || ORDERS.containsKey(other.id) || other.runtime.paused)
+            if (other == self || other.graph != self.graph || ORDERS.containsKey(other.id)
+                || other.runtime.paused)
                 continue;
             if (other.navigation.destination != null)
                 continue;
