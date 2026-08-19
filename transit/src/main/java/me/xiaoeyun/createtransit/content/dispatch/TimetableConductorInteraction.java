@@ -63,15 +63,12 @@ public class TimetableConductorInteraction {
             return;
 
         String depot = TransitTimetableItem.depot(held);
-        Component denial = null;
-        if (depot.isEmpty())
-            denial = Component.translatable(LANG_BIND_FIRST);
-        else if (train.runtime.getSchedule() != null)
-            denial = Component.translatable("create.schedule.remove_with_empty_hand");
-
-        if (denial != null) {
-            AllSoundEvents.DENY.playOnServer(player.level(), player.blockPosition(), 1, 1);
-            player.displayClientMessage(denial, true);
+        if (depot.isEmpty()) {
+            denyUnbound(player);
+            return;
+        }
+        if (train.runtime.getSchedule() != null) {
+            deny(player, Component.translatable("create.schedule.remove_with_empty_hand"));
             return;
         }
 
@@ -81,6 +78,16 @@ public class TimetableConductorInteraction {
         AllSoundEvents.CONFIRM.playOnServer(player.level(), player.blockPosition(), 1, 1);
         player.displayClientMessage(
             Component.translatable(LANG_ENROLLED, Component.literal(depot)), true);
+    }
+
+    /** Shared so the blaze-burner conductor refuses an unbound timetable in the same words as the seated one. */
+    public static void denyUnbound(Player player) {
+        deny(player, Component.translatable(LANG_BIND_FIRST));
+    }
+
+    private static void deny(Player player, Component reason) {
+        AllSoundEvents.DENY.playOnServer(player.level(), player.blockPosition(), 1, 1);
+        player.displayClientMessage(reason, true);
     }
 
 }

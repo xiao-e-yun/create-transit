@@ -2,15 +2,22 @@ package me.xiaoeyun.createtransit.mixin;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.simibubi.create.api.behaviour.interaction.ConductorBlockInteractionBehavior;
+import com.simibubi.create.content.contraptions.AbstractContraptionEntity;
 import com.simibubi.create.content.trains.schedule.Schedule;
 import com.tterrag.registrate.util.entry.ItemEntry;
 
+import me.xiaoeyun.createtransit.content.dispatch.TimetableConductorInteraction;
 import me.xiaoeyun.createtransit.content.dispatch.TransitTimetableInstruction;
 import me.xiaoeyun.createtransit.content.dispatch.TransitTimetableItem;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -39,9 +46,29 @@ public abstract class ConductorBlockInteractionBehaviorMixin {
         if (!(held.getItem() instanceof TransitTimetableItem))
             return original.call(held);
 
-        String depot = TransitTimetableItem.depot(held);
-        // Empty rather than null for an unbound one: Create's own no_stops denial says so and spends nothing.
-        return depot.isEmpty() ? new Schedule() : TransitTimetableInstruction.schedule(depot);
+        return TransitTimetableInstruction.schedule(TransitTimetableItem.depot(held));
+    }
+
+    /**
+     * Create would answer an unbound timetable with no_stops, but a timetable has no stops to
+     * add — only a bay to bind. Denied here, one call before Create reads the schedule: every
+     * gate has passed, the level is already known to be the server's, and nothing is spent yet.
+     */
+    @Inject(method = "handlePlayerInteraction",
+        at = @At(value = "INVOKE",
+            target = "Lcom/simibubi/create/content/trains/schedule/ScheduleItem;"
+                + "getSchedule(Lnet/minecraft/world/item/ItemStack;)"
+                + "Lcom/simibubi/create/content/trains/schedule/Schedule;"),
+        cancellable = true)
+    private void createTransit$denyUnboundTimetable(Player player, InteractionHand activeHand, BlockPos localPos,
+        AbstractContraptionEntity contraptionEntity, CallbackInfoReturnable<Boolean> cir) {
+        ItemStack held = player.getItemInHand(activeHand);
+        if (!(held.getItem() instanceof TransitTimetableItem) || !TransitTimetableItem.depot(held)
+            .isEmpty())
+            return;
+
+        TimetableConductorInteraction.denyUnbound(player);
+        cir.setReturnValue(true);
     }
 
 }
