@@ -89,6 +89,9 @@ public class RouteMap {
     /** Every station in the world, as it was this frame — read fresh by {@link #render} and shared by the rest of the frame's questions of it. */
     private List<Stations.At> stations = List.of();
 
+    /** Frames left before the station walk is redone; it crosses every graph, and one appearing a sixth of a second late is not visible. */
+    private int rescanIn;
+
     RouteMap(RouteHost host) {
         this.host = host;
     }
@@ -122,7 +125,10 @@ public class RouteMap {
             return;
         TrainMapManager.tick(minecraft.level.dimension());
         mapTip = null;
-        stations = Stations.all();
+        if (rescanIn-- <= 0) {
+            stations = Stations.all();
+            rescanIn = 10;
+        }
         // Before the drag, which would otherwise be measured against a centre
         // that is not a number yet.
         if (Double.isNaN(mapX))

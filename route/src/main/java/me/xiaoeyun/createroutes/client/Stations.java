@@ -1,7 +1,9 @@
 package me.xiaoeyun.createroutes.client;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -36,6 +38,12 @@ public class Stations {
 
     /** One station, where it stands, and which way its sprite is turned. */
     public record At(String name, int x, int z, int rotation) {}
+
+    /**
+     * Filters already compiled. A pattern for a given filter never goes stale, so this needs no
+     * invalidation; it is cleared on size alone because the keys are typed by a player.
+     */
+    private static final Map<String, Pattern> PATTERNS = new HashMap<>();
 
     private Stations() {}
 
@@ -98,7 +106,9 @@ public class Stations {
             return ClientRoutes.reach(reference.route());
         if (!(instruction instanceof DestinationInstruction destination))
             return name -> false;
-        Pattern pattern = Pattern.compile(destination.getFilterForRegex());
+        if (PATTERNS.size() > 256)
+            PATTERNS.clear();
+        Pattern pattern = PATTERNS.computeIfAbsent(destination.getFilterForRegex(), Pattern::compile);
         return name -> pattern.matcher(name)
             .matches();
     }

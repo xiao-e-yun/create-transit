@@ -195,7 +195,7 @@ public class RouteView {
     /** The pan/zoom railway map. */
     private final RouteMap map;
 
-    /** The stops' filters, as they were this frame — read once and shared by the frame's questions of it, rather than recompiled per row. */
+    /** The stops' filters, built once a frame and shared by the several questions asked of them. */
     private List<Predicate<String>> filters = List.of();
 
     /** Which stop the cursor was on when the table drew, or -1. */
