@@ -11,7 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
-/** Creates, renames, or deletes a route; no permission gate, on purpose — the same trust Create gives a station rename. */
+/** Creates, renames, or deletes a route. */
 public class RouteManagePacket {
 
     public enum Action {
@@ -78,7 +78,6 @@ public class RouteManagePacket {
                 store.put(new Route(wanted));
                 store.syncNames();
             }
-            // Refused rather than quietly kept: two routes with the same name would make typing one ambiguous.
             case RENAME -> {
                 if (!store.rename(route, name.trim()))
                     taken(sender, name.trim());

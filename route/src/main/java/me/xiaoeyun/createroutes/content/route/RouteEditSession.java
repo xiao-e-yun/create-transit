@@ -97,7 +97,6 @@ public class RouteEditSession {
         route.defaults = Route.readConditions(defaults);
         store.setDirty();
 
-        // Refused rather than silently kept: two routes with the same name would make typing one ambiguous.
         if (!route.name.equals(name) && !store.rename(id, name))
             tell(player, "create_routes.route.rename.taken", ChatFormatting.RED, name);
 

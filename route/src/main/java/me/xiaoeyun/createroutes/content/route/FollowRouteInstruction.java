@@ -135,7 +135,7 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         }
     }
 
-    /** Stored as ints, not booleans, because {@code ModularGuiLine.saveValues} only knows how to write an int or a string. */
+    /** {@link #toggle} writes a boolean; {@code getInt} reads it back because it accepts any numeric tag. */
     private boolean flag(String key) {
         return getData().getInt(key) != 0;
     }
@@ -166,7 +166,7 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
             accessor.createTransit$getY() - 27, AllIcons.I_VIEW_SCHEDULE);
         configure.setToolTip(Component.translatable(LANG_CONFIGURE));
         // Added before the picker so the picker's dropdown draws over it, not under it.
-        // "Dummy" keeps ModularGuiLine from drawing a field plate behind it or reading a value out of it.
+        // "Dummy" is the key ModularGuiLine skips when it draws its field plates.
         accessor.createTransit$getTarget()
             .add(Pair.of(configure, "Dummy"));
         toggle(accessor, 83, AllIcons.I_FLIP, NBT_REVERSED, LANG_REVERSED);
@@ -189,7 +189,7 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         }, NBT_INDEX);
     }
 
-    /** Written directly to the entry's data rather than through the line's save system, which only knows a text box and a scroll input. */
+    /** Written straight to the entry's data: {@code ModularGuiLine.saveValues} only saves a text box or a scroll input. */
     @OnlyIn(Dist.CLIENT)
     private void toggle(ModularGuiLineBuilderAccessor accessor, int x, ScreenElement icon, String key,
         String tip) {
@@ -349,7 +349,7 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         entry.conditions = new ArrayList<>();
     }
 
-    /** Overridden because the inherited summary looks up a key under Create's own namespace, not ours. */
+    /** Overridden because {@code TextScheduleInstruction} builds its key with {@code CreateLang}, under Create's namespace rather than ours. */
     @Override
     public List<Component> getTitleAs(String type) {
         // type is ignored deliberately — this instruction is only ever asked for its title as an instruction.

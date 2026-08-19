@@ -26,14 +26,11 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Where the world's stations are, and which of them a stop means.
+ * Where the world's stations are, and which of them a stop means. A stop carries a filter, not a name
+ * (for example {@code Harbour *}), so the relation is many to many.
  *
- * <p>A stop does not name a station — it carries a filter (for example
- * {@code Harbour *}), so the relation between a stop and the stations it means
- * is many to many.
- *
- * <p>Positions are worked out the way {@code TrainMapManager.drawPoints} does,
- * because a marker anywhere else than Create's own sprite points at nothing.
+ * <p>Positions are worked out the way {@code TrainMapManager.drawPoints} does, because a marker anywhere
+ * but under Create's own sprite points at nothing.
  */
 public class Stations {
 
@@ -94,7 +91,8 @@ public class Stations {
     /** Which station names a stop means, or nothing at all where it is not going anywhere. */
     public static Predicate<String> meant(ScheduleInstruction instruction) {
         // Checked before the destination test: a follower is also a
-        // DestinationInstruction, but its field holds a route's name, not a station's.
+        // DestinationInstruction, but it stands for every station its whole route
+        // reaches, where its own filter is only the stop it is heading for now.
         RouteReference reference = RouteReference.of(instruction);
         if (reference != null)
             return ClientRoutes.reach(reference.route());

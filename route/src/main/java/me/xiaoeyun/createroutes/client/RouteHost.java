@@ -10,18 +10,10 @@ import com.simibubi.create.content.trains.schedule.destination.ScheduleInstructi
 
 import net.minecraft.client.gui.screens.Screen;
 
-/**
- * Everything {@link RouteView} needs from the screen it is drawn on, and
- * nothing else.
- *
- * <p>Reaching Create's {@code ScheduleScreen} internals takes {@code @Shadow},
- * so this interface is the only place a Create update can break — implemented
- * once by the mixin rather than added to {@code ScheduleScreen} itself, which
- * would expose these methods on Create's own screen to buy nothing.
- */
+/** Everything {@link RouteView} needs from the screen it is drawn on; implemented by {@code ScheduleScreenTableMixin} over Create's private state. */
 public interface RouteHost {
 
-    /** For its width and height, which the layout is proportional to. */
+    /** For its width and height, which the layout is centred on and clamped against. */
     Screen screen();
 
     /** The route's stops, which are the schedule's entries. */

@@ -65,7 +65,7 @@ public class RouteTable {
     /** Where that spine is, measured from the card's left edge. */
     private static final int SPINE = 8;
 
-    /** Create's own card width — every measurement in {@code ScheduleScreen} is relative to it, and sizing to content instead overflows the 480px screen at GUI scale 4. */
+    /** Create's own card width; every measurement in {@code ScheduleScreen} is relative to it. */
     private static final int CARD_WIDTH = 195;
 
     /** Where a card sits on {@code AllGuiTextures.SCHEDULE}, taken from {@code ScheduleScreen}. */
@@ -77,10 +77,7 @@ public class RouteTable {
     /** How many buttons a stop's row ends with: its conditions, a copy of it, and its removal. */
     public static final int SLOTS = 3;
 
-    /**
-     * The edge fades, over the fields and under the tooltips. Relative, because
-     * the whole popup is already drawn {@link #OVER} everything else.
-     */
+    /** The edge fades, over the fields and under the tooltips; relative, the popup already being drawn {@link #OVER} everything. */
     private static final int FADE = 10;
 
     /** Create's own shading, for the card, whose arrows stand clear of it. */
@@ -177,8 +174,6 @@ public class RouteTable {
             CtSkin.FIELD_TEXT, false);
         CtSkin.rule(graphics, x, y + HEADING - 1, width);
 
-        // The headings stay put; only what is under them moves. Whole rows only;
-        // the remainder becomes margin under the last row.
         int top = y + HEADING;
         int buttons = textEnd + MARK;
 
@@ -241,9 +236,7 @@ public class RouteTable {
         } else
             strip.blank();
 
-        // I_FX_BLEND_OFF and I_DISABLE stand in for copy/delete: the atlas has
-        // no icon for either, and the near misses (I_OPEN_FOLDER, I_MTD_CLOSE)
-        // read worse.
+        // I_FX_BLEND_OFF and I_DISABLE stand in for copy and delete; the atlas has neither.
         strip.button(AllIcons.I_FX_BLEND_OFF);
         strip.button(AllIcons.I_DISABLE);
     }
@@ -259,8 +252,7 @@ public class RouteTable {
         List<List<ScheduleWaitCondition>> columns = entry.conditions;
 
         int cardWidth = CARD_WIDTH;
-        // A floor Create's own card never needs — alone on a panel a lone row
-        // reads as cramped without the ten pixel gap a list gives it.
+        // A floor Create's own card never needs: alone on a panel, one row reads as cramped.
         int cardHeight = Math.max(HEADER + 32, HEADER + 24 + rowsIn(columns) * CONDITION_ROW);
         // Create's list area is what the card scrolls inside; the card starts
         // nine pixels into it and the content extends that much past its end, so
@@ -309,9 +301,7 @@ public class RouteTable {
 
         List<Line> lines = new ArrayList<>();
         // The fade and arrows are centred on the card's field rather than the
-        // conditions in it, so a tall column scrolling does not carry them out
-        // of view; hit-testing checks the arrows before the columns to match
-        // Create's own overlap handling.
+        // conditions in it, so a tall column scrolling cannot carry them out of view.
         int inner = cardWidth - CONTENT - 16;
         int clipped = cardX + CONTENT - 3;
         band(graphics, font, columns, of, cardX + CONTENT, cardY + 29, inner, cardHeight - 29, 0,
@@ -351,9 +341,8 @@ public class RouteTable {
 
         graphics.enableScissor(x, y, x + width, bottom);
 
-        // Floor and ceiling are the same width here, unlike Create's plates
-        // which grow to fit and cap at 150 — wider than this band, which let a
-        // long name run off the edge with its ellipsis unreadable.
+        // Floor and ceiling the same, so the name fills the band exactly; Create's
+        // plates grow to fit and cap at 150, which is wider than this band.
         chip(graphics, font, Pair.of(ROUTE_ICON, Component.literal(name)), bandX + INSET, top + 2,
             false, band - INSET * 2, band - INSET * 2);
 
@@ -468,7 +457,7 @@ public class RouteTable {
         pose.popPose();
     }
 
-    /** One condition-sized rectangle, cut to what is on screen — recorded whole it would sit under the scroll arrow beside it, and the arrow (first in the list) would never be found. */
+    /** One condition-sized rectangle, cut to what is on screen, so nothing is recorded where nothing was drawn. */
     private static void record(List<Line> lines, Box cut, int x, int y, int width,
         Action action) {
         if (cut == null)
@@ -503,12 +492,9 @@ public class RouteTable {
     }
 
     /**
-     * Create's card plate, which is four stretched bands and no texture of its
-     * own, copied out of {@code renderScheduleEntry} rather than borrowed since
-     * that method draws a whole card around these few lines.
-     *
-     * <p>The spine down the left edge is not drawn here; it runs the length of
-     * the window rather than of the card, so the caller lays it under this.
+     * Create's card plate: four stretched bands and no texture of its own, copied out of
+     * {@code renderScheduleEntry}. The spine down the left edge runs the length of the window rather than
+     * of the card, so the caller lays that under this.
      */
     private static void card(GuiGraphics graphics, int x, int y, int width, int height) {
         AllGuiTextures light = AllGuiTextures.SCHEDULE_CARD_LIGHT;
@@ -521,12 +507,7 @@ public class RouteTable {
         UIRenderHelper.drawStretched(graphics, x + 2, y + 2, width - 4, HEADER, 0, light);
     }
 
-    /**
-     * How wide {@link #chip} will draw a summary, between a floor and a ceiling.
-     *
-     * <p>Create's {@code getFieldSize} does the same sum but keeps it private,
-     * which is why this exists rather than a copy of it.
-     */
+    /** How wide {@link #chip} draws a summary: Create's {@code getFieldSize} sum, which is private, with a ceiling added. */
     private static int fieldWidth(Font font, Pair<ItemStack, Component> summary, int minSize,
         int maxSize) {
         Component text = summary.getSecond();
@@ -536,12 +517,9 @@ public class RouteTable {
     }
 
     /**
-     * One of Create's condition plates, drawn here rather than borrowed, since
-     * {@code getFieldSize} is private and the measuring had to be copied anyway.
-     *
-     * <p>Two differences from Create's own: it cuts to the plate's actual width
-     * rather than a flat 120 pixels, and it cuts with {@link CtSkin#clipped}'s
-     * mark rather than bare.
+     * One of Create's condition plates, with two differences from Create's own: it cuts to the plate's
+     * actual width rather than a flat 120 pixels, and it cuts with {@link CtSkin#clipped}'s mark
+     * rather than bare.
      */
     public static void chip(GuiGraphics graphics, Font font, Pair<ItemStack, Component> summary, int x,
         int y, boolean clean, int minSize, int maxSize) {
@@ -581,11 +559,7 @@ public class RouteTable {
         pose.popPose();
     }
 
-    /**
-     * A scroll arrow and the target around it. Create pads its own both ways —
-     * drawn at 15, it answers from 12 to 19 — but this pads outwards only, since
-     * there are no pixels to spare on the inside of the band.
-     */
+    /** A scroll arrow and the target around it, padded outwards only sideways — there are no pixels to spare on the inside of the band. */
     private static void arrow(GuiGraphics graphics, List<Line> lines, boolean back, Action action,
         AllGuiTextures glyph, int x, int y) {
         glyph.render(graphics, x, y);
@@ -623,14 +597,7 @@ public class RouteTable {
         return null;
     }
 
-    /**
-     * How wide the action column has to be: the widest of them, so the stop
-     * names line up instead of each starting wherever its verb ended.
-     *
-     * <p>Capped at half the room, since an unbounded action name would otherwise
-     * take the whole line and leave nothing for the stop column; its own heading
-     * floors the width, so a route with no stops yet still has somewhere to start.
-     */
+    /** The widest action name, so the stop names line up; floored by its own heading and capped at half the room. */
     private static int actionColumn(Font font, List<ScheduleEntry> entries, int room) {
         int widest = font.width(heading("create_routes.route.column.action"));
         for (ScheduleEntry entry : entries)
@@ -638,23 +605,13 @@ public class RouteTable {
         return Math.min(widest + 4, room / 2);
     }
 
-    /**
-     * What the stop does, named the way the editor's type dropdown names it.
-     *
-     * <p>Built from the instruction's id rather than {@code getTitleAs} (the
-     * tooltip's wording, which an instruction may override into a whole
-     * sentence), so it reads as the same words the dropdown offered.
-     */
+    /** What the stop does, built from the instruction's id — the dropdown's wording, not {@code getTitleAs}, which an instruction may override into a whole sentence. */
     public static Component action(ScheduleEntry entry) {
         ResourceLocation id = entry.instruction.getId();
         return Component.translatable(id.getNamespace() + ".schedule.instruction." + id.getPath());
     }
 
-    /**
-     * Takes a whole key rather than a column name — building one from a prefix
-     * hides it from {@code scripts/lang_audit.py}, which then reports the key
-     * unused and the assembled one missing.
-     */
+    /** Takes a whole key: one assembled from a prefix is invisible to {@code scripts/lang_audit.py}. */
     private static Component heading(String key) {
         return Component.translatable(key)
             .withStyle(ChatFormatting.BOLD);

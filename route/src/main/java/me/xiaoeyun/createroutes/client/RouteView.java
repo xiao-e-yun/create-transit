@@ -36,14 +36,7 @@ import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * The route editor's main interface: three windows across the whole screen, in
- * place of Create's card list.
- *
- * <p>Created once per screen and deliberately not replaced — {@code init()}
- * reruns on a resize and after every added or deleted stop, and a fresh view
- * there would reset the map and the chosen row each time.
- */
+/** The route editor's main interface: three windows across the whole screen, in place of Create's card list. */
 public class RouteView {
 
     /** The gap around and between the windows. */
@@ -59,19 +52,15 @@ public class RouteView {
     private static final int BODY =
         CtSkin.windowHeight(RouteTable.HEADING + ROWS * CtSkin.ROW_HEIGHT);
 
-    /** The map and the route's own conditions, which is the narrower column — 118 reaches the conditions, and a "wait 5s" chip needs about 60. */
+    /** The map and the route's own conditions, which is the narrower column. */
     private static final int LEFT = 120;
 
     private static final int MAP = 100;
 
     /**
-     * The stops, and the only thing on this screen a wider one can spend itself
-     * on.
-     *
-     * <p>The floor fits beside the left column at Minecraft's smallest
-     * guaranteed screen (320x240); the ceiling is the widest row there is
-     * content for — the mark, icon, action column, a 32-character station
-     * name, and the three buttons.
+     * The stops, and the only thing a wider screen spends itself on. The floor fits beside the left column
+     * at Minecraft's smallest guaranteed screen (320x240); the ceiling is the widest row there is content
+     * for — the mark, icon, action column, a 32-character station name, and the three buttons.
      */
     private static final int RIGHT_MIN = 182;
 
@@ -93,12 +82,9 @@ public class RouteView {
     }
 
     /**
-     * Where the three windows sit on a screen of a given size, worked out once.
-     *
-     * <p>Every box here is a <em>window</em> (the whole frame, rim included)
-     * since hit testing cares about the whole frame; the content boxes
-     * ({@link #mapBox}, {@link #routeBox}, {@link #tableBox}) are a frame-inset
-     * narrower and kept separate for that reason.
+     * Where the three windows sit on a screen of a given size. Every box here is a whole frame, rim
+     * included, which is what hit testing wants; the content boxes ({@link #mapBox}, {@link #routeBox},
+     * {@link #tableBox}) are a rim narrower and kept apart for that reason.
      */
     private record Layout(Box mapWindow, Box routeWindow, Box tableWindow) {
 
@@ -143,7 +129,7 @@ public class RouteView {
     /** What it is called, which is a label the player may change. */
     private String name;
 
-    /** The conditions a stop borrows when it declares none of its own — edited here and sent back on close since they cannot ride in Create's own schedule packet. */
+    /** The conditions a stop borrows when it declares none of its own; sent back by {@link #close}, not by Create's schedule packet. */
     private final List<List<ScheduleWaitCondition>> defaults;
 
     /** What the table drew last frame, which is also what it is hit-tested against. */
@@ -206,7 +192,7 @@ public class RouteView {
     /** What a held press belongs to — captured on the press rather than found again on each move. */
     private Action dragging;
 
-    /** The pan/zoom railway map, boxed off from the schedule editing this class does. */
+    /** The pan/zoom railway map. */
     private final RouteMap map;
 
     /** The stops' filters, as they were this frame — read once and shared by the frame's questions of it, rather than recompiled per row. */
@@ -228,13 +214,7 @@ public class RouteView {
         return route;
     }
 
-    /**
-     * Saves the route: its stops, its name, and its default conditions, in
-     * place of the schedule-edit packet Create's screen would otherwise send.
-     *
-     * <p>Called from a redirect on {@code removed()} that never lets Create's
-     * own save packet go out for a route.
-     */
+    /** Saves the route's stops, name and default conditions, in place of the schedule-edit packet Create's screen would send. */
     public void close() {
         Schedule schedule = new Schedule();
         schedule.entries = host.entries();
@@ -242,13 +222,7 @@ public class RouteView {
             new RouteSavePacket(route, schedule.write(), name, Route.writeConditions(defaults)));
     }
 
-    /**
-     * Three windows: where the route runs, what the route is, and what it does.
-     *
-     * <p>Proportional rather than fixed, since the editor that opens over this
-     * is a fixed 256 by 190, and the layout must stay wider than that at any
-     * GUI scale.
-     */
+    /** Three windows: where the route runs, what the route is, and what it does. */
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         carry(mouseX, mouseY);
         hoveredStop = -1;
@@ -262,8 +236,6 @@ public class RouteView {
             mapWindow.height(), Component.translatable("create_routes.route.window.map"), 0);
         map.render(graphics, mapBox, filters, mouseX, mouseY, partialTicks);
 
-        // The route's own envelope: the conditions its stops borrow when they
-        // declare none, editable only here since they are not a Schedule's to hold.
         Box routeWindow = layout.routeWindow();
         routeBox = CtSkin.frame(graphics, font, routeWindow.x(), routeWindow.y(), routeWindow.width(),
             routeWindow.height(), Component.translatable("create_routes.route.window.route"), FOOTER);
@@ -271,9 +243,8 @@ public class RouteView {
             defaults, editing(RouteTable.DEFAULTS), routeBox.x(), routeBox.y(), routeBox.width(),
             routeBox.bottom(), defaultsDown, defaultsAcross));
 
-        // Together at the right end, not opposite corners: JEI answers clicks in
-        // the left corner before this screen is ever asked, so a button drawn
-        // there would be one you can see but never press.
+        // Together at the right end: JEI answers clicks in the left corner before
+        // this screen is ever asked, so a button there could be seen but never pressed.
         int footerY = mapWindow.y() + BODY - FOOTER + (FOOTER - BUTTON) / 2;
         Box done = new Box(mapWindow.x() + LEFT - FOOTER_INSET - BUTTON, footerY, BUTTON, BUTTON);
         Box back = new Box(done.x() - BUTTON, footerY, BUTTON, BUTTON);
@@ -469,9 +440,8 @@ public class RouteView {
                 overrides.reset();
                 alternatives.reset();
             } else if (click != 1) {
-                // Named after the window it opens rather than Create's "add
-                // condition"; this is also the only place the override star gets
-                // explained, since it belongs to no rectangle of its own.
+                // The only place the override star is explained, it having no
+                // rectangle of its own to be hovered over.
                 if (entry.conditions.isEmpty())
                     tipOf(graphics, mouseX, mouseY, "create_routes.route.window.conditions");
                 else
@@ -506,7 +476,7 @@ public class RouteView {
         return true;
     }
 
-    /** Done with the route, which is what Create's own tick did: closing is what saves, so there is nothing here to hold back until it. */
+    /** Done with the route; closing is what saves, so this only leaves. */
     private boolean leave(GuiGraphics graphics, double mouseX, double mouseY, int click) {
         if (click == 0)
             back();
@@ -571,10 +541,9 @@ public class RouteView {
             // there is a footer button to close it now.
             if (conditionsFor >= 0)
                 return true;
-            // A click on our layout that hit nothing still reaches the
-            // container behind, as a click on no slot; the footer is
-            // deliberately not swallowed, since Create only offers the confirm
-            // widget the click after this returns false.
+            // A miss inside our own windows is swallowed too: returning false
+            // hands the click on to the container behind, which reads it as a
+            // click on no slot.
             return onLayout(mouseX, mouseY);
         }
         return action.act(graphics, mouseX, mouseY, click);
@@ -600,10 +569,8 @@ public class RouteView {
     }
 
     /**
-     * A condition, edited or removed the way Create's own card does it, except
-     * that Create's rule against removing the last condition holds only for
-     * the route's own defaults — for a stop's override, empty means back to
-     * the route's defaults, which is the whole point of removing it.
+     * A condition, edited or removed the way Create's own card does it, except that the rule against
+     * removing the last one holds only for the route's own defaults: a stop with none falls back to them.
      */
     private void condition(GuiGraphics graphics, double mouseX, double mouseY, int click,
         List<List<ScheduleWaitCondition>> columns, int column, int row, boolean keepLast) {
@@ -636,12 +603,7 @@ public class RouteView {
         }, removable);
     }
 
-    /**
-     * What a stop or a condition is, and what clicking it does.
-     *
-     * <p>Assembled here rather than called, since {@code renderActionTooltip}
-     * and its two ready-made lines are private to the screen.
-     */
+    /** What a stop or a condition is, and what clicking it does; assembled here since Create's {@code renderActionTooltip} and its two ready-made lines are private. */
     private void titled(GuiGraphics graphics, double mouseX, double mouseY, IScheduleInput field, String as,
         boolean deletable, boolean draggable) {
         if (graphics == null)
@@ -681,7 +643,6 @@ public class RouteView {
             (int) mouseX, (int) mouseY);
     }
 
-    /** A station if the cursor is on one, and the map itself otherwise. */
     public boolean grab(double mouseX, double mouseY, int button) {
         if (!idleOverMap(mouseX, mouseY))
             return false;
@@ -718,8 +679,7 @@ public class RouteView {
             conditionsFor = -1;
             return true;
         }
-        // At the top it is left alone — that's not the same as no route above
-        // this one, since a schedule may be down there.
+        // Nothing behind us: Escape closes the screen the ordinary way.
         if (!RouteTrail.leadsBack())
             return false;
         back();
@@ -735,7 +695,7 @@ public class RouteView {
             new Rect2i(tableWindow.x(), tableWindow.y(), tableWindow.width(), tableWindow.height()));
     }
 
-    /** Anywhere the layout draws, minus the confirm plaque. */
+    /** Anywhere the three windows cover. */
     private boolean onLayout(double mouseX, double mouseY) {
         Layout layout = layout();
         Box mapWindow = layout.mapWindow();

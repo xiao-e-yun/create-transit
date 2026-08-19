@@ -20,7 +20,7 @@ public class RouteListPacket {
     /** What one route is, as far as any client needs to know. */
     public record Line(String name, List<String> filters, List<UUID> references) {}
 
-    /** A station filter, already in the form a pattern is compiled from. */
+    /** A filter arrives as the regex it is compiled from, so it outgrows the name it was written against. */
     private static final int MAX_FILTER_LENGTH = 256;
 
     private final Map<UUID, Line> routes;

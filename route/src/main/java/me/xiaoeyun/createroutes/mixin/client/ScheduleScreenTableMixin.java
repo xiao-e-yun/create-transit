@@ -37,7 +37,7 @@ import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.simple.SimpleChannel;
 
-/** Hangs the route layout on Create's schedule screen; every injection defers to {@link RouteView} when this is a route and otherwise leaves Create's screen untouched. */
+/** Hangs the route layout on Create's schedule screen. Every injection but {@code createTransit$hideBorrowedConditions} does nothing unless a {@link RouteView} is up. */
 // remap = false: a Create class, so its names are never obfuscated — except members inherited
 // from Minecraft (init, removed, mouse/key handlers), which carry SRG names in production and
 // mark remap = true individually.
@@ -89,7 +89,7 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
         return ItemStack.EMPTY;
     }
 
-    /** The only place Create's private state is handed over; anonymous so these methods don't land on {@code ScheduleScreen} itself. */
+    /** Anonymous, so these methods do not land on {@code ScheduleScreen} itself the way an implemented interface would. */
     @Unique
     private RouteHost createTransit$host() {
         return new RouteHost() {
@@ -207,9 +207,9 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     }
 
     /**
-     * Keeps a route follower's borrowed conditions out of the schedule editor by answering {@code supportsConditions}
-     * false only here — the whole card layout is driven by that one flag — while the instruction itself still
-     * reports true, since it does wait and its conditions must still be written to disk.
+     * Hides a route follower's borrowed conditions in any schedule screen, a train's own included: the card
+     * layout is driven by that one flag. The instruction still reports true everywhere else, since it does
+     * wait and its conditions must still reach disk.
      */
     @Redirect(method = { "renderSchedule", "renderScheduleEntry", "action" },
         at = @At(value = "INVOKE",

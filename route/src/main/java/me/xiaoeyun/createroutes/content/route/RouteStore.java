@@ -40,7 +40,6 @@ public class RouteStore extends SavedData {
         return routes.get(id);
     }
 
-    /** The route a player means when they type a name; a scan, not a second index, since ids don't change but names do. */
     @Nullable
     public Route byName(String name) {
         for (Route route : routes.values())
@@ -88,7 +87,7 @@ public class RouteStore extends SavedData {
         return true;
     }
 
-    /** Renames a route; names must stay unique since typing one is how a reference is authored. */
+    /** False for a blank, over-long, or already-taken name, none of which are written. */
     public boolean rename(UUID id, String to) {
         Route route = routes.get(id);
         if (route == null || to.isBlank() || to.length() > Route.MAX_NAME_LENGTH)

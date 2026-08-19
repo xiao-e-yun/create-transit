@@ -52,12 +52,11 @@ public final class ScrollTable {
         return this;
     }
 
-    /** Pure arithmetic over the offered box, so it may be called before a frame is drawn — Create sets a button's position in {@code init()}. */
     public void arrange(Box within) {
         box = within;
     }
 
-    /** Nothing outside the window answers, which is the row's own bounds checked in the same step. */
+    /** Nothing outside the window answers. */
     public Action hit(double x, double y) {
         if (!box.holds(x, y))
             return null;
@@ -65,7 +64,7 @@ public final class ScrollTable {
         return index < 0 ? null : row.hit(this, index, at(index), x, y);
     }
 
-    /** Which row is at a height, or -1; not clamped to the window, so a drag past the last row still means the last row. */
+    /** Which row is at a height, or -1; a height past the last row is -1 as well, not the last row. */
     public int rowAt(double y) {
         int index = (int) ((y - box.y() + offset) / rowHeight);
         return index >= 0 && index < rows ? index : -1;
@@ -82,7 +81,6 @@ public final class ScrollTable {
         graphics.enableScissor(box.x(), box.y(), box.right(), box.bottom());
         for (int i = 0; i < rows; i++) {
             Box at = at(i);
-            // Skip rows scrolled entirely outside the window.
             if (at.bottom() <= box.y() || at.y() >= box.bottom())
                 continue;
             // Lit rows are lit, but only the cursor's row is hovered.

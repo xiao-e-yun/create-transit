@@ -1,6 +1,5 @@
 package me.xiaoeyun.createroutes.client;
 
-/** A rectangle, and — more to the point — <em>which</em> rectangle. */
 public record Box(int x, int y, int width, int height) {
 
     public int right() {

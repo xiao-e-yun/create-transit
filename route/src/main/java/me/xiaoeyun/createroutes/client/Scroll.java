@@ -11,10 +11,9 @@ public class Scroll {
     /** How much of the way there each frame carries it. */
     private static final float EASE = 0.35f;
 
-    /** Where it is going. */
+    /** Where it is going, and where it has got to; {@link #at} eases the second toward the first. */
     private int offset;
 
-    /** Where it is, which catches up. */
     private float shown;
 
     private int range;
@@ -44,7 +43,7 @@ public class Scroll {
         return to(offset - (int) Math.signum(delta) * STEP);
     }
 
-    /** Moves to a given place, for a button that was told where to land. */
+    /** Moves to a given place; false when there is nothing to scroll. */
     public boolean to(int where) {
         if (range <= 0)
             return false;
@@ -52,13 +51,12 @@ public class Scroll {
         return true;
     }
 
-    /** Back to the top, for when this is now showing something else. */
     public void reset() {
         offset = 0;
         shown = 0;
     }
 
-    /** Whether there is anything above or behind, for an arrow to point at. */
+    /** Whether there is anything above or behind. */
     public boolean before() {
         return offset > 0;
     }

@@ -9,13 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * The schedule window's chrome, at whatever size it is asked for.
- *
- * <p>Create ships its own background as one fixed 256x226 image, so this
- * redraws it as flat colour fills measured off {@code schedule.png} instead of
- * slicing the picture apart.
- */
+/** The schedule window's chrome at any size, as flat fills measured off Create's one fixed 256x226 {@code schedule.png}. */
 public class CtSkin {
 
     private static final ResourceLocation SCHEDULE =
@@ -33,11 +27,7 @@ public class CtSkin {
     /** The outline and the pixel of edging inside it, on every side. */
     private static final int RIM = 2;
 
-    /**
-     * Banding and selection are white at low alpha rather than three fixed
-     * greys, so they read the same over the checkered field, over a header, and
-     * over whatever a window is given next.
-     */
+    /** White at low alpha rather than fixed greys, so they read the same over whatever they land on. */
     private static final int ROW_BAND = 0x33FFFFFF;
     private static final int ROW_SELECTED = 0x66FFFFFF;
 
@@ -76,10 +66,7 @@ public class CtSkin {
     public static final int FIELD_TEXT = 0xFFFFFF;
     public static final int MUTED_TEXT = 0xA6A6A6;
 
-    /**
-     * The largest square of pure checker in the sheet, and even-sided so that
-     * tiling it cannot shift the pattern's phase.
-     */
+    /** The largest square of pure checker in the sheet; even-sided, so tiling cannot shift the pattern's phase. */
     private static final int CHECKER_U = 16;
     private static final int CHECKER_V = 16;
     private static final int CHECKER_SIZE = 128;
@@ -112,16 +99,13 @@ public class CtSkin {
     }
 
     /**
-     * Create's own schedule panel, whole, centred on a screen this size — with
-     * its title, its cyclic socket and its confirm button all done at once.
+     * Create's own schedule panel, whole, centred on a screen this size.
      *
-     * <p>The cyclic socket and confirm tick are already painted into the sheet,
-     * so this paints the socket back over (a route has no cyclic schedule) and
-     * lays a live plate over the tick, since the sheet's own tick cannot light
-     * up under the cursor.
+     * <p>The cyclic socket and the confirm tick are painted into the sheet: the socket is filled back
+     * over (a route has no cyclic schedule), and a live plate laid over the tick, which cannot light up
+     * under the cursor by itself.
      *
-     * @return the panel's own origin and size, for whatever else — a card, a
-     *         list — is drawn relative to it
+     * @return the panel's origin and size, for whatever is drawn relative to it
      */
     public static Box schedulePanel(GuiGraphics graphics, Font font, Component title, int screenWidth,
         int screenHeight, double mouseX, double mouseY) {
@@ -146,11 +130,7 @@ public class CtSkin {
         return new Box(panelX + CONFIRM_X, panelY + CONFIRM_Y, BUTTON_SIZE, BUTTON_SIZE);
     }
 
-    /**
-     * A raised plate: an outline, a lit top and left, a shaded bottom and right,
-     * and the face between them — measured off a plaque row of
-     * {@code create:textures/gui/schedule.png}, columns x13..238.
-     */
+    /** A raised plate, measured off a plaque row of {@code create:textures/gui/schedule.png}, columns x13..238. */
     private static void plate(GuiGraphics graphics, int x, int y, int width, int height) {
         int right = x + width;
         int bottom = y + height;
@@ -173,7 +153,7 @@ public class CtSkin {
         checker(graphics, x + RIM, y + 1, width - RIM * 2, height - 2);
     }
 
-    /** One row of a table. Odd rows are banded and even ones are left alone, so half the list costs nothing to draw. */
+    /** One row of a table: lit when selected, banded when odd, and otherwise left alone. */
     public static void row(GuiGraphics graphics, int x, int y, int width, int height, int index,
         boolean selected) {
         if (selected)
@@ -208,10 +188,7 @@ public class CtSkin {
         graphics.fill(x, y, x + width, y + 1, HIGHLIGHT);
     }
 
-    /**
-     * Tiles the sheet's checkered field. Clipped rather than scaled, because a
-     * one-pixel pattern turns to mush the moment it is stretched.
-     */
+    /** Tiles the sheet's checkered field. Clipped rather than scaled: a one-pixel pattern smears the moment it is stretched. */
     private static void checker(GuiGraphics graphics, int x, int y, int width, int height) {
         for (int dy = 0; dy < height; dy += CHECKER_SIZE) {
             int tileHeight = Math.min(CHECKER_SIZE, height - dy);

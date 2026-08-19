@@ -24,11 +24,8 @@ import net.minecraft.util.Mth;
 public class RouteMap {
 
     /**
-     * How near the cursor has to be to a station to mean it: four pixels, or the
-     * sprite itself, whichever is the larger.
-     *
-     * <p>Neither alone is enough — a fixed pixel target breaks down zoomed in,
-     * and Create's fixed block reach vanishes zoomed out.
+     * How near the cursor has to be to a station to mean it: four pixels, or the sprite itself, whichever
+     * is larger. A pixel target alone breaks down zoomed in, a block reach alone vanishes zoomed out.
      */
     private static final int REACH = 4;
 
@@ -109,11 +106,8 @@ public class RouteMap {
     /**
      * Create's own railway map, drawn into our window.
      *
-     * <p>{@code renderAndPick} takes the visible area in blocks, not pixels, so
-     * the rectangle passed to it is world coordinates.
-     *
-     * <p>Ticked here because {@code TrainMapEvents} only ticks for FTB Chunks,
-     * JourneyMap and Xaero; without one installed the data would never rebuild.
+     * <p>Ticked here because {@code TrainMapEvents} only ticks for FTB Chunks, JourneyMap and Xaero;
+     * without one of those installed the data would never rebuild.
      */
     public void render(GuiGraphics graphics, Box box, List<Predicate<String>> filters, int mouseX,
         int mouseY, float partialTicks) {
@@ -180,8 +174,6 @@ public class RouteMap {
             return;
         graphics.enableScissor(at.x(), at.y(), at.right(), at.bottom());
 
-        // A row lights its stations and a station lights its rows; the filter
-        // is the whole of the relation, so there is nothing here to keep in step.
         Predicate<String> linked =
             hoveredStop >= 0 && hoveredStop < filters.size() ? filters.get(hoveredStop) : name -> false;
 
@@ -201,14 +193,12 @@ public class RouteMap {
                 station(graphics, on);
         graphics.setColor(1, 1, 1, 1);
 
-        // Panned away from, the map is a network with no you in it.
         here(graphics, minecraft.player.getX(), minecraft.player.getZ(),
             minecraft.player.getYRot());
         pose.popPose();
 
-        // The two rings are the exception, on purpose: they outline what a
-        // click will act on, and that reach has a floor in pixels since a
-        // station three blocks across is unreachable at route-fitting zoom.
+        // Outside the map's pose, on purpose: the rings outline what a click will
+        // act on, and that reach has a floor in pixels rather than in blocks.
         for (Stations.At on : stations)
             if (linked.test(on.name()))
                 marker(graphics, screenX(at, on.x()), screenY(at, on.z()), LINK);
@@ -253,13 +243,7 @@ public class RouteMap {
         return true;
     }
 
-    /**
-     * The wheel, over the map.
-     *
-     * <p>A block per pixel at 1; the floor shows a line spanning a few thousand
-     * blocks at once, and the ceiling (4) is where 1:1 stops adding anything to
-     * look at.
-     */
+    /** The wheel, over the map. A block per pixel at 1; the floor takes in a line a few thousand blocks long. */
     public boolean zoom(double delta) {
         scale = Mth.clamp(scale * (delta > 0 ? 1.5f : 1 / 1.5f), FLOOR, 4f);
         return true;

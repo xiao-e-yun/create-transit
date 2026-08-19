@@ -145,7 +145,6 @@ public class Route {
         return false;
     }
 
-    /** A list of alternatives, in NBT — public because the defaults travel to the editor and back on their own; {@code Schedule} has nowhere to carry them. */
     public static ListTag writeConditions(List<List<ScheduleWaitCondition>> columns) {
         ListTag out = new ListTag();
         for (List<ScheduleWaitCondition> column : columns)
