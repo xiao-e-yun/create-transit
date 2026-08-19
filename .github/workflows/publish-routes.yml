@@ -23,11 +23,18 @@ jobs:
       - name: Build
         run: ./gradlew :route:build
 
+      # mc-publish reads the version off the tag and strips a leading r or v as a
+      # version prefix, so routes-v0.1.0-mc1.20.1 published as outes-v0.1.0-mc1.20.1.
+      - name: Version from tag
+        id: version
+        run: echo "value=${GITHUB_REF_NAME#routes-v}" >> "$GITHUB_OUTPUT"
+
       - name: Publish
         uses: Kira-NT/mc-publish@v3.3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-tag: ${{ github.ref_name }}
+          version: ${{ steps.version.outputs.value }}
           modrinth-id: njXnqD1w
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           curseforge-id: 1657654
