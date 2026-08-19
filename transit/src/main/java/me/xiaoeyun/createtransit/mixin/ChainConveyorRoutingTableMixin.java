@@ -9,19 +9,11 @@ import com.simibubi.create.content.kinetics.chainConveyor.ChainConveyorRoutingTa
 import me.xiaoeyun.createtransit.content.transit.AddressLabels;
 
 /**
- * Makes a wildcard transit endpoint the last resort on a chain, the same as the
- * wildcard address it is modelled on.
- *
- * Vanilla files a port advertising {@code *} at distance 1000 and everything
- * else at 0, so a named port always wins and the catch-all only receives what
- * nothing else claimed. A port filtering {@code <[*]>} means exactly that one
- * layer up, but it is not the string {@code *}, so it would be filed at 0 and
- * would race named border posts on physical distance — the failure vanilla
- * already went out of its way to avoid.
- *
- * Redirecting the comparison rather than the distance keeps the number itself
- * vanilla's: the branch that produces 1000 is untouched, and there is no
- * literal here to drift out of step with it.
+ * Makes a wildcard transit endpoint the last resort on a chain. Vanilla files a port advertising
+ * {@code *} at distance 1000 and everything else at 0; a port filtering {@code <[*]>} means the
+ * same thing one layer up but is not that string, so it would be filed at 0 and race named border
+ * posts on physical distance. Redirecting the comparison rather than the distance leaves the
+ * branch that produces 1000 untouched, so no literal here can drift out of step with it.
  */
 // remap = false: the target is a Create class, so its names are never
 // obfuscated and there is no SRG mapping for the annotation processor.

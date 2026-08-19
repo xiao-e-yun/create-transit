@@ -16,17 +16,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 /**
  * Places this mod's items in Create's own creative tab.
  *
- * The registrate is already pointed at BASE_CREATIVE_TAB, but that setting
- * places nothing by itself: CreateRegistrate's setCreativeTab only files the
- * entry in a lookup table, and the generator that reads it walks
- * {@code Create.registrate()} — Create's entries, never an addon's. So without
- * something like this, our blocks belong to no tab at all.
- *
- * That is worth more than tidiness, because a creative tab is also how a
- * recipe browser finds items: JEI builds its ingredient list from what the
- * tabs display and only falls back to the item registry when the player turns
- * on "show hidden items". An item in no tab is an item that, as far as the
- * browser is concerned, does not exist — recipes for it included.
+ * The registrate is already pointed at BASE_CREATIVE_TAB, but that places nothing by itself:
+ * CreateRegistrate's setCreativeTab only files the entry in a lookup table, and the generator
+ * reading it walks {@code Create.registrate()} — Create's entries, never an addon's. Without this
+ * our blocks belong to no tab, which also hides them from JEI's ingredient list.
  */
 public final class CtCreativeTab {
 
@@ -41,10 +34,8 @@ public final class CtCreativeTab {
             .equals(AllCreativeModeTabs.BASE_CREATIVE_TAB.getKey()))
             return;
 
-        // Beside the block each one stands in for, rather than trailing after
-        // the whole of Create: a gate is a packager and a transit link is a
-        // stock link, and whoever wants one is already looking there. Missing
-        // anchors need no guard -- putAfter falls back to appending.
+        // Beside the block each one stands in for. Missing anchors need no guard -- putAfter
+        // falls back to appending.
         event.getEntries()
             .putAfter(AllBlocks.PACKAGER.asStack(), CtBlocks.TRANSIT_GATE.asStack(),
                 TabVisibility.PARENT_AND_SEARCH_TABS);
@@ -58,11 +49,9 @@ public final class CtCreativeTab {
             .putAfter(AllItems.SCHEDULE.asStack(), CtItems.TRANSIT_TIMETABLE.asStack(),
                 TabVisibility.PARENT_AND_SEARCH_TABS);
 
-        // The packages ride with Create's own boxes, which sit in the tab in
-        // registration order -- so "after the last style Create declares" is
-        // the end of that run. Deriving the anchor from PackageStyles.STYLES
-        // instead of hard-coding an id keeps it pointed there even if the
-        // list changes shape upstream.
+        // Create's own boxes sit in the tab in registration order, so "after the last style
+        // Create declares" is the end of that run. Derived from PackageStyles.STYLES rather than
+        // a hard-coded id, so it stays pointed there if the list changes shape upstream.
         Item lastBox = ForgeRegistries.ITEMS.getValue(PackageStyles.STYLES.get(PackageStyles.STYLES.size() - 1)
             .getItemId());
         // A missing anchor is not the same as an absent one: putAfter appends

@@ -33,14 +33,10 @@ import net.minecraft.world.level.block.state.BlockState;
  * local warehouses served by vanilla links stay unlabelled while foreign
  * sources served by this link get stamped.
  *
- * The label is what routes the shipment to a border gate and what the customs
- * machinery keys on. A blank label is a border in its own right — the default
- * lane, which unnamed border traffic is addressed to — so a freshly placed link
- * ships through the default gate without being configured first. To take a link
- * out of service, silence it with full redstone as with any Stock Link.
- * Everything else — tuning, protection, keepAlive, redstone priority — is
- * inherited, so lowering this link's priority with redstone means "spend local
- * stock first, only reach across the border when short".
+ * A blank label is a border in its own right — the default lane — so a freshly placed link ships
+ * through the default gate without being configured first; full redstone silences it as it would
+ * any Stock Link. Everything else is inherited, so lowering this link's redstone priority means
+ * "spend local stock first, only reach across the border when short".
  */
 public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements IHaveGoggleInformation {
 

@@ -13,28 +13,19 @@ import me.xiaoeyun.createtransit.registry.CtPartialModels;
 import net.minecraft.core.Direction;
 
 /**
- * Swings a gate's curtain, on the Flywheel path.
- *
- * Inherits the packager's own visual rather than replacing it: the tray, the
- * package and the rail — which the gate hands back in place of the iris — are all
- * still Create's to place, and only the strips are new. That also means this
- * class carries no copy of Create's chain, and stays correct if Create moves the
- * hatch.
+ * Swings a gate's curtain, on the Flywheel path. Inherits the packager's visual rather than
+ * replacing it, so the tray, the package and the rail stay Create's to place and no copy of its
+ * chain lives here.
  *
  * The strips are re-placed every frame because {@link PackagerVisual} implements
- * {@code SimpleDynamicVisual}, whose {@code beginFrame} already calls
- * {@link #animate}. Smoothness is therefore free; what it costs is one matrix per
- * strip per frame, and only while the curtain is actually moving.
+ * {@code SimpleDynamicVisual}, whose {@code beginFrame} already calls {@link #animate}; the cost
+ * is one matrix per strip per frame, and only while the curtain is moving.
  */
 public class TransitGateVisual extends PackagerVisual<TransitGateBlockEntity> {
 
     private final TransformedInstance[] strips = new TransformedInstance[TransitGateCurtain.STRIPS];
 
-    /**
-     * The pose last written. Create guards its own tray the same way, and here it
-     * matters more: a gate at rest is the overwhelmingly common case, and a
-     * resting curtain should cost nothing per frame.
-     */
+    /** The pose last written, guarded as Create guards its own tray, so a resting curtain costs nothing. */
     private float lastFlapness = Float.NaN;
 
     public TransitGateVisual(VisualizationContext ctx, TransitGateBlockEntity gate, float partialTick) {

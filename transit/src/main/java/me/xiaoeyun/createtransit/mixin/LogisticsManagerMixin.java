@@ -24,57 +24,26 @@ import net.createmod.catnip.data.Pair;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Two things a Transit Ticker needs from the machinery that hands out a request,
- * both of them consequences of its being a packager that holds nothing itself.
+ * A Transit Ticker is a packager that holds nothing itself, which two of Create's assumptions
+ * trip on.
  *
- * <p>Gives a Transit Ticker an identity in the one place a network dedupes by one.
+ * <p>{@code getInventoryIdentifierFromLink} answers null unless
+ * {@code targetInventory.hasInventory()}, and the two dedupe paths that ask it —
+ * {@code createSummaryOfNetwork} and {@code findPackagersForRequest} — then count every link
+ * separately, so two links on one ticker each contributed the child's whole stock. Answered here
+ * rather than in {@code hasInventory}, whose other caller {@code FactoryPanelBehaviour} reads it
+ * as "has somewhere to restock into". The ticker's own position is safe as an identity: an
+ * identifier names a container, never the packager, and identifiers compare by record equality.
  *
- * <p>Vanilla already refuses to count a warehouse twice when two links present
- * it: {@code createSummaryOfNetwork} skips a link whose inventory another link
- * has shown already, and {@code findPackagersForRequest} groups links by
- * inventory and assigns through only one of each group. Both ask
- * {@code getInventoryIdentifierFromLink}, and both fall back to counting every
- * link separately when it answers null.
- *
- * <p>It answers null for a ticker, because the guard is
- * {@code targetInventory.hasInventory()} and a ticker deliberately has no
- * inventory — it holds nothing itself, and the warehouse it speaks for is a
- * whole network away. So two Transit Links on one ticker in one parent network
- * each contributed the child's entire stock, and the parent browsed a warehouse
- * twice the size of the real one. Nothing duplicated: the second child order
- * clamped against stock the first had already consumed, so the order simply
- * under-delivered against a number that was never true.
- *
- * <p>Answering here rather than making {@code hasInventory} say yes is what
- * keeps the fix to the question actually being asked. The other caller of that
- * guard is {@code FactoryPanelBehaviour}, where it means "does this packager
- * have somewhere to restock into" — a ticker does not, and a panel told
- * otherwise would try to fill a block that holds nothing.
- *
- * <p>The ticker's own position is the identity. A packager's identifier names
- * the container it reaches into, never the packager, so no real inventory can
- * ever claim this position — the ticker is standing in it. And identifiers are
- * compared here as map keys, by record equality rather than by
- * {@code contains}, so a {@code Single} cannot collide with the {@code Bounds}
- * of some multiblock that happens to enclose the ticker.
- *
- * <p>And gives it the order's crafts, which vanilla spends on the first link
- * that takes any of the order and nulls for the rest, so that exactly one
- * shipment box carries them. A ticker is not a shipment: it re-orders across the
- * border, and the crafts are the only thing telling the far-side gate to repack
- * by recipe, so a ticker drawn anywhere but first forwarded a craftless order
- * and the mechanical crafters at the far end got boxes they could not read.
- * Handing it the order is what vanilla would have done had it been drawn first.
+ * <p>{@code findPackagersForRequest} spends the order's crafts on the first link to take any of
+ * the order and nulls them for the rest. A ticker re-orders across the border, and the crafts are
+ * the only thing telling the far-side gate to repack by recipe.
  */
 // remap = false: the target is a Create class, so its names are never
 // obfuscated and there is no SRG mapping for the annotation processor.
 @Mixin(value = LogisticsManager.class, remap = false)
 public class LogisticsManagerMixin {
 
-    /**
-     * On the way out rather than the way in, so only the links vanilla gave up
-     * on pay for the second {@code getBlockEntity} this costs.
-     */
     @ModifyReturnValue(method = "getInventoryIdentifierFromLink", at = @At("RETURN"))
     private static InventoryIdentifier createTransit$identifyMountingPoints(
         @Nullable InventoryIdentifier identifier, LogisticallyLinkedBehaviour link) {
@@ -87,12 +56,7 @@ public class LogisticsManagerMixin {
         return new InventoryIdentifier.Single(ticker.getBlockPos());
     }
 
-    /**
-     * At the call rather than at the {@code context = null} after it, so a ticker
-     * still counts as a link that has been drawn — and because every hop of a
-     * chain of borders reaches this same call, one per forwarded order, nothing
-     * has to be carried across the hops.
-     */
+    /** At the call, not the {@code context = null} after it, so a ticker still counts as a link drawn. */
     @WrapOperation(method = "findPackagersForRequest",
         at = @At(value = "INVOKE",
             target = "Lcom/simibubi/create/content/logistics/packagerLink/LogisticallyLinkedBehaviour;"

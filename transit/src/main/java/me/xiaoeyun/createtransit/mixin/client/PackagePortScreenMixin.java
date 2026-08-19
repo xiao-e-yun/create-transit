@@ -24,14 +24,10 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Adds the transit endpoint switch to both package ports — frogports and
- * postboxes share this one screen, so a single mixin covers them.
- *
- * Purely presentational, and deliberately small: one button that changes how
- * the address box is read, and the delimiters wrapped around its contents on
- * the way to {@code PackagePortConfigurationPacket}. The packet and everything
- * server-side are untouched, and an address typed out by hand is still the same
- * string the button produces.
+ * Adds the transit endpoint switch to both package ports — frogports and postboxes share this one
+ * screen, so a single mixin covers them. Presentational only: the button changes how the address
+ * box is read and wraps the delimiters around its contents on the way to
+ * {@code PackagePortConfigurationPacket}, which is otherwise untouched.
  */
 @Mixin(PackagePortScreen.class)
 public abstract class PackagePortScreenMixin extends AbstractSimiContainerScreen<PackagePortMenu> {
@@ -56,11 +52,8 @@ public abstract class PackagePortScreenMixin extends AbstractSimiContainerScreen
      * the box may have clamped what it was handed, and an endpoint shows only
      * the bare name anyway.
      *
-     * The switch sits to the left of the confirm button, four pixels clear of
-     * it, rather than beside the two acceptance buttons on the left: those two
-     * are one either-or choice, and joining that row would have read as a third
-     * option in it. The four pixels are measured to the confirm's socket, which
-     * the background art bakes in six pixels left of the button it holds.
+     * The four pixels of clearance are measured to the confirm button's socket, which the
+     * background art bakes in six pixels left of the button it holds.
      */
     @Inject(method = "init", at = @At("TAIL"))
     private void createTransit$addEndpointToggle(CallbackInfo ci) {
@@ -70,16 +63,10 @@ public abstract class PackagePortScreenMixin extends AbstractSimiContainerScreen
     }
 
     /**
-     * The placeholder vanilla draws in an empty address box is the port's own
-     * item name, which says nothing about what an empty box means. With the
-     * switch on it means the default lane — a real destination — so the box has
-     * to say that, or a configured endpoint would look exactly like a port
-     * nobody had touched.
-     *
-     * Redirecting the name rather than the drawing keeps every other decision
-     * vanilla's: this is reached only inside the branch that already decided the
-     * box is empty and unfocused, and the text is still drawn in the same place
-     * in the same colour.
+     * Vanilla's placeholder for an empty address box is the port's own item name; with the switch
+     * on, an empty box means the default lane, which is a real destination. Redirecting the name
+     * rather than the drawing is reached only inside the branch that already decided the box is
+     * empty and unfocused.
      */
     @Redirect(method = "renderBg(Lnet/minecraft/client/gui/GuiGraphics;FII)V",
         at = @At(value = "INVOKE",

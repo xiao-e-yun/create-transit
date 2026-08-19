@@ -13,7 +13,7 @@ import me.xiaoeyun.createtransit.content.dispatch.TransitTimetableInstruction;
 import me.xiaoeyun.createtransit.content.dispatch.TransitTimetableItem;
 import net.minecraft.world.item.ItemStack;
 
-/** Hands back the timetable instead of a schedule item, so every way Create removes a schedule also retires the train. */
+/** A train carrying a timetable hands that item back, not Create's schedule item, wherever Create returns one. */
 // remap = false: a Create class, so its names are never obfuscated.
 @Mixin(value = ScheduleRuntime.class, remap = false)
 public abstract class ScheduleRuntimeMixin {

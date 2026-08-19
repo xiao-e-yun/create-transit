@@ -17,15 +17,10 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Carries a customs declaration across a vanilla repackaging, which {@code
- * PackageItem.containing} otherwise loses by setting a fresh box's tag wholesale
- * — leaving the parent order unable to settle and the box wearing Create's
- * cardboard despite a still-labelled address.
- *
- * <p>Every fragment of one child order is stamped from the same filing, so the
- * first source box speaks for all of them; this is the exit of {@code repack}
- * rather than the repackager's own method because the declaration has to land
- * after {@code setOrder}, which is what clears one.
+ * Carries a customs declaration across a vanilla repackaging, which {@code PackageItem.containing}
+ * otherwise loses by setting a fresh box's tag wholesale. Every fragment of one child order is
+ * stamped from the same filing, so the first source box speaks for all of them; at the exit of
+ * {@code repack} because the declaration has to land after {@code setOrder}, which clears one.
  */
 // remap = false: the target is a Create class, so its names are never
 // obfuscated and there is no SRG mapping for the annotation processor.

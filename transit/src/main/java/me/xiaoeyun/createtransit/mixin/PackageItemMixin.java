@@ -16,20 +16,10 @@ import me.xiaoeyun.createtransit.content.transit.TransitCustoms;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Two rules about addresses, both of which have to hold everywhere a package
- * is matched or written, which is why they live on {@link PackageItem} itself.
- *
- * All of Create's address matching converges on {@code matchAddress} — frogports,
- * chain conveyor routing tables, train cargo, stations and filters all reach it
- * — so a single rule there gives labels consistent semantics everywhere, and
- * keeps the routing hardware itself 100% vanilla.
- *
- * {@code setOrder} is the one place a package is handed an order identity, and
- * it is where a customs declaration stops being a filing and becomes NBT.
- *
- * Both injections defer to vanilla whenever nothing transit-related is in play,
- * so existing saves and other addons see no behavioural change. Overwriting
- * either method outright would break that guarantee.
+ * All of Create's address matching converges on {@code matchAddress} — frogports, chain conveyor
+ * routing tables, train cargo, stations and filters all reach it — and {@code setOrder} is the
+ * one place a package is handed an order identity. Both injections defer to vanilla whenever
+ * nothing transit-related is in play.
  */
 // remap = false: the target is a Create class, so its names are never obfuscated
 // and there is no SRG mapping for the annotation processor to resolve.
@@ -45,17 +35,8 @@ public class PackageItemMixin {
     }
 
     /**
-     * A ticker cannot write on the boxes a child network packs for it, but it
-     * does not need to: it files its customs declaration against the child
-     * order id, and this is where a box is handed that id.
-     *
-     * Stamping an identity is the right moment because a declaration describes
-     * one — the two are the same fact about a shipment, seen from either side
-     * of a border — and because it is the moment vanilla itself decides a box
-     * belongs to an order, handing over the very id the filing is under.
-     * Addressing would have been the wrong one: it happens to hand-written
-     * signs and to repacked boxes as well, neither of which has anything to
-     * declare.
+     * A ticker cannot write on the boxes a child network packs for it, so it files its declaration
+     * against the child order id; this is where a box is handed that id.
      */
     @Inject(method = "setOrder(Lnet/minecraft/world/item/ItemStack;IIZIZL"
         + "com/simibubi/create/content/logistics/stockTicker/PackageOrderWithCrafts;)V", at = @At("TAIL"))

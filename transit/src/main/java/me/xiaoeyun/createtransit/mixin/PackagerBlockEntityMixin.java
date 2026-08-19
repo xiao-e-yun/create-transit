@@ -27,18 +27,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Lets a packager see a transit link where it looks for a stock link.
+ * Lets a packager see a transit link where it looks for a stock link. Three methods compare
+ * against {@code AllBlocks.STOCK_LINK} by block identity: {@code flashLink}, {@code getLinkPos}
+ * (which otherwise leaves {@code PackagerBlock.LINKED} unset, so the packager stays in redstone
+ * mode) and {@code submitNewArrivals} (which otherwise never retires a promise).
  *
- * <p>Three methods compare against {@code AllBlocks.STOCK_LINK} by block
- * identity, and missing any of them is one bug rather than three: {@code
- * flashLink} stops blinking the bulb, {@code getLinkPos} leaves {@code
- * PackagerBlock.LINKED} unset so the packager serves the network while still in
- * redstone mode, and {@code submitNewArrivals} never retires a promise, which
- * stalls a factory panel permanently.
- *
- * <p>Repackagers, and the gate that extends one, are untouched: their {@code
- * recheckIfLinksPresent} is empty and their {@code redstoneModeActive} is always
- * true, and a link refuses to take one as its packager in the first place.
+ * <p>Repackagers, and the gate that extends one, are untouched: their
+ * {@code recheckIfLinksPresent} is empty, their {@code redstoneModeActive} is always true, and a
+ * link refuses to take one as its packager anyway.
  */
 // remap = false: the target is a Create class, so its names are never obfuscated
 // and there is no SRG mapping for the annotation processor to resolve.
@@ -61,17 +57,11 @@ public class PackagerBlockEntityMixin {
     }
 
     /**
-     * Vanilla credits an arrival to the adjacent link's frequency alone, which
-     * is complete only while network membership means physical adjacency. A
-     * ticker exists to break that: the network this one is mounted onto browses
-     * its stock without ever touching it, so a factory panel bound up there held
-     * a promise no arrival down here could retire, and the default clearing
-     * interval expires none.
-     *
-     * <p>At the {@code hasQueuedPromises} call rather than after it, because
-     * that guard skips a link whose own network promised nothing, which is the
-     * case being fixed. Upward only, because mounting is one-way: an arrival
-     * here raises what a parent sees and nothing of what a child sees.
+     * Vanilla credits an arrival to the adjacent link's frequency alone, so a factory panel on a
+     * network mounted above held a promise no arrival down here could retire, and the default
+     * clearing interval expires none. At the {@code hasQueuedPromises} call rather than after it,
+     * since that guard skips a link whose own network promised nothing. Upward only: mounting is
+     * one-way.
      */
     @ModifyExpressionValue(
         method = "submitNewArrivals(Lcom/simibubi/create/content/logistics/packager/InventorySummary;"
@@ -89,9 +79,9 @@ public class PackagerBlockEntityMixin {
     }
 
     /**
-     * Puts a freshly packed box into the one its address calls for, at the sole
-     * instruction between the last {@code addAddress} the choice depends on and
-     * the two places {@code createdBox} is handed off.
+     * Puts a freshly packed box into the one its address calls for, at the sole instruction
+     * between the last {@code addAddress} the choice depends on and the two hand-offs of
+     * {@code createdBox}.
      */
     @Inject(method = "attemptToSend(Ljava/util/List;)V",
         at = @At(value = "INVOKE",

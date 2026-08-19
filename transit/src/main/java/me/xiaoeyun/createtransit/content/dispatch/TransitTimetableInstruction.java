@@ -18,11 +18,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 /**
- * The train's antenna: every move is the dispatcher's answer, this entry only asks.
+ * A one-entry cyclic schedule whose every move is the dispatcher's answer.
  *
- * Conditions stay unsupported on purpose — {@code tickConditions} then advances right after
- * arrival and the cyclic wrap re-asks; standing by is {@code start} returning null on the
- * engine's own cooldown.
+ * Conditions stay unsupported: {@code ScheduleRuntime.tickConditions} advances the moment it
+ * meets an instruction that does not support them, and the cyclic wrap re-asks.
  */
 public class TransitTimetableInstruction extends TextScheduleInstruction {
 
@@ -88,12 +87,14 @@ public class TransitTimetableInstruction extends TextScheduleInstruction {
     @Override
     @Nullable
     public DiscoveredPath start(ScheduleRuntime runtime, Level level) {
-        // Assembly mode re-runs the live entry; null lets Create cancel and cleanly re-plan next tick.
+        // Create re-asks a live entry mid-journey -- Train.updateNavigationTarget on a full
+        // refresh, and a station entering assembly mode -- both only while a destination stands.
+        // Null leaves the path already running alone.
         if (runtime.train.navigation.destination != null)
             return null;
 
-        // Unconditional, and doing double duty: it breaks the already-there hot loop, and since travel
-        // never consumes it, the leftover count is a free dwell of extra mail cycles after every arrival.
+        // Unconditional: it paces the poll, and ScheduleRuntime.tick returns above the countdown
+        // while a destination stands, so travel never spends it and the leftover becomes dwell.
         runtime.startCooldown();
         return TransitDispatch.nextLeg(runtime, level, depot());
     }

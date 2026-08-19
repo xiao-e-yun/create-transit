@@ -44,24 +44,18 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Transit Ticker: a packager-shaped block that vanilla Stock Links attach to,
- * mounting a bound child logistics network onto the parent network in one of
- * two modes decided by what is mounted.
+ * A packager-shaped block that links attach to, mounting a bound child logistics network onto the
+ * parent in one of two modes decided by what is mounted.
  *
- * With a vanilla Stock Link mounted the child's links are re-registered under
- * the parent frequency as shadow entries, so vanilla sees them as ordinary
- * parent members and the ticker itself reports no stock and takes no
- * assignments. With a Transit Link mounted, a request whose head label names
- * that link is foreign traffic: the ticker reports the child's aggregate stock,
- * forwards the request into the child network as an order of the child's own,
- * and a {@link TransitCustoms} declaration rides along telling the far-side
- * transit gate which parent order to re-stamp the arriving boxes for.
+ * A vanilla Stock Link re-registers the child's links under the parent frequency as shadows, so
+ * vanilla sees ordinary parent members and the ticker itself reports no stock. A Transit Link
+ * instead makes the ticker report the child's aggregate stock and forward a request naming that
+ * link into the child as an order of its own, with a {@link TransitCustoms} declaration riding
+ * along for the far-side gate.
  *
- * Membership is one-way — the child network can neither browse nor request from
- * the parent — the mounting point never stores ({@link #unwrapBox} refuses
- * everything, so goods must travel physically), and proxy cycles are legal but
- * inert: shadowing skips links already living in the target network and
- * re-entrant summary/dispatch calls are cut off by a thread-local visited set.
+ * Mounting is one-way, {@link #unwrapBox} refuses everything, and proxy cycles are inert:
+ * shadowing skips links already in the target network, and re-entrant summary and dispatch calls
+ * are cut by a thread-local visited set.
  */
 public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHaveGoggleInformation {
 
@@ -109,8 +103,8 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         // themselves, so a summary here would count the warehouse twice.
         if (!collectAdjacentMountFrequencies().isEmpty())
             return InventorySummary.EMPTY;
-        // A disabled Transit Link declares no border, and the sending path
-        // honours that; showing stock a query can never order would lie.
+        // A link silenced by redstone declares no border, and the sending path honours that;
+        // showing stock a query can never order would lie.
         if (collectAdjacentTransitLabels().isEmpty())
             return InventorySummary.EMPTY;
 
@@ -145,9 +139,8 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         if (!crossBorder.isEmpty())
             forwardCrossBorder(crossBorder);
 
-        // Under flattened mounting the child's own links take assignments
-        // directly, and a disabled Transit Link declares no border, so nothing
-        // left here names a crossing this ticker can answer for.
+        // Under flattened mounting the child's own links take assignments directly, and a link
+        // silenced by redstone declares no border, so nothing left here names a crossing.
         queuedRequests.clear();
     }
 
@@ -196,10 +189,8 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     }
 
     /**
-     * One parent link slot becomes one whole child order: the broadcast mints a
-     * fresh order id, the child network packs and ships under it as if a local
-     * player had ordered, and the customs declaration filed here is what lets
-     * the far-side gate hand the boxes back to the parent order.
+     * One parent link slot becomes one whole child order: the broadcast mints a fresh order id,
+     * and the declaration filed here is what lets the far-side gate hand the boxes back.
      */
     private void forwardSlot(UUID childFreqId, List<PackagingRequest> requests) {
         PackagingRequest parent = requests.get(0);
@@ -245,10 +236,9 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         if (assignment.isEmpty())
             return;
 
-        // Borders chain here: a ticker forwarding across an inner border is one
-        // of the packagers driven by the outer border's broadcast, so the outer
-        // filing is still open and its declarations ride onto this order behind
-        // ours.
+        // Borders chain: a ticker forwarding across an inner border is itself one of the
+        // packagers driven by the outer broadcast, so the outer filing is still open and its
+        // declarations ride onto this order behind ours.
         List<TransitCustoms> declarations = new ArrayList<>();
         declarations.add(declaration);
         declarations.addAll(TransitCustoms.filedFor(parent.orderId()));
@@ -280,13 +270,11 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     }
 
     /**
-     * Re-registers every link of the child network under each mounted parent
-     * frequency on the registry's own keepAlive cadence. A shadow is a plain
-     * {@link LogisticallyLinkedBehaviour} wrapping the real child link — so
-     * summaries and requests delegate to it natively — with the frequency
-     * swapped, a link id of its own and the child link's redstone priority
-     * mirrored. Nested tickers are enumerated like any other link, so mounting
-     * chains flatten transitively, one lazyTick per layer.
+     * Re-registers every link of the child network under each mounted parent frequency, on the
+     * registry's own keepAlive cadence. A shadow is a plain {@link LogisticallyLinkedBehaviour}
+     * wrapping the real child link, with the frequency swapped, a link id of its own and the
+     * child link's redstone priority mirrored. Nested tickers enumerate like any other link, so
+     * mounting chains flatten transitively, one lazyTick per layer.
      */
     private void refreshShadowLinks() {
         Map<UUID, Map<PackagerLinkBlockEntity, LogisticallyLinkedBehaviour>> refreshed = new HashMap<>();
@@ -359,9 +347,8 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     }
 
     /**
-     * Frequencies of the vanilla Stock Links mounted here — the networks the
-     * child's links are flattened into. Transit Links are never mount points: a
-     * border stays opaque, that being the point of one.
+     * Frequencies of the vanilla Stock Links mounted here — the networks the child's links are
+     * flattened into. Transit Links are never mount points.
      */
     private Set<UUID> collectAdjacentMountFrequencies() {
         Set<UUID> result = new HashSet<>();
@@ -406,9 +393,9 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     }
 
     /**
-     * The parent networks this mounting lends the child's stock to. Flattened
-     * mounting lends through shadow links rather than through a summary, which
-     * is why its branch here is the inverse of {@link #getAvailableItems}'s.
+     * The parent networks this mounting lends the child's stock to. Flattened mounting lends
+     * through shadow links rather than a summary, so this branch is the inverse of
+     * {@link #getAvailableItems}'s.
      */
     private Set<UUID> lentTo() {
         Set<UUID> mounts = collectAdjacentMountFrequencies();
@@ -500,9 +487,9 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
     }
 
     /**
-     * Walks downward from the child network through every loaded proxyer and
-     * reports which attached parent networks the walk comes back around to.
-     * Advisory only — the thread-local guard is the actual correctness mechanism.
+     * Walks downward from the child network through every loaded proxyer and reports which
+     * attached parent networks the walk comes back around to. Advisory only: the thread-local
+     * guard is the actual correctness mechanism.
      */
     private Set<UUID> computeCyclingFrequencies() {
         Set<UUID> parentFreqs = collectAdjacentParentFrequencies();

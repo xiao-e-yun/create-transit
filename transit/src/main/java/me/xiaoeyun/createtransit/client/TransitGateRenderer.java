@@ -17,18 +17,11 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Swings a gate's curtain when Flywheel's backend is off.
+ * Swings a gate's curtain when Flywheel's backend is off. Only the strips are added here —
+ * everything else a gate draws is the packager's own {@code renderSafe}, which this calls first.
  *
- * The block entity renderer is the fallback path, and it only has to add the
- * strips: everything else a gate draws — the rail in place of the iris, the tray,
- * the package — is drawn by the packager's own {@code renderSafe}, which this
- * calls first. Adding rather than replacing is what keeps Create's twenty-odd
- * lines out of this file, and it works because the part of a gate that moves
- * differently is exactly the part that is not Create's.
- *
- * The visibility check is the same one Create makes: with a Flywheel backend
- * running, {@link TransitGateVisual} owns the strips and drawing them here as
- * well would double them.
+ * The visibility check is the same one Create makes: with a Flywheel backend running,
+ * {@link TransitGateVisual} owns the strips and drawing them here too would double them.
  */
 public class TransitGateRenderer extends PackagerRenderer {
 

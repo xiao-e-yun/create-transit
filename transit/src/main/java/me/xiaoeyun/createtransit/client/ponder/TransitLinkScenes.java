@@ -42,10 +42,8 @@ public class TransitLinkScenes {
             .showSection(util.select()
                 .layer(0), Direction.UP);
 
-        // Create's own stock_link diorama with our link on both stacks: a
-        // warehouse behind one and an ordinary chest pair behind the other.
-        // Nothing here moves and nothing rides a belt, so the lesson is carried
-        // by the two stacks standing side by side and by what they are called.
+        // Create's own stock_link diorama with our link on both stacks: a warehouse behind one
+        // and an ordinary chest pair behind the other.
         BlockPos namedPackager = util.grid()
             .at(4, 1, 3);
         BlockPos namedLink = util.grid()
@@ -65,8 +63,7 @@ public class TransitLinkScenes {
         // TransitLinkBlockEntity.getLabel -- so it is not baked into the
         // schematic either. The address on the package is real, though, and
         // comes from the same helper the mod uses.
-        // The two stacks differ only in what their link stamps on the way out,
-        // so the two boxes have to differ the same way -- a blank name is the
+        // The two links differ only in what they stamp on the way out -- a blank name is the
         // default lane, which pushEndpoint writes as a layer of its own.
         ItemStack namedBox = box(AddressLabels.push(WAREHOUSE, FACTORY),
             new ItemStack(Items.IRON_INGOT, 32));

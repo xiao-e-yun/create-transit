@@ -31,40 +31,20 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.items.IItemHandler;
 
 /**
- * Transit on a domain boundary: packages passing through lose exactly one head
- * label, LIFO, and the gate is the customs office where a forwarded child order
- * is handed back to the parent order it fulfils.
+ * A domain boundary: a package through the gate loses exactly one head label, LIFO, and a
+ * forwarded child order is repacked into the parent order its {@link TransitCustoms} declaration
+ * names. An incomplete declared order holds the buffer until it completes, which is the vanilla
+ * Repackager's own behaviour. Nothing about a shipment is remembered here — completeness is read
+ * off the boxes and identity off the declaration they carry.
  *
- * Arrivals go into the buffer the gate faces exactly as they came, and most
- * leave again on the next pass stripped of one label. The exception is boxes
- * carrying a {@link TransitCustoms} declaration for this border: they wait for
- * their siblings, then leave repacked and re-stamped with the parent identity,
- * exactly the link slot the destination's defragmenter is waiting on. An
- * incomplete declared order holds the buffer until it completes, which is the
- * vanilla Repackager's own behaviour.
+ * Both directions share the container the gate faces, so two gates facing two containers is the
+ * arrangement that means anything.
  *
- * Nothing about a shipment is remembered here: completeness is read off the
- * boxes the way vanilla reads {@code IsFinal}, identity off the declaration
- * they carry, so a reload is a non-event.
- *
- * The gate does no routing — routing stays vanilla hardware. It only rewrites
- * packages handed to it, accepting a package whose head label its sign claims;
- * a sign reading {@code *} claims every label and an unsigned gate is the
- * default lane, which also stamps the unnamed label on departure. Unlabelled
- * packages are always refused.
- *
- * A gate runs in both directions on the Packager's own terms: fed a package it
- * delivers into the container it faces cleared of one label, pulsed with
- * redstone it takes one back out and pushes its label on. Both directions share
- * that container, so two gates facing two containers is the arrangement that
- * means anything; the only guard here is against stamping a label already on
- * the head.
- *
- * Extends the Repackager rather than the Packager because vanilla excludes a
- * RepackagerBlockEntity from {@code PackagerLinkBlockEntity.getPackager()} by
- * name, so a gate cannot be mistaken for a stock source. The sending half is
- * replaced rather than inherited, since a repackager stamps its sign onto
- * traffic as an address and a gate's sign holds a label.
+ * Extends the Repackager rather than the Packager because
+ * {@code PackagerLinkBlockEntity.getPackager()} excludes a {@code RepackagerBlockEntity} by name,
+ * so a gate cannot be mistaken for a stock source. The sending half is replaced rather than
+ * inherited, since a repackager stamps its sign onto traffic as an address and a gate's sign
+ * holds a label.
  */
 public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHaveGoggleInformation {
 
@@ -90,7 +70,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     /** How fast a pushed curtain settles, as a fraction of the remaining swing per tick. */
     private static final float CURTAIN_SETTLE = .15f;
 
-    /** Label written on this gate's own sign; blank means wildcard. */
+    /** Label written on this gate's own sign; blank is the default lane, not {@code *}. */
     private String ownLabel = "";
 
     /** Label actually in force, possibly adopted from a nearby signed gate. */
@@ -228,10 +208,9 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     // Intake
 
     /**
-     * Admitting a package: it goes into the customs buffer — the container the
-     * gate faces — exactly as it arrived, because what release looks like
-     * depends on the box. Refusing before anything moves keeps traffic this gate
-     * has no business with on its original route.
+     * Admitting a package: it goes into the container the gate faces exactly as it arrived, since
+     * what release looks like depends on the box. Refused before anything moves, so traffic this
+     * gate has no business with stays on its original route.
      */
     @Override
     public boolean unwrapBox(ItemStack box, boolean simulate) {
@@ -271,10 +250,9 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     // Customs
 
     /**
-     * One action per pass, on the packager family's usual cadence: either one
-     * box that owes nothing here is released, or one complete child order is
-     * repacked and re-stamped. Boxes declaring a parent order wait in the buffer
-     * for their siblings; everything else passes through stripped of one label.
+     * One action per pass: either one box that owes nothing here is released, or one complete
+     * child order is repacked and re-stamped. Boxes declaring a parent order wait for their
+     * siblings.
      */
     private void processCustoms() {
         if (!heldBox.isEmpty() || animationTicks != 0 || buttonCooldown > 0)
@@ -301,9 +279,8 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
                 release(storage, slot, stack);
                 return;
             }
-            // A declaration answering to some other border — a different name,
-            // or the same name at a different depth — belongs to a hop further
-            // along and is cargo here, exactly as an outer label is.
+            // A declaration answering to some other border -- a different name, or the same
+            // name at a different depth -- belongs to a later hop and is cargo here.
             if (TransitCustoms.head(stack, address) == null) {
                 release(storage, slot, stack);
                 return;
@@ -318,8 +295,8 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
         if (completedOrderId == -1)
             return;
         List<ItemStack> members = declared.get(completedOrderId);
-        // A disagreeing order waits in the buffer like an incomplete one: the jam
-        // is visible and traceable in place, and pulling the offender heals it.
+        // A disagreeing order waits in the buffer like an incomplete one; pulling the offender
+        // out heals it.
         if (agree(members))
             mergeOrder(storage, completedOrderId, members);
     }
@@ -337,11 +314,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
         return true;
     }
 
-    /**
-     * Passing a single box through: one label off, nothing else touched, so a
-     * fragment forwarded natively by a Transit Link reaches the destination
-     * defragmenter with its identity intact.
-     */
+    /** Passing a single box through: one label off, nothing else touched, identity intact. */
     private void release(IItemHandler storage, int slot, ItemStack box) {
         ItemStack sent = storage.extractItem(slot, 1, false);
         if (sent.isEmpty())
@@ -354,7 +327,6 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             PackageItem.clearAddress(sent);
         else
             PackageItem.addAddress(sent, remaining);
-        // The box a package wears follows the address it now carries.
         heldBox = TransitPackaging.restyle(sent);
         animationInward = false;
         animationTicks = CYCLE;
@@ -362,11 +334,9 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     }
 
     /**
-     * The whole child order becomes the parent link slot it was ordered as:
-     * upstream repacks it — recipe-aware when the order carried crafts — one
-     * label comes off the shared address, identity comes from the customs
-     * declaration the forwarding ticker wrote onto the goods, and the numbering
-     * is rebuilt 0..n with IsFinal on the last.
+     * The whole child order becomes the parent link slot it was ordered as: upstream repacks it,
+     * recipe-aware when the order carried crafts, one label comes off the shared address, identity
+     * comes from the declaration, and the numbering is rebuilt 0..n with IsFinal on the last.
      */
     private void mergeOrder(IItemHandler storage, int orderId, List<ItemStack> members) {
         ItemStack sample = members.get(0);
@@ -415,14 +385,13 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     }
 
     /**
-     * Departure: a redstone pulse takes one package out of the storage the gate
-     * faces and pushes the gate's label onto the head of its address, which is
-     * exactly what {@link AddressLabels#stripHeadLabel} pops at the far end.
+     * Departure: a redstone pulse takes one package out of the storage the gate faces and pushes
+     * the gate's label onto its address — what {@link AddressLabels#stripHeadLabel} pops at the
+     * far end.
      */
     @Override
     public void attemptToSend(List<PackagingRequest> queuedRequests) {
-        // A gate is not a stock source; this covers any path that hands us
-        // requests despite vanilla already refusing to see a repackager as one.
+        // A gate is not a stock source; covers any path handing us requests anyway.
         if (queuedRequests != null) {
             queuedRequests.clear();
             return;
@@ -455,8 +424,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             if (sent.isEmpty())
                 continue;
 
-            // Departure adds a label rather than consuming one, so every
-            // declaration on the box is still owed and none is touched.
+            // Departure adds a label rather than consuming one, so every declaration is still owed.
             PackageItem.addAddress(sent, AddressLabels.pushEndpoint(effectiveLabel, address));
             heldBox = TransitPackaging.restyle(sent);
             animationInward = false;

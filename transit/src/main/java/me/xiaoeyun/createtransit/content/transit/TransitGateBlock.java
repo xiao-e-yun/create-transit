@@ -50,11 +50,9 @@ public class TransitGateBlock extends WrenchableDirectionalBlock implements IBE<
     }
 
     /**
-     * A box the gate has sent out but nothing collected sits in {@code heldBox}
-     * with no other way out, so hand it back the way the Packager this borrows
-     * its model from does. Outward only: a gate takes packages from the
-     * container it faces, never from a hand, so with nothing to give it stays
-     * out of the way of whatever the player is actually holding.
+     * A box the gate has sent out but nothing collected sits in {@code heldBox} with no other way
+     * out, so hand it back as the Packager does. Outward only — a gate never takes from a hand —
+     * so with nothing to give it passes rather than swallowing the click.
      */
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,

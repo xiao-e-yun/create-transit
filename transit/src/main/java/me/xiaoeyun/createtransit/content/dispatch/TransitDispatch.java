@@ -29,25 +29,23 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.items.IItemHandlerModifiable;
 
 /**
- * The network's brain, asked by every enrolled train's poll and by the loading gate.
- *
- * The only state it keeps is a claim ledger, and only between assignment and loading —
- * cargo aboard names its own destinations, mail in postboxes is the backlog, so a lost
- * ledger merely re-derives itself from the world on the next round of polls.
+ * Asked by every enrolled train's poll and by the loading gate. The only state kept is a claim
+ * ledger, and only between assignment and loading; everything else is read off the world.
  */
 public class TransitDispatch {
 
-    /** A claim on one station's outgoing transit mail; expiry is the only failure handling an order needs. */
+    /** One train's claim on the outgoing transit mail of one (graph, station); expiry is the only failure handling. */
     private record Order(UUID graph, String station, long deadline) {}
 
-    /** Generous because it covers the whole trip out plus loading; a stuck train forfeits, and the mail gets re-claimed. */
+    /** Covers the whole trip out plus loading; on expiry the train forfeits and the mail is claimable again. */
     private static final long ORDER_TIMEOUT = 20 * 60 * 5;
 
     private static final Map<UUID, Order> ORDERS = new HashMap<>();
 
     /**
-     * The next move for an enrolled train: deliver what it carries, else collect what it
-     * claimed, else go home. Null stands the train down for one engine cooldown.
+     * The next move for an enrolled train, in order: deliver what it carries, collect what it
+     * claimed, claim a backlog station, else go home to a free bay. Null stands the train down
+     * for one engine cooldown.
      */
     @Nullable
     public static DiscoveredPath nextLeg(ScheduleRuntime runtime, Level level, String depot) {
@@ -84,7 +82,7 @@ public class TransitDispatch {
                 train.status.failedNavigation();
                 return null;
             }
-            // No port anywhere answers to this cargo yet; home beats standing here forever.
+            // No port anywhere answers to this cargo yet; carry on rather than stand here.
             train.status.failedPackageNoTarget(PackageItem.getAddress(aboard.get(0)));
         }
 
@@ -123,7 +121,6 @@ public class TransitDispatch {
             }
         }
 
-        // Every station wearing the depot's name is home, which is a depot group for free.
         if (here != null && here.name.equals(depot))
             return null;
         ArrayList<GlobalStation> home = stationsNamed(train, depot);
@@ -131,9 +128,8 @@ public class TransitDispatch {
             train.status.failedNavigationNoTarget(depot);
             return null;
         }
-        // Same-named bays spread by skipping ones another train has eyes on: Create re-reserves its
-        // nearestTrain slot every navigation tick, in the same server tick a path starts, so a whole
-        // batch released together still picks distinct bays. All taken -> queue like before.
+        // Skip bays another train has eyes on. Create re-reserves nearestTrain every navigation
+        // tick, in the same server tick a path starts, so a batch released together still spreads.
         ArrayList<GlobalStation> free = new ArrayList<>();
         for (GlobalStation bay : home) {
             Train eyeing = bay.getNearestTrain();
@@ -161,19 +157,17 @@ public class TransitDispatch {
     }
 
     /**
-     * A bay just opened: wake the most-stuck homebound train queued for a taken bay
-     * of the same name. Navigation never re-plans on its own, so a train that settled
-     * for the queue when everything was full would otherwise hold the yard's throat
-     * forever; cancelling re-polls it, and selection then finds this bay free.
-     * Disassembling a parked train frees its bay without a departure — that one waits
-     * for the next real departure.
+     * A bay just opened: wake the most-stuck homebound train queued for a taken bay of the same
+     * name. Create's navigation never re-plans on its own, so cancelling is what re-polls it.
+     * Disassembling a parked train frees its bay without a departure, so that one is missed.
      */
     public static void bayFreed(GlobalStation bay, Train departed) {
         if (bay.getNearestTrain() != null)
             return;
         Train best = null;
         for (Train other : Create.RAILWAYS.trains.values()) {
-            // Paused runtimes never reach the re-poll, so a cancel would strand them where they roll out.
+            // Another graph's yard is not this one, and a paused runtime never reaches the
+            // re-poll, so cancelling would strand it where it rolls out.
             if (other == departed || other.graph != departed.graph || other.runtime.paused)
                 continue;
             GlobalStation target = other.navigation.destination;
@@ -195,6 +189,8 @@ public class TransitDispatch {
 
     /** Orders whose train is gone, no longer enrolled, or out of time. */
     private static void sweep(Level level) {
+        // A deadline is stamped in one dimension and read in another: safe only because every
+        // ServerLevel shares the overworld's game time through DerivedLevelData.
         long now = level.getGameTime();
         for (var iterator = ORDERS.entrySet().iterator(); iterator.hasNext();) {
             Entry<UUID, Order> entry = iterator.next();

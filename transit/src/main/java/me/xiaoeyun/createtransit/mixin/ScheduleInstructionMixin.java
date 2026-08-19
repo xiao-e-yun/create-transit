@@ -11,9 +11,8 @@ import me.xiaoeyun.createtransit.content.dispatch.TransitTimetableInstruction;
 import net.minecraft.nbt.CompoundTag;
 
 /**
- * Deserializes the timetable instruction without registering it: registration's only other
- * effect is a slot in the schedule editor's list, where a surrendered-control entry is a
- * category error among player-written steps.
+ * Deserializes the timetable instruction, which is deliberately unregistered — {@code fromTag}
+ * would otherwise log a warning and hand back a {@code DestinationInstruction}.
  */
 // remap = false: a Create class, so its names are never obfuscated.
 @Mixin(value = ScheduleInstruction.class, remap = false)

@@ -11,15 +11,13 @@ import net.minecraft.world.phys.Vec3;
 /**
  * Where each strip of a gate's curtain goes, and how far it has swung.
  *
- * <p>Written once against {@link Affine} so that all three consumers — Flywheel's
- * {@code TransformedInstance}, catnip's {@code SuperByteBuffer} on the
- * no-visualization fallback, and {@code DumpTransforms} feeding the offline
- * renderer — execute the same arithmetic rather than three copies of it.
+ * <p>Written against {@link Affine} so all three consumers — Flywheel's
+ * {@code TransformedInstance}, catnip's {@code SuperByteBuffer} on the no-visualization fallback,
+ * and {@code DumpTransforms} — execute the same arithmetic.
  *
- * <p>The chain opens with Create's own hatch placement, so the curtain keeps
- * tracking the iris if Create ever moves it, then (post-multiplying, so the last
- * call is innermost) steps sideways to this strip's column and swings about the
- * pivot the strips hang from.
+ * <p>The chain opens with Create's own hatch placement, so the curtain keeps tracking the iris if
+ * Create moves it, then (post-multiplying, so the last call is innermost) steps sideways to this
+ * strip's column and swings about the pivot the strips hang from.
  */
 public final class TransitGateCurtain {
 

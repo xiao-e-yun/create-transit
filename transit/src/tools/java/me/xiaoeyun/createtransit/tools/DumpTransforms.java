@@ -21,54 +21,25 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Writes out the matrices a block entity renderer applies to its partial models.
+ * Writes out the matrices a block entity renderer applies to its partial models, by
+ * <em>running</em> each renderer's own chain rather than describing it. A partial model's
+ * coordinates do not mean what the model file says — a renderer transforms it every frame, and
+ * the model format has no way to record that — so a tool reading the file alone shows it in the
+ * wrong place while looking plausible.
  *
- * A block model's coordinates mean what they say, because the model is baked
- * into the chunk mesh. A partial model's do not: a renderer transforms it every
- * frame before drawing, and Minecraft's model format has no way to record that.
- * So geometry that looks right in Blockbench can land eight units away in game,
- * and any tool reading the model file alone will show it in the wrong place
- * while looking entirely plausible.
+ * {@code TransformStack.of(new PoseStack())} cannot be used outside the game: Flywheel reaches a
+ * PoseStack's matrix through an interface it <em>mixes into</em> the class at launch, and without
+ * the mixin transformer that cast fails. {@link MatrixAffine} supplies {@link Affine}'s three
+ * abstract methods over a JOML matrix instead, leaving every derived method as Flywheel's own
+ * code. JOML's {@code translate}/{@code rotate}/{@code scale} post-multiply, which is PoseStack's
+ * convention: the last call applies to the model first.
  *
- * This closes that gap by <em>running</em> each renderer's transform rather than
- * describing it. Nothing here reimplements Create's or Flywheel's arithmetic —
- * the chains below are the renderers' own chains, so the result cannot drift the
- * way a hand-ported copy would.
+ * Matrices are keyed by the <em>blockstate</em> facing rather than by a variable a renderer
+ * derives from it, so every {@code getOpposite()} and angle helper stays on this side of the file
+ * and a consumer does a pure lookup.
  *
- * <h2>Why a hand-rolled Affine and not a PoseStack</h2>
- *
- * The obvious way to replay a chain is {@code TransformStack.of(new PoseStack())}
- * — and it does not work outside the game, because Flywheel reaches a
- * PoseStack's matrix through an interface it <em>mixes into</em> the class at
- * launch. Without the mixin transformer that cast fails. The matrix math is
- * pure; the accessor is not.
- *
- * {@link MatrixAffine} below sidesteps that entirely, and is arguably the better
- * answer rather than a workaround. {@link Affine} is dozens of default methods
- * over exactly three abstract ones — translate, rotate, scale — so supplying
- * those three over a JOML matrix leaves every derived method
- * ({@code rotateYCenteredDegrees}, {@code rotateAround}, the lot) as Flywheel's
- * code, executed rather than transcribed. The three primitives are the one part
- * with no room for interpretation, and dropping PoseStack drops the dependency
- * on a running game with it.
- *
- * JOML's {@code translate}/{@code rotate}/{@code scale} post-multiply, which is
- * PoseStack's convention: the last call applies to the model first.
- * {@code Affine.rotateAround} is the proof that this is the contract, since
- * {@code translate(c).rotate(q).translateBack(c)} only means "rotate about c"
- * under post-multiplication.
- *
- * <h2>Keying</h2>
- *
- * Matrices are keyed by the <em>blockstate</em> facing rather than by whatever
- * local variable a renderer derives from it. That keeps every
- * {@code getOpposite()} and every angle helper on this side of the file, so a
- * consumer does a pure lookup and cannot get the semantics wrong — the worst it
- * can do is ask for a key that does not exist.
- *
- * Run via {@code ./gradlew dumpTransforms}; {@code checkTransforms} runs it into
- * a temporary file and fails the build if the committed table disagrees, which
- * is why the table cannot go quietly stale when Create updates.
+ * Run via {@code ./gradlew dumpTransforms}; {@code checkTransforms} runs it into a temporary file
+ * and fails the build if the committed table disagrees.
  */
 public final class DumpTransforms {
 
@@ -81,21 +52,15 @@ public final class DumpTransforms {
     };
 
     /**
-     * The tray and the package slide as they animate. Dumping the resting pose
-     * keeps the table a pure function of the blockstate; a consumer wanting a
-     * mid-animation frame composes the extra slide itself, which is what
-     * {@code animated_along} in the output is there to tell it.
+     * The tray and the package slide as they animate; the table dumps the resting pose, and
+     * {@code animated_along} in the output names the axis a consumer composes the slide along.
      */
     private static final float AT_REST = 0f;
 
     /**
-     * The curtain's three poses, named by the tray position and traffic direction
-     * that produce them, and converted by the same method the game calls — the
-     * sign of a swing is the curtain's business, and a table that hardcoded it
-     * could disagree with the game about which way the strips go. Everything
-     * between rest and either peak is a linear blend of the angle, so a fixture at
-     * each end pins the pivot, the pitch and the shape; nothing in the middle can
-     * be wrong while both ends are right.
+     * The curtain's three poses, converted by the same method the game calls, since the sign of a
+     * swing is the curtain's business. Everything between rest and either peak is a linear blend
+     * of the angle, so a fixture at each end pins the whole range.
      */
     private static final float HANGING = 0f;
     private static final float PUSHED_OUT = TransitGateBlockEntity.CURTAIN_PUSHED_OUT;
@@ -192,11 +157,9 @@ public final class DumpTransforms {
                     .scale(1.49f, 1.49f, 1.49f);
             }));
 
-        // This mod's own, and the reason they belong in a table pinned to a
-        // Create version: each one opens with Create's hatch placement and only
-        // then steps and swings, so they are as exposed to Create moving the
-        // hatch as the entry above is. TransitGateCurtain.place is the same
-        // method the game calls, and the swing is linear between the two poses.
+        // This mod's own, but each opens with Create's hatch placement before it steps and
+        // swings, so they are as exposed to Create moving the hatch as the entry above.
+        // TransitGateCurtain.place is the same method the game calls.
         String curtain = "me.xiaoeyun.createtransit.client.TransitGateCurtain";
         for (int strip = 0; strip < TransitGateCurtain.STRIPS; strip++) {
             int column = strip;

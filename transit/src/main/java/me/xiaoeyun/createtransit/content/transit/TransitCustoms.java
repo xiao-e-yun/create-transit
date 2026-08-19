@@ -13,21 +13,19 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * The customs declaration a package carries: which parent order slot this
- * shipment stands in for, one entry per border it has yet to clear. The goods
- * say what they stand for, so nothing is remembered on their behalf and a
- * reload cannot separate the two.
+ * The customs declaration a package carries: which parent order slot this shipment stands in for,
+ * one entry per border it has yet to clear.
  *
- * A ticker cannot write on boxes packed by the child network, so it files its
- * declaration against the child order id and {@code PackageItem#setOrder} —
- * intercepted in {@code PackageItemMixin} — stamps it onto each box. Packing is
- * synchronous, so a filing lives exactly as long as the call that makes it.
+ * A ticker cannot write on boxes packed by the child network, so it files its declaration against
+ * the child order id and {@code PackageItem#setOrder} — intercepted in {@code PackageItemMixin}
+ * — stamps it onto each box. Packing is synchronous, so a filing lives exactly as long as the
+ * call that makes it.
  *
- * A box crossing several borders carries a stack of declarations, outermost
- * last, and each gate consumes the head only if its {@link #label} names that
- * gate's border: a label may have no declaration behind it, so the two stacks
- * are not the same height. Two borders on one route sharing a sign will confuse
- * that, as two package ports sharing an address already do in vanilla.
+ * A box crossing several borders carries a stack of declarations, outermost last, and each gate
+ * consumes the head only if its {@link #label} names that gate's border. A label may have no
+ * declaration behind it, so the two stacks are not the same height, and two borders on one route
+ * sharing a sign will confuse that — as two package ports sharing an address already do in
+ * vanilla.
  */
 public record TransitCustoms(String label, int parentOrderId, int parentLinkIndex, boolean parentIsFinalLink) {
 
@@ -95,10 +93,9 @@ public record TransitCustoms(String label, int parentOrderId, int parentLinkInde
     }
 
     /**
-     * The declaration this box carries for the border {@code address} is
-     * standing at, or null when it carries none for it. Takes the address
-     * rather than the label so that {@link #answersTo} stays the only place
-     * that decides what a border is called.
+     * The declaration this box carries for the border {@code address} names, or null when it
+     * carries none. Takes the address rather than the label, so {@link #answersTo} stays the only
+     * place deciding what a border is called.
      */
     @Nullable
     public static TransitCustoms head(ItemStack box, String address) {

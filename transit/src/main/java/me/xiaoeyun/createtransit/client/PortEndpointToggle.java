@@ -14,25 +14,14 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 
 /**
- * Turns a package port into a transit endpoint: a door that foreign packages
- * are addressed to, rather than an address inside the local domain.
+ * Turns a package port into a transit endpoint: a door foreign packages are addressed to, rather
+ * than an address inside the local domain.
  *
- * The button switches how the address box is read, nothing more. Off, the box
- * holds an ordinary address exactly as vanilla left it. On, it holds a label
- * name, and {@code <[} {@code ]>} are put around it on the way out — so an
- * endpoint's stored address is the same string a player could type by hand, and
- * the delimiters never take up room in a field the player is typing into.
- *
- * The box's two vanilla-flavoured values keep their vanilla meanings inside the
- * switch, one layer up: blank is the default lane, taking border traffic that
- * names no door, the way a blank filter takes packages that name no address;
- * {@code *} takes any label, the way it takes any address. Leaving the name out
- * therefore does something now, which is the point — a switch that quietly did
- * nothing when the box was empty was a switch that looked broken.
- *
- * There is no state hiding behind the button, and no {@code <[} {@code ]>} on
- * screen either: the box shows a plain name in both positions, and the button
- * alone says whether that name is a transit label or an ordinary address.
+ * The button changes how the address box is read and nothing else. Off, the box holds an ordinary
+ * address as vanilla left it; on, it holds a label name and {@code <[} {@code ]>} go around it on
+ * the way out, so an endpoint's stored address is the string a player could have typed by hand.
+ * Inside the switch a blank name is the default lane and {@code *} takes any label, one layer up
+ * from what those two mean to a vanilla filter. There is no state behind the button.
  */
 public class PortEndpointToggle {
 
@@ -80,14 +69,9 @@ public class PortEndpointToggle {
     }
 
     /**
-     * Switching changes what the text means and never the text itself, so
-     * {@code 工廠} reads as a label one way and as a plain address the other.
-     * The delimiters stay out of sight — they belong to the wire format, and
-     * nobody should have to learn them to press a button.
-     *
-     * An address that already carries label syntax is wrapped as literally as
-     * any other, oddities and all. Whoever typed it chose it, and a port is
-     * matched on its head label alone, so nothing downstream is any the wiser.
+     * Switching changes what the text means and never the text itself, so {@code 工廠} reads as a
+     * label one way and a plain address the other. An address already carrying label syntax is
+     * wrapped as literally as any other; a port is matched on its head label alone.
      */
     private void toggle() {
         endpoint = !endpoint;

@@ -13,20 +13,12 @@ import javax.annotation.Nullable;
  * label   := "&lt;[" name "]&gt;"
  * </pre>
  *
- * Labels may only appear at the head of an address. A name cannot contain the
- * sequence {@code ]>} because the first occurrence always terminates the token.
- * Everything from the first token that is not a complete label onwards is the
- * path, which may contain spaces.
+ * Labels may only appear at the head of an address, and everything from the first token that
+ * is not a complete label onwards is the path, which may contain spaces. A name cannot contain
+ * {@code ]>}, since the first occurrence always terminates the token.
  *
- * A label is a transit door number inside one transport domain, not a requester
- * identity: each layer is stamped by the transit link that declared the source
- * foreign, routed by that domain's vanilla hardware, and consumed by a transit
- * gate on its boundary. Addresses without labels behave exactly as in vanilla.
- *
- * Two names are special, and they are vanilla's own two special filters read
- * one layer up. A blank name is the default lane, matched only by itself, the
- * way a blank address filter matches only unaddressed packages. {@code *} takes
- * any label, the way {@code *} takes any address.
+ * Two names are special. A blank name is a label of its own — the default lane, matched only by
+ * itself — while {@code *} matches any label. Unlabelled addresses behave exactly as in vanilla.
  */
 public final class AddressLabels {
 
@@ -54,12 +46,9 @@ public final class AddressLabels {
     }
 
     /**
-     * True when an address is one label and nothing else — what a package port
-     * configured as a transit endpoint holds.
-     *
-     * A label with a path behind it does not qualify: the path could never be
-     * matched against anyway, since a labelled address is compared on its head
-     * label alone.
+     * True when an address is one label and nothing else — what a package port configured as a
+     * transit endpoint holds. A label with a path behind it does not qualify; a labelled address
+     * is compared on its head label alone, so that path could never be matched against.
      */
     public static boolean isEndpoint(String address) {
         return startsWithLabel(address) && stripHeadLabel(address).isEmpty();
@@ -93,13 +82,9 @@ public final class AddressLabels {
     }
 
     /**
-     * The address a package port holds as a transit endpoint.
-     *
-     * A blank name is a label in its own right here — the default lane, which
-     * unnamed border traffic is addressed to — and that is the opposite of what
-     * {@link #push} means by a blank name, which is why the two cannot share an
-     * entry point. Vanilla draws the same distinction one layer down: a blank
-     * address filter matches unaddressed packages rather than all of them.
+     * The address a package port holds as a transit endpoint. A blank name is a label in its own
+     * right here — the default lane — which is the opposite of what {@link #push} means by one,
+     * so the two cannot share an entry point.
      */
     public static String endpoint(String name) {
         return OPEN + sanitizeName(name) + CLOSE;
@@ -158,19 +143,11 @@ public final class AddressLabels {
     }
 
     /**
-     * The narrow matching rule injected in front of {@code PackageItem#matchAddress}.
-     *
-     * Returns null when neither side is labelled, leaving vanilla semantics
-     * completely untouched. Otherwise the head label short-circuits everything:
-     * only an identical head label matches, so
-     * {@code *}, globs and blanks never catch a package in transit — and an
-     * unstripped label shadows the path behind it, keeping foreign packages
-     * invisible to local address hardware until a gate peels the layer off.
-     *
-     * A {@link #WILDCARD} label on either side is the one exception, and it
-     * matches any label, as vanilla's own {@code *} does. An unlabelled package
-     * is still refused — transit is a space of its own, and a port that wants
-     * all local traffic too is a second port.
+     * The rule injected in front of {@code PackageItem#matchAddress}. Null when neither side is
+     * labelled, leaving vanilla untouched. Otherwise only the head labels are compared — the path
+     * behind one stays invisible to local address hardware until a gate peels the layer off — and
+     * either side naming {@link #WILDCARD} matches any label. A labelled address and an unlabelled
+     * one never match, in either direction.
      */
     @Nullable
     public static Boolean match(String boxAddress, String address) {
@@ -197,11 +174,7 @@ public final class AddressLabels {
         return close == -1 ? -1 : close + CLOSE.length();
     }
 
-    /**
-     * Puts a complete label token in front of an address. A label with nothing
-     * behind it is an address in its own right; the separator only exists to
-     * keep a path from touching the delimiter.
-     */
+    /** Puts a label token in front of an address; the separator only keeps a path off the delimiter. */
     private static String join(String label, String address) {
         String path = trimLeading(address);
         return path.isEmpty() ? label : label + " " + path;

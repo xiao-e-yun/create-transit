@@ -28,16 +28,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 /**
- * Two chapters, on two dioramas.
- *
- * Crossing runs on {@code transit_gate.nbt}, three identical lanes of which this
- * chapter stages the northern -- the only gate with a face free for a sign --
- * revealing the other two only to show the label reaching them. Merging runs on
- * {@code transit_merge.nbt}, which is Create's own stock ticker diorama with its
- * belt corner turned into a customs post, because merging needs a network that
- * packs one request in two places and the gate diorama has no network at all.
- * {@link Lane} and the beats that take one belong to the first; the second
- * addresses its blocks outright.
+ * Two chapters, on two dioramas: {@link Lane} and the beats that take one belong to crossing, and
+ * merging addresses its blocks outright.
  *
  * {@link TransitScenes} carries the rules every storyboard here follows: why
  * each trigger is scripted, where the freight comes from, and why a caption can
@@ -45,17 +37,13 @@ import net.minecraft.world.item.Items;
  */
 public class TransitGateScenes {
 
-    /**
-     * A border this gate does not keep, and an address behind it. Chapter one
-     * needs traffic the sign refuses, and refusing is only visible against a
-     * label that is well formed and simply someone else's.
-     */
+    /** A border this gate does not keep, and an address behind it: well formed, simply someone else's. */
     private static final String FOREIGN_BORDER = "harbor";
     private static final String FOREIGN_DESTINATION = "drawer 9";
 
     /**
-     * The diorama's northern lane, which is the only one this chapter runs on:
-     * the other two carry no sign, and a sign is half of what it teaches.
+     * The diorama's northern lane, the only one this chapter runs on: it is the one gate with a
+     * face free for a sign, and a sign is half of what the chapter teaches.
      */
     private static final int LANE = 2;
 
@@ -63,10 +51,8 @@ public class TransitGateScenes {
         CreateSceneBuilder scene = new CreateSceneBuilder(builder);
         scene.title("transit_gate", "Crossing a border with the Transit Gate");
 
-        // The northern lane, because it is the one gate with a face free for a
-        // sign and this chapter hangs one halfway through. It opens unsigned:
-        // the sign is a block of the diorama like any other, and stage() leaves
-        // it out. The two gates behind it are the closing beat.
+        // The lane opens unsigned: the sign is a block of the diorama like any other, and
+        // stage() leaves it out. The two gates behind it are the closing beat.
         Lane lane = new Lane(util);
         BlockPos sign = util.grid()
             .at(3, 2, 1);
@@ -77,9 +63,7 @@ public class TransitGateScenes {
         stage(scene, util, lane);
         scene.idle(20);
 
-        // Two borders deep, so the gate can strip its own layer and still leave
-        // something addressed behind. The foreign box is the same shape one
-        // border over -- well formed, simply not this gate's.
+        // Two borders deep, so the gate can strip its own layer and still leave an address behind.
         String foreign = AddressLabels.push(FOREIGN_BORDER, FOREIGN_DESTINATION);
         ItemStack arrivingBox = box(AddressLabels.push(BORDER, DESTINATION), new ItemStack(Items.IRON_INGOT, 32));
         ItemStack clearedBox = box(DESTINATION, new ItemStack(Items.IRON_INGOT, 32));
@@ -105,9 +89,8 @@ public class TransitGateScenes {
         scene.idle(30);
         absorb(scene, lane);
 
-        // The tray only ever comes out of the gate's front, which is the side
-        // the outbound funnel is on, so every box the gate shows is one it has
-        // taken back out of the buffer.
+        // The tray only comes out of the gate's front, where the outbound funnel is, so every box
+        // shown is one drawn back out of the buffer.
         present(scene, lane, clearedBox);
         scene.idle(25);
 
@@ -192,14 +175,8 @@ public class TransitGateScenes {
         hopOff(scene, lane, forwardedBox);
         unpowerLever(scene, util, lane, leverL);
 
-        // One sign, three gates. Only that it reaches is said; the range, the
-        // tie-break, that it never chains and that a gate with its own sign
-        // keeps it are all left for the goggles, which name the donor's
-        // coordinates outright.
-        // One outline, issued twice under the same slot, so Ponder grows the one
-        // it already has instead of drawing a second: the label's reach is the
-        // thing moving, and it reads as reach only if the box was around one
-        // gate first.
+        // One outline, issued twice under the same slot, so Ponder grows the one it already has
+        // instead of drawing a second.
         scene.overlay()
             .showOutline(PonderPalette.GREEN, lane.gate(), util.select()
                 .position(lane.gate()), 60);
@@ -233,41 +210,26 @@ public class TransitGateScenes {
     }
 
     /**
-     * Merging, on Create's own stock ticker diorama with the belt corner turned
-     * into a customs post.
+     * Merging, on Create's own stock ticker diorama with the belt corner turned into a customs
+     * post. {@code findPackagersForRequest} fans one order across both of upstream's packagers,
+     * and the near one stands two blocks of belt closer to the border, so the two parts leave at
+     * once and arrive thirty ticks apart with nothing staging the gap.
      *
-     * Everything upstream of the corner is theirs and is left alone: one request
-     * reaches two packagers, each packs part of it, and both parts ride the same
-     * belt west. What changes is what the corner does with them -- and the two
-     * packagers, which upstream put there for its own reasons, are exactly why
-     * this chapter works. findPackagersForRequest fans an order out across
-     * whichever packagers can fill it, so the parts are packed in two places,
-     * and the near one stands two blocks of belt closer to the border than the
-     * far one. Both leave at once and still arrive apart, with nothing staging
-     * the gap.
-     *
-     * That gap is thirty ticks of belt, which is no time to read a line of text
-     * in, so the world is slowed to an eighth for it. Multiplication rather than
-     * setKineticSpeed, because the two belts turn a corner and run at opposite
-     * signs -- multiplying keeps each one's sign, and one flat number would send
-     * half the scene backwards.
-     *
-     * Every idle between a package joining a belt and being taken off it is
-     * aimed at a window the belt decides, and both ends of that window come off
-     * upstream rather than off a guess:
+     * Every idle between a package joining a belt and being taken off it comes off upstream
+     * numbers rather than a guess:
      *
      * <ul>
-     * <li>{@code BeltBlockEntity.getBeltMovementSpeed} is {@code getSpeed()/480},
-     * so Speed 32 is a block every fifteen ticks;
-     * <li>an inserted package lands at {@code index + .5f - signum(speed)/16f} --
-     * the centre of the segment it was handed to, not its far edge -- so the near
-     * packager is one block from the corner and the far one three;
-     * <li>{@code removeItemsFromBelt} reaches half a block either side of a
-     * segment's centre.
+     * <li>{@code BeltBlockEntity.getBeltMovementSpeed} is {@code getSpeed()/480}, so Speed 32 is a
+     * block every fifteen ticks;
+     * <li>an inserted package lands at {@code index + .5f - signum(speed)/16f} -- the centre of the
+     * segment it was handed to, not its far edge -- so the near packager is one block from the
+     * corner and the far one three;
+     * <li>{@code removeItemsFromBelt} reaches half a block either side of a segment's centre.
      * </ul>
      *
-     * Which puts the near package in reach from tick 7 to 23 and the far one from
-     * 37 to 53. The idles below land on 15 and 45, the middle of each.
+     * Which puts the near package in reach from tick 7 to 23 and the far one from 37 to 53; the
+     * idles below land on 15 and 45. The slowdown multiplies rather than calling
+     * {@code setKineticSpeed}, because the two belts turn a corner and run at opposite signs.
      */
     public static void transitGateMerge(SceneBuilder builder, SceneBuildingUtil util) {
         CreateSceneBuilder scene = new CreateSceneBuilder(builder);
@@ -309,9 +271,8 @@ public class TransitGateScenes {
         BlockPos border = util.grid()
             .at(3, 2, 1);
 
-        // Belt, then the cogwheel on its pulley, then the large cogwheel that
-        // meshes with it. There is no motor to leave out: a Ponder world computes
-        // no kinetics, so the diorama carries none.
+        // Belt, then the cogwheel on its pulley, then the large cogwheel meshing with it. A
+        // Ponder world computes no kinetics, so there is no motor to leave out.
         Selection inbound = util.select()
             .fromTo(2, 1, 4, 6, 1, 4)
             .add(util.select()
@@ -376,8 +337,7 @@ public class TransitGateScenes {
             .placeNearTarget();
         scene.idle(80);
 
-        // The order, which is the only wireless part of this: the border is
-        // named, both links answer, and both packagers pack.
+        // The order: the border is named, both links answer, and both packagers pack.
         PonderHilo.linkEffect(scene, border);
         scene.idle(10);
         PonderHilo.linkEffect(scene, nearLink);
@@ -412,9 +372,8 @@ public class TransitGateScenes {
             .indicateSuccess(buffer);
         scene.idle(5);
 
-        // An eighth speed, so the second package is still visibly on its way
-        // while the line explaining why the first one is not moving is read.
-        // Eighty ticks of reading spend ten ticks of belt.
+        // An eighth speed: eighty ticks of reading spend ten ticks of belt, so the second package
+        // is still visibly on its way.
         scene.world()
             .multiplyKineticSpeed(util.select()
                 .everywhere(), 1 / 8f);
@@ -453,12 +412,9 @@ public class TransitGateScenes {
     }
 
     /**
-     * One of the diorama's three lanes: a row along x at a fixed z, every
-     * position in it following from that one number.
-     *
-     * A package rides west along the belt at y=1, is taken off it by the intake
-     * funnel and parked in the Item Vault, and comes back out through the gate —
-     * what a gate faces away from is its own storage.
+     * One of the diorama's three lanes: a row along x at a fixed z. A package rides west along the
+     * belt at y=1, is taken off by the intake funnel and parked in the Item Vault, and comes back
+     * out through the gate — what a gate faces away from is its own storage.
      */
     private record Lane(SceneBuildingUtil util) {
 
@@ -516,18 +472,13 @@ public class TransitGateScenes {
     }
 
     /**
-     * The opening every chapter shares: base plate, kinetics, then one lane
-     * revealed.
+     * The opening every chapter shares, staged the way {@code TunnelScenes.andesite} stages a belt:
+     * floor, drivetrain, the belt along its own length, then the things standing on it. The
+     * diorama hands us two segments already cased, so the casing comes off before anything is
+     * shown and each piece goes back on as its block lands.
      *
-     * Staged the way {@code TunnelScenes.andesite} stages a belt: floor, then
-     * the drivetrain, then the belt along its own length, and only then the
-     * things that stand on it, one at a time. The diorama hands us two segments
-     * already cased, so the casing comes off before anything is shown and each
-     * piece goes back on as its block lands.
-     *
-     * The base plate is five of the diorama's six columns: the sixth carries the
-     * drivetrain and the belts' far pulleys, which every shipped scene keeps off
-     * its checkerboard, and is where a cleared package rides off the end.
+     * The base plate is five of the diorama's six columns; the sixth carries the drivetrain and
+     * the belts' far pulleys, which shipped scenes keep off the checkerboard.
      */
     private static void stage(CreateSceneBuilder scene, SceneBuildingUtil util, Lane lane) {
         scene.configureBasePlate(0, 1, 6);
@@ -547,11 +498,9 @@ public class TransitGateScenes {
         scene.world()
             .showSection(util.select()
                 .position(4, 0, 0), Direction.UP);
-        // The diorama drives its three lanes in series -- cog, shaft, then each
-        // belt's far pulley passing it to the next -- and the shaft ends where
-        // the northern lane begins, so the drive reads whole with nothing after
-        // it. A chapter staging a lane further along would have to reveal the
-        // pulleys between.
+        // The diorama drives its three lanes in series -- cog, shaft, then each belt's far pulley
+        // passing it on -- and the shaft ends where the northern lane begins, so a chapter staging
+        // a lane further along would have to reveal the pulleys between.
         scene.world()
             .showSection(util.select()
                 .fromTo(5, 1, 0, 5, 1, 1), Direction.UP);
@@ -602,10 +551,8 @@ public class TransitGateScenes {
     }
 
     /**
-     * The lever is a prop for one beat, not part of the machine: it arrives on
-     * its own section and leaves again, the way {@code StockLinkScenes} stages
-     * its own redstone lesson. Pairs with {@link #unpowerLever}, which takes it
-     * back off.
+     * The lever is a prop for one beat: it arrives on its own section and leaves again, the way
+     * {@code StockLinkScenes} stages its redstone lesson. Pairs with {@link #unpowerLever}.
      */
     private static ElementLink<WorldSectionElement> powerLever(CreateSceneBuilder scene, SceneBuildingUtil util,
         Lane lane) {
@@ -633,10 +580,8 @@ public class TransitGateScenes {
     }
 
     /**
-     * What {@code mergeOrder} would have handed back, assembled here because it
-     * runs on the server and a Ponder world is client-side. The one seam in this
-     * file: its inputs are real fragments, declarations and all, and the address
-     * it leaves under is the arriving one a border lighter.
+     * What {@code mergeOrder} would have handed back, assembled here because it runs on the server
+     * and a Ponder world is client-side.
      */
     private static ItemStack merged(ItemStack... contents) {
         ItemStack box = PackageItem.containing(List.of(contents));
@@ -646,13 +591,10 @@ public class TransitGateScenes {
     }
 
     /**
-     * Puts a belt segment's andesite casing back on as the block standing on it
-     * lands, the way {@code TunnelScenes.andesite} does it.
-     *
-     * The block property is what draws a casing at all, and the block entity is
-     * what names which casing it is, so both have to be said. The trailing
-     * {@code true} is {@code reDrawBlocks}: without it the segment keeps the
-     * model it already had and the casing never appears.
+     * Puts a belt segment's andesite casing back on as the block standing on it lands, the way
+     * {@code TunnelScenes.andesite} does. The block property draws a casing at all and the block
+     * entity names which one, so both have to be said, and the trailing {@code true} is
+     * {@code reDrawBlocks} — without it the segment keeps its old model and no casing appears.
      */
     private static void caseBelt(CreateSceneBuilder scene, SceneBuildingUtil util, BlockPos belt) {
         scene.world()

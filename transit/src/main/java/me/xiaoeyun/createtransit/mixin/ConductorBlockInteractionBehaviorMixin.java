@@ -21,9 +21,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Lets a timetable enroll a train wherever a schedule can, by passing Create's own
- * two gates: the item check that would refuse it, and the read that turns it into a
- * schedule. Everything after — the advancement, the sound, the shrink — is Create's.
+ * Lets a timetable enroll a train wherever a schedule can: it passes the item check that would
+ * refuse it and the read that turns it into a schedule, and an unbound one is cancelled at that
+ * same read. Everything after — the advancement, the sound, the shrink — is Create's.
  */
 // remap = false: a Create class, so its names are never obfuscated.
 @Mixin(value = ConductorBlockInteractionBehavior.class, remap = false)
@@ -50,9 +50,9 @@ public abstract class ConductorBlockInteractionBehaviorMixin {
     }
 
     /**
-     * Create would answer an unbound timetable with no_stops, but a timetable has no stops to
-     * add — only a bay to bind. Denied here, one call before Create reads the schedule: every
-     * gate has passed, the level is already known to be the server's, and nothing is spent yet.
+     * An unbound timetable still reads as a one-entry schedule, so without this the train would
+     * enroll on a blank depot. Denied at the read: every gate has passed, the level is already
+     * known to be the server's, and nothing is spent yet.
      */
     @Inject(method = "handlePlayerInteraction",
         at = @At(value = "INVOKE",

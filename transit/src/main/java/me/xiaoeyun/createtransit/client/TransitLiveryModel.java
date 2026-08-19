@@ -23,12 +23,8 @@ import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.client.model.data.ModelProperty;
 
 /**
- * Two baked models behind one, picked per block from its address.
- *
- * Standing in front of the vanilla model rather than replacing it is what keeps
- * every postbox its dyed colour and every ordinary port untouched: a port that
- * is not an endpoint never reaches the second model at all, and the block it
- * draws is byte for byte the one Create baked.
+ * Two baked models behind one, picked per block from its address. A port that is not an endpoint
+ * never reaches the second model, so it draws byte for byte what Create baked.
  */
 @OnlyIn(Dist.CLIENT)
 public class TransitLiveryModel extends BakedModelWrapper<BakedModel> {
@@ -62,10 +58,7 @@ public class TransitLiveryModel extends BakedModelWrapper<BakedModel> {
         return pick(data).getParticleIcon(data);
     }
 
-    /**
-     * Read off the address, which is already on the client to be drawn as a
-     * nameplate, so nothing is stored, synchronised or migrated for the livery.
-     */
+    /** Read off the address, already on the client for the nameplate, so the livery syncs nothing. */
     @Override
     public @NotNull ModelData getModelData(@NotNull BlockAndTintGetter level, @NotNull BlockPos pos,
         @NotNull BlockState state, @NotNull ModelData data) {

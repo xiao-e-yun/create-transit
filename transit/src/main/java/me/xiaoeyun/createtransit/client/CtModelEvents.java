@@ -20,16 +20,11 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Puts the transit livery in front of the two ports' baked models.
- *
- * Both blocks are Create's, and both pick their model from a block state that
- * knows nothing about addresses, so the variant cannot be selected the ordinary
- * way. Wrapping the baked result instead lets the choice happen per block, at
- * draw time, from the model data the block entity supplies.
- *
- * Doing it here rather than in a renderer is also what spares the frogport a
- * second implementation: a base plate is part of the chunk mesh, which Flywheel
- * does not replace, so this one path covers both settings.
+ * Puts the transit livery in front of the two ports' baked models. Both blocks are Create's and
+ * both pick their model from a block state that knows nothing about addresses, so the variant
+ * cannot be selected the ordinary way; wrapping the baked result moves the choice to draw time,
+ * from the model data the block entity supplies. A base plate is part of the chunk mesh, which
+ * Flywheel does not replace, so this one path covers both settings.
  */
 @Mod.EventBusSubscriber(modid = CreateTransit.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD,
     value = Dist.CLIENT)

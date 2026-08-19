@@ -15,13 +15,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 /**
- * Ponder scenes for the three border blocks.
- *
- * Scene ids are namespaced to this mod by Ponder itself, so they cannot collide
- * with Create's. A scene id and the schematic it loads are unrelated, and the
- * gate uses that: its two chapters carry different ids and load different
- * dioramas, because merging needs a network that packs a request in two places
- * and crossing needs three gates in a row.
+ * Ponder scenes for the three border blocks. Scene ids are namespaced to this mod by Ponder
+ * itself, so they cannot collide with Create's.
  */
 public class CtPonderPlugin implements PonderPlugin {
 

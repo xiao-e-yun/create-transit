@@ -7,37 +7,25 @@ import me.xiaoeyun.createtransit.content.transit.AddressLabels;
 import net.minecraft.network.chat.Component;
 
 /**
- * How a labelled address is spelled out for a player to read.
- *
- * {@code <[} and {@code ]>} are wire format. They exist so the grammar can find
- * where a label ends, and a player who never types one has no reason to learn
- * them — so every surface that shows an address to somebody puts it through
- * here, and the delimiters become the hops they stand for:
+ * How a labelled address is spelled out for a player to read. Every surface showing one puts it
+ * through here, and the wire format's delimiters become the hops they stand for:
  *
  * <pre>
  * &lt;[depot]&gt; &lt;[north]&gt; drawer 4   reads as   depot → north → drawer 4
  * </pre>
  *
- * Nothing is dropped in the translation. Every label is named in the order it
- * will be peeled off and the path stays on the end, so an address with a path
- * behind a label still shows that path — the routing ignores it, and a spelling
- * that quietly swallowed it would be the reason nobody could work out why.
+ * Nothing is dropped: labels are named in the order they will be peeled off and the path stays on
+ * the end, even the path behind a label that routing ignores.
  */
 public final class TransitAddress {
 
-    /**
-     * Reads as "and then", which is what one layer of label means. The same
-     * arrow Create puts in front of a package's address, so a spelled address
-     * reads as one chain rather than as a prefix and a different notation.
-     */
+    /** One layer of label, in the same arrow Create puts in front of a package's address. */
     private static final String HOP = " → ";
 
     /**
-     * What the default lane is called on screen. A blank label name is a real
-     * destination, so it has to read as one — left as the empty string it came
-     * as, a nameplate would go blank and the port would look unconfigured. The
-     * translation carries its own delimiters, marking it as a name the game
-     * supplied rather than one somebody typed.
+     * What the default lane is called on screen: a blank label name is a real destination, and
+     * left blank a nameplate would look unconfigured. The translation carries its own delimiters,
+     * marking it as a name the game supplied.
      */
     private static final String DEFAULT_LANE = "create_transit.package_port.default_lane";
 

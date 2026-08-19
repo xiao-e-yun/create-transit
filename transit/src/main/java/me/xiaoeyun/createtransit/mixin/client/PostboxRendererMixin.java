@@ -20,15 +20,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * The two things a postbox's renderer decides: what its nameplate says, and
- * what its flag is made of.
- *
- * The flag has to be handled here rather than with the rest of the livery. The
- * box is a baked model and takes its brass from model data, but the flag is
- * drawn by this renderer from a partial model of Create's, which no amount of
- * model data reaches. It is also the only part of a postbox that was going to
- * carry the network's colour at all — the box belongs to whoever dyed it, and
- * the frame is where the brass went.
+ * The two things a postbox's renderer decides: what its nameplate says, and what its flag is made
+ * of. The flag cannot go with the rest of the livery — the box is a baked model taking its brass
+ * from model data, but the flag is drawn here from a partial model of Create's, which model data
+ * never reaches.
  */
 @Mixin(value = PostboxRenderer.class, remap = false)
 public class PostboxRendererMixin {

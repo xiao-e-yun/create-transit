@@ -8,17 +8,12 @@ import com.simibubi.create.content.logistics.box.PackageStyles;
 import com.simibubi.create.content.logistics.box.PackageStyles.PackageStyle;
 
 /**
- * The box a package wears while it is still foreign, in each of Create's four
- * standard sizes.
+ * The box a package wears while it is still foreign, in each of Create's four standard sizes.
  *
- * Create invites this: {@code PackageStyles.STYLES} says in as many words that
- * an addon should register its own {@link PackageItem} rather than insert into
- * that list. Being a real package item rather than a look is what makes it work
- * everywhere — half of Create's package rendering never sees NBT, because it
- * asks {@code AllPartialModels.PACKAGES} for a model by <em>item id</em>. A
- * separate item is visible to that lookup, so belts, frogports, chain
- * conveyors, dropped entities and both Flywheel paths all show it without a
- * single mixin. Nothing carried in a tag could have done that.
+ * A separate {@link PackageItem} rather than a tag, as {@code PackageStyles.STYLES} invites,
+ * because half of Create's package rendering never sees NBT: it asks
+ * {@code AllPartialModels.PACKAGES} for a model by <em>item id</em>. Belts, frogports, chain
+ * conveyors, dropped entities and both Flywheel paths therefore show it without a mixin.
  */
 public class TransitPackageItem extends PackageItem {
 
