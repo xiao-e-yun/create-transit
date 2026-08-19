@@ -11,7 +11,7 @@ Networks stay sovereign here, and freight moves between them the way it crosses 
 
 ## Train dispatch
 
-Transit freight moves by rail only on trains carrying a **Transport Timetable**. The timetable donates a train to the network — bind its parking bay, hand it to a conductor — and the dispatcher does the rest. The trade is exclusive: an enrolled train carries transit freight and nothing else.
+Transit freight moves by rail only on trains carrying a **Transport Timetable**. The timetable donates a train to the network — bind its parking bay, hand it to a conductor — and the dispatcher does the rest.
 
 ## Related
 **[Create: Routes](route/README.md)**.

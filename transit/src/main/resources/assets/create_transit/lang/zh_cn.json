@@ -54,5 +54,7 @@
   "create_transit.transit_ticker.goggles.mount_conflict": "仓储链接站与跨境链接站同时挂载，跨境请求取不到库存",
   "item.create_transit.transit_package": "跨境包裹",
   "item.create_transit.transit_timetable": "运输时刻表",
-  "item.create_transit.transit_timetable.tooltip.summary": "把列车_捐给网络_：绑定_停车位_，再把时刻表递给_列车长_，其余交给调度器。"
+  "item.create_transit.transit_timetable.tooltip.summary": "把列车_捐给网络_：绑定_停车位_，再把时刻表递给_列车长_，其余交给调度器。",
+  "item.create_transit.transit_timetable.tooltip.condition1": "交给列车长后",
+  "item.create_transit.transit_timetable.tooltip.behaviour1": "该列车只载运_跨境包裹_，不再收取普通包裹。"
 }

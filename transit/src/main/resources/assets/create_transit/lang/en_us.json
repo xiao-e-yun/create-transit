@@ -54,5 +54,7 @@
   "create_transit.transit_ticker.goggles.mount_conflict": "Stock Link and Transit Link both mounted; transit requests get no stock",
   "item.create_transit.transit_package": "Transit Package",
   "item.create_transit.transit_timetable": "Transport Timetable",
-  "item.create_transit.transit_timetable.tooltip.summary": "_Donates_ a train to the network: bind its _parking bay_, then hand this to a _conductor_. The dispatcher does the rest."
+  "item.create_transit.transit_timetable.tooltip.summary": "_Donates_ a train to the network: bind its _parking bay_, then hand this to a _conductor_. The dispatcher does the rest.",
+  "item.create_transit.transit_timetable.tooltip.condition1": "When given to a Conductor",
+  "item.create_transit.transit_timetable.tooltip.behaviour1": "The train hauls _Transit Packages_ only, and no longer accepts ordinary ones."
 }

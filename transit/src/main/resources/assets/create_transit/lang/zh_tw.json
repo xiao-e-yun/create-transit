@@ -54,5 +54,7 @@
   "create_transit.transit_ticker.goggles.mount_conflict": "庫存鏈路與跨境鏈路同時掛載，跨境請求取不到庫存",
   "item.create_transit.transit_package": "跨境包裹",
   "item.create_transit.transit_timetable": "運輸時刻表",
-  "item.create_transit.transit_timetable.tooltip.summary": "把列車_捐給網路_：綁定_停車位_，再把時刻表遞給_列車長_，其餘交給調度器。"
+  "item.create_transit.transit_timetable.tooltip.summary": "把列車_捐給網路_：綁定_停車位_，再把時刻表遞給_列車長_，其餘交給調度器。",
+  "item.create_transit.transit_timetable.tooltip.condition1": "交給列車長後",
+  "item.create_transit.transit_timetable.tooltip.behaviour1": "該列車只載運_跨境包裹_，不再收取一般包裹。"
 }
