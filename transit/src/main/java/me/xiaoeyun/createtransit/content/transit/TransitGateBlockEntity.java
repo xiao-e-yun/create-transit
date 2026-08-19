@@ -143,11 +143,11 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     /**
      * Whether this gate's sign claims a package's head label. An unsigned gate
      * is the default lane and takes any label; {@link AddressLabels#WILDCARD}
-     * takes any label too, as a port filter does.
+     * takes any label on either side, as a port filter does.
      */
     private boolean claimsLabel(@Nullable String headLabel) {
         return headLabel != null && (effectiveLabel.isEmpty() || AddressLabels.WILDCARD.equals(effectiveLabel)
-            || effectiveLabel.equals(headLabel));
+            || AddressLabels.WILDCARD.equals(headLabel) || effectiveLabel.equals(headLabel));
     }
 
     // Label resolution
@@ -437,11 +437,6 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
         // step longer than that: an unsigned gate looks for a donor too.
         refreshLabels();
 
-        // A wildcard sign is a filter, not a place: it claims every label and so
-        // has none of its own to stamp, the same reason a Transit Link refuses it.
-        if (AddressLabels.WILDCARD.equals(effectiveLabel))
-            return;
-
         IItemHandler storage = getStorage();
         if (storage == null)
             return;
@@ -510,17 +505,10 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             .append(Component.translatable("block.create_transit.transit_gate")
                 .withStyle(ChatFormatting.WHITE)));
 
-        if (effectiveLabel.isEmpty()) {
-            tooltip.add(Component.literal("    ")
-                .append(Component.translatable("create_transit.transit_gate.goggles.wildcard")
-                    .withStyle(ChatFormatting.GRAY)));
-            return true;
-        }
-
         tooltip.add(Component.literal("    ")
-            .append(AddressLabels.WILDCARD.equals(effectiveLabel)
+            .append(effectiveLabel.isEmpty()
                 ? Component.translatable("create_transit.transit_gate.goggles.any")
-                    .withStyle(ChatFormatting.GOLD)
+                    .withStyle(ChatFormatting.GRAY)
                 : Component.translatable("create_transit.transit_gate.goggles.strips",
                     Component.literal(effectiveLabel)
                         .withStyle(ChatFormatting.WHITE))

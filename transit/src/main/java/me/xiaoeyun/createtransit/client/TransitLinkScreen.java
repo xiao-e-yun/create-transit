@@ -6,7 +6,6 @@ import com.simibubi.create.foundation.gui.AllGuiTextures;
 import com.simibubi.create.foundation.gui.AllIcons;
 import com.simibubi.create.foundation.gui.widget.IconButton;
 
-import me.xiaoeyun.createtransit.content.transit.AddressLabels;
 import me.xiaoeyun.createtransit.content.transit.TransitLinkBlockEntity;
 import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.network.TransitLinkLabelPacket;
@@ -133,11 +132,7 @@ public class TransitLinkScreen extends AbstractSimiScreen {
 
     @Override
     public void removed() {
-        String value = labelBox.getValue();
-        // * is the one thing a link cannot declare, so closing on it leaves the
-        // link exactly as it was found.
-        if (!AddressLabels.WILDCARD.equals(value.trim()))
-            CtPackets.CHANNEL.sendToServer(new TransitLinkLabelPacket(pos, value));
+        CtPackets.CHANNEL.sendToServer(new TransitLinkLabelPacket(pos, labelBox.getValue()));
         super.removed();
     }
 

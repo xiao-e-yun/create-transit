@@ -34,6 +34,14 @@ them by hand is undone on the next run**:
 | `scripts/repalette.py` | `transit/…/textures/block/` |
 | `scripts/transit_package.py` | `transit/…/textures/item/package…` |
 | `scripts/draw_curtain.py` | the gate curtain's texture and its three models |
+| `scripts/ponder_scenes.py` | `transit/…/ponder/*.nbt`, the Ponder scene worlds |
+
+The Ponder worlds are the one generated thing upstream would build by hand, in-game with
+Schematic and Quill. Three of the four are about frequencies and labels — which link belongs to
+which network, whether a gate's sign says the same word as the link beside it — and none of that
+is visible while you place the blocks. Generating them keeps the invisible half in the file the
+diff can read, and lets the script reject a typo the game would have swallowed: a misspelled
+block id loads as air, and a misspelled property name as the default, both without a log line.
 
 `scripts/lang_audit.py` and `scripts/render_model.py` only read: one checks the lang files
 against the code, the other renders models to PNG without launching the game.

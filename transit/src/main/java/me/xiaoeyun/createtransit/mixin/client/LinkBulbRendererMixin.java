@@ -13,14 +13,13 @@ import com.simibubi.create.content.redstone.displayLink.LinkBulbRenderer;
 import com.simibubi.create.content.redstone.displayLink.LinkWithBulbBlockEntity;
 
 import me.xiaoeyun.createtransit.content.ticker.TransitTickerBlockEntity;
-import me.xiaoeyun.createtransit.content.transit.TransitLinkBlockEntity;
 import net.createmod.catnip.render.SuperByteBuffer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.level.Level;
 
 /**
- * What a link's bulb says once it sits on a Transit Ticker: dark is inert, a
- * white heartbeat is the ticker polling, and a red flash is a fault — a proxy
+ * What a link's bulb says once it sits on a Transit Ticker: a white heartbeat
+ * is the ticker polling, and a red flash is a fault — a proxy
  * cycle closing through this link's frequency, or a dual mount starving the
  * transit link on this ticker.
  */
@@ -74,9 +73,8 @@ public class LinkBulbRendererMixin {
             return glow;
         if (isFaulted(ticker, be))
             return flash(ticker, partialTicks);
-        // A binding that reaches nothing has no poll to announce, and an
-        // unlabelled link is not part of the poll being announced.
-        if (!ticker.isChildConnected() || isInert(be))
+        // A binding that reaches nothing has no poll to announce.
+        if (!ticker.isChildConnected())
             return glow;
         return Math.max(glow, heartbeat(ticker, partialTicks));
     }
@@ -131,11 +129,6 @@ public class LinkBulbRendererMixin {
         if (!(be instanceof PackagerLinkBlockEntity link))
             return null;
         return link.getPackager() instanceof TransitTickerBlockEntity ticker ? ticker : null;
-    }
-
-    /** A disabled transit link stamps no border, so the ticker never counts it as one. */
-    private static boolean isInert(LinkWithBulbBlockEntity be) {
-        return be instanceof TransitLinkBlockEntity link && !link.isActive();
     }
 
     /**

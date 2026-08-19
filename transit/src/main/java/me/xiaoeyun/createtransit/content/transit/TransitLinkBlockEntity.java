@@ -34,8 +34,10 @@ import net.minecraft.world.level.block.state.BlockState;
  * sources served by this link get stamped.
  *
  * The label is what routes the shipment to a border gate and what the customs
- * machinery keys on. Clearing it disables the link: it stamps nothing, declares
- * no border, and behaves like a plain Stock Link, with the bulb dark to say so.
+ * machinery keys on. A blank label is a border in its own right — the default
+ * lane, which unnamed border traffic is addressed to — so a freshly placed link
+ * ships through the default gate without being configured first. To take a link
+ * out of service, silence it with full redstone as with any Stock Link.
  * Everything else — tuning, protection, keepAlive, redstone priority — is
  * inherited, so lowering this link's priority with redstone means "spend local
  * stock first, only reach across the border when short".
@@ -53,31 +55,16 @@ public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements I
         return label;
     }
 
-    /** Whether this link declares a border at all; a blank label is the disabled state. */
-    public boolean isActive() {
-        return !label.isBlank();
-    }
-
-    /** Stores a label, refusing only the wildcard: "every border" is not a place a shipment can be sent. */
     public void setLabel(String label) {
-        String sanitized = AddressLabels.sanitizeName(label);
-        if (AddressLabels.WILDCARD.equals(sanitized))
-            return;
-        this.label = sanitized;
+        this.label = AddressLabels.sanitizeName(label);
         notifyUpdate();
-    }
-
-    /** Dark while disabled: the blink means a request went through, and through a disabled link none does. */
-    @Override
-    public float getGlow(float partialTicks) {
-        return isActive() ? super.getGlow(partialTicks) : 0;
     }
 
     @Override
     public Pair<PackagerBlockEntity, PackagingRequest> processRequest(ItemStack stack, int amount, String address,
         int linkIndex, MutableBoolean finalLink, int orderId, @Nullable PackageOrderWithCrafts context,
         @Nullable IdentifiedInventory ignoredHandler) {
-        return super.processRequest(stack, amount, AddressLabels.push(label, address), linkIndex, finalLink, orderId,
+        return super.processRequest(stack, amount, AddressLabels.pushEndpoint(label, address), linkIndex, finalLink, orderId,
             context, ignoredHandler);
     }
 
@@ -99,16 +86,12 @@ public class TransitLinkBlockEntity extends PackagerLinkBlockEntity implements I
             .append(Component.translatable("block.create_transit.transit_link")
                 .withStyle(ChatFormatting.WHITE)));
 
-        if (!isActive())
-            tooltip.add(Component.literal("    ")
-                .append(Component.translatable("create_transit.transit_link.goggles.disabled")
-                    .withStyle(ChatFormatting.GRAY)));
-        else
-            tooltip.add(Component.literal("    ")
-                .append(Component.translatable("create_transit.transit_link.goggles.label",
-                    Component.literal(label)
-                        .withStyle(ChatFormatting.WHITE))
-                    .withStyle(ChatFormatting.GOLD)));
+        tooltip.add(Component.literal("    ")
+            .append(Component.translatable("create_transit.transit_link.goggles.label",
+                (label.isEmpty() ? Component.translatable("create_transit.transit_link.default_label")
+                    : Component.literal(label))
+                    .withStyle(ChatFormatting.WHITE))
+                .withStyle(ChatFormatting.GOLD)));
         return true;
     }
 

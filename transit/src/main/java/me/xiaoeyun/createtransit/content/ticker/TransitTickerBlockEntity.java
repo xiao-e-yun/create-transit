@@ -380,11 +380,11 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         return result;
     }
 
-    /** Labels of the Transit Links mounted here; a disabled link declares no border and so contributes none. */
+    /** Labels of the Transit Links mounted here; a link silenced by redstone declares no border and so contributes none. */
     private Set<String> collectAdjacentTransitLabels() {
         Set<String> result = new HashSet<>();
         for (PackagerLinkBlockEntity link : adjacentLinks())
-            if (link instanceof TransitLinkBlockEntity tlbe && tlbe.isActive())
+            if (link instanceof TransitLinkBlockEntity tlbe && isActive(tlbe))
                 result.add(tlbe.getLabel());
         return result;
     }
@@ -398,7 +398,7 @@ public class TransitTickerBlockEntity extends PackagerBlockEntity implements IHa
         boolean transit = false;
         for (PackagerLinkBlockEntity link : adjacentLinks()) {
             if (link instanceof TransitLinkBlockEntity tlbe)
-                transit |= tlbe.isActive();
+                transit |= isActive(tlbe);
             else
                 mount |= isActive(link);
         }

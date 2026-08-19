@@ -5,6 +5,7 @@ import com.simibubi.create.AllCreativeModeTabs;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.foundation.item.ItemDescription;
 
+import me.xiaoeyun.createtransit.client.ponder.CtPonderPlugin;
 import me.xiaoeyun.createtransit.content.dispatch.TimetableConductorInteraction;
 import me.xiaoeyun.createtransit.network.CtPackets;
 import me.xiaoeyun.createtransit.registry.CtBlockEntities;
@@ -47,6 +48,7 @@ public class CreateTransit {
         // Partial models must exist before the first model bake collects them,
         // which the constructor comfortably precedes and a setup event may not.
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> CtPartialModels::init);
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> modEventBus.addListener(CtPonderPlugin::register));
 
         modEventBus.addListener(CreateTransit::commonSetup);
         // Create's creative tab is filled from Create's own registrate, which

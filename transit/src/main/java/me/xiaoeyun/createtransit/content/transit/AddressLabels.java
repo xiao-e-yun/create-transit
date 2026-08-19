@@ -34,9 +34,8 @@ public final class AddressLabels {
     private static final String CLOSE = "]>";
 
     /**
-     * A label name meaning "any label", the way {@code *} means "any address"
-     * everywhere else in Create. Only a port's filter is read this way; a
-     * package addressed to every border at once is not a thing.
+     * A label name meaning "any label", read on either side the way {@code *}
+     * means "any address" everywhere else in Create.
      */
     public static final String WILDCARD = "*";
 
@@ -168,12 +167,10 @@ public final class AddressLabels {
      * unstripped label shadows the path behind it, keeping foreign packages
      * invisible to local address hardware until a gate peels the layer off.
      *
-     * A filter labelled {@link #WILDCARD} is the one exception, and it takes
-     * any label. Only the filter side, never the package's: every caller in
-     * Create passes the box first and the filter second, and a package that
-     * every border post would claim is a hole rather than a feature. An
-     * unlabelled package is still refused — transit is a space of its own, and
-     * a port that wants all local traffic too is a second port.
+     * A {@link #WILDCARD} label on either side is the one exception, and it
+     * matches any label, as vanilla's own {@code *} does. An unlabelled package
+     * is still refused — transit is a space of its own, and a port that wants
+     * all local traffic too is a second port.
      */
     @Nullable
     public static Boolean match(String boxAddress, String address) {
@@ -183,7 +180,7 @@ public final class AddressLabels {
             return null;
         if (!boxLabelled || !addressLabelled)
             return false;
-        if (WILDCARD.equals(headLabelName(address)))
+        if (WILDCARD.equals(headLabelName(address)) || WILDCARD.equals(headLabelName(boxAddress)))
             return true;
         return headLabel(boxAddress).equals(headLabel(address));
     }

@@ -19,7 +19,7 @@ Opens one network up to another. Bind the ticker to the network being offered, t
 
 ### Transit Link
 
-Declares a border. Every shipment it forwards is stamped with its transit label — and a link with no label declares no border, which is how you close one.
+Declares a border. Every shipment it forwards leaves stamped with its transit label, and an unnamed link stamps the default lane — so it works the moment you place it. Full redstone takes it out of service, as with any Stock Link.
 
 ### Transit Gate
 
