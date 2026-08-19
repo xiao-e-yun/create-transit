@@ -58,6 +58,12 @@ public class TransitGateScenes {
     private static final String FOREIGN_BORDER = "harbor";
     private static final String FOREIGN_DESTINATION = "drawer 9";
 
+    /**
+     * The diorama's northern lane, which is the only one this chapter runs on:
+     * the other two carry no sign, and a sign is half of what it teaches.
+     */
+    private static final int LANE = 2;
+
     public static void transitGate(SceneBuilder builder, SceneBuildingUtil util) {
         CreateSceneBuilder scene = new CreateSceneBuilder(builder);
         scene.title("transit_gate", "Crossing a border with the Transit Gate");
@@ -66,7 +72,7 @@ public class TransitGateScenes {
         // sign and this chapter hangs one halfway through. It opens unsigned:
         // the sign is a block of the diorama like any other, and stage() leaves
         // it out. The two gates behind it are the closing beat.
-        Lane lane = new Lane(util, 2);
+        Lane lane = new Lane(util);
         BlockPos sign = util.grid()
             .at(3, 2, 1);
         BlockPos middleGate = util.grid()
@@ -459,7 +465,7 @@ public class TransitGateScenes {
      * funnel and parked in the Item Vault, and comes back out through the gate —
      * what a gate faces away from is its own storage.
      */
-    private record Lane(SceneBuildingUtil util, int z) {
+    private record Lane(SceneBuildingUtil util) {
 
         BlockPos gate() {
             return at(3, 2);
@@ -510,7 +516,7 @@ public class TransitGateScenes {
 
         private BlockPos at(int x, int y) {
             return util.grid()
-                .at(x, y, z);
+                .at(x, y, LANE);
         }
     }
 
@@ -546,17 +552,18 @@ public class TransitGateScenes {
         scene.world()
             .showSection(util.select()
                 .position(4, 0, 0), Direction.UP);
-        // Up to the lane, not just to z=1. The diorama drives the three lanes in
-        // series -- cog, shaft, then each belt's far pulley passing it to the
-        // next -- so a chapter on lane 3 or 4 that stopped at the shaft left it
-        // pointing across a gap at a belt it did not reach.
+        // The diorama drives its three lanes in series -- cog, shaft, then each
+        // belt's far pulley passing it to the next -- and the shaft ends where
+        // the northern lane begins, so the drive reads whole with nothing after
+        // it. A chapter staging a lane further along would have to reveal the
+        // pulleys between.
         scene.world()
             .showSection(util.select()
-                .fromTo(5, 1, 0, 5, 1, lane.z() - 1), Direction.UP);
+                .fromTo(5, 1, 0, 5, 1, 1), Direction.UP);
         scene.idle(5);
         scene.world()
             .showSection(util.select()
-                .fromTo(5, 1, lane.z(), 0, 1, lane.z()), Direction.SOUTH);
+                .fromTo(5, 1, LANE, 0, 1, LANE), Direction.SOUTH);
         scene.idle(10);
         scene.world()
             .showSection(util.select()
@@ -613,7 +620,7 @@ public class TransitGateScenes {
         scene.idle(15);
         scene.world()
             .toggleRedstonePower(util.select()
-                .fromTo(3, 2, lane.z(), 3, 3, lane.z()));
+                .fromTo(3, 2, LANE, 3, 3, LANE));
         scene.effects()
             .indicateRedstone(lane.lever());
         return leverL;
@@ -623,7 +630,7 @@ public class TransitGateScenes {
         ElementLink<WorldSectionElement> leverL) {
         scene.world()
             .toggleRedstonePower(util.select()
-                .fromTo(3, 2, lane.z(), 3, 3, lane.z()));
+                .fromTo(3, 2, LANE, 3, 3, LANE));
         scene.idle(10);
         scene.world()
             .hideIndependentSection(leverL, Direction.SOUTH);

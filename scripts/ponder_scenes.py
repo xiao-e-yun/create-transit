@@ -318,13 +318,10 @@ def transit_gate_scene():
     at x=1 takes arrivals off it into the Item Vault that is the gates' shared
     customs buffer, the gate takes them back out and presents them at its front
     face, and the funnel at x=4 puts them back on the belt to ride off the far
-    end. Only the northern gate carries a sign, which is what the third chapter
-    is about; the first two stage a lane that has none.
-
-    All three chapters load this one file -- a scene's id and the schematic it
-    loads are unrelated in Ponder -- and each stages one lane, so the levers are
-    per-lane too: the middle one drives chapter one's redstone beat and the
-    northern one chapter three's.
+    end. Only the northern gate carries a sign, and that is the lane the
+    crossing chapter stages. The other two are scenery for its closing beat --
+    gates with no sign of their own, reached by the label on this one -- so
+    nothing ever travels their belts and only the northern gate needs a lever.
 
     Two things the export spells that the eye does not. A belt's `facing` is
     which end it was dragged from, not which way it moves -- getMovementFacing
@@ -361,12 +358,11 @@ def transit_gate_scene():
         at(s, (4, 2, z), "create:andesite_belt_funnel",
            facing="east", powered="false", shape="retracted", waterlogged="false")
     vault(s, (2, 2, 2), size=1, length=3)
-    # facing=north means the sign hangs on the block to its south -- the first gate.
+    # facing=north means the sign hangs on the block to its south -- the northern gate.
     at(s, (3, 2, 1), "minecraft:oak_wall_sign", sign(LABEL), facing="north", waterlogged="false")
-    # A lever on top of the gate each redstone beat is staged on: chapter one
-    # pulses the middle lane, chapter three the northern one.
+    # The one redstone beat is staged on the signed gate, so it is the only one
+    # that needs a lever.
     at(s, (3, 3, 2), "minecraft:lever", face="floor", facing="east", powered="false")
-    at(s, (3, 3, 3), "minecraft:lever", face="floor", facing="east", powered="false")
     cover_belts(s)
     return s
 
