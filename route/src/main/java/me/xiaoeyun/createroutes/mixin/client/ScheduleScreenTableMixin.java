@@ -36,7 +36,7 @@ import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.simple.SimpleChannel;
 
-/** Hangs the route layout on Create's schedule screen. Every injection but {@code createTransit$hideBorrowedConditions} does nothing unless a {@link RouteView} is up. */
+/** Hangs the route layout on Create's schedule screen; every injection does nothing unless a {@link RouteView} is up. */
 // remap = false: a Create class, so its names are never obfuscated — except members inherited
 // from Minecraft (init, removed, mouse/key handlers), which carry SRG names in production and
 // mark remap = true individually.

@@ -429,7 +429,7 @@ public class RouteView {
 
     /** The button onto a stop's own conditions, or nothing where there are none to have. */
     private Action conditionsOf(ScheduleEntry entry, int index) {
-        if (!entry.instruction.supportsConditions() || RouteReference.of(entry.instruction) != null)
+        if (!entry.instruction.supportsConditions())
             return null;
 
         return (graphics, mouseX, mouseY, click) -> {
