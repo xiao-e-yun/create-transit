@@ -268,10 +268,14 @@ public class FollowRouteInstruction extends TextScheduleInstruction {
      * True when this entry can send a train nowhere: the route it names is gone, or expansion left no stops
      * behind it.
      *
-     * <p>A block's stops sit immediately behind its header, so the entry after this one answers the second
-     * without flattening the route again.
+     * <p>A block's stops sit immediately behind its header, so the entry after this one answers the last
+     * case without flattening the route again.
      */
     private boolean stuck(ScheduleRuntime runtime, Level level) {
+        // A stand-in stands where a nested route resolved to nothing, so it is the gap itself.
+        if (RouteExpansion.isStop(runtime.schedule.entries.get(runtime.currentEntry)))
+            return true;
+
         RouteReference reference = reference();
         MinecraftServer server = level.getServer();
         if (reference != null && server != null && RouteStore.get(server)

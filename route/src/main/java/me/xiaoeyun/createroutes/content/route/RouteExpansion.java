@@ -89,6 +89,10 @@ public class RouteExpansion {
     /** True when any block was built against a route that has changed since. */
     public static boolean isStale(List<ScheduleEntry> entries, RouteStore store) {
         for (ScheduleEntry entry : entries) {
+            // An inserted stop carries no hash of its own; only the headers were stamped.
+            if (isStop(entry))
+                continue;
+
             RouteReference reference = RouteReference.of(entry.instruction);
             if (reference != null && entry.instruction.getData()
                 .getInt(FollowRouteInstruction.NBT_HASH) != store.hashOf(reference.route()))
