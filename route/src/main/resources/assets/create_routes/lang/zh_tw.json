@@ -26,7 +26,9 @@
   "create_routes.schedule.instruction.follow_route.configure": "設定路線",
   "create_routes.schedule.instruction.follow_route.mark.reversed": "反",
   "create_routes.schedule.instruction.follow_route.mark.skipped": "略",
+  "create_routes.schedule.instruction.follow_route.missing": "未知路線",
   "create_routes.schedule.instruction.follow_route.reversed": "反向運行這條路線",
   "create_routes.schedule.instruction.follow_route.skipped": "略過終點站",
-  "create_routes.schedule.instruction.follow_route.summary": "跟隨一條共用路線"
+  "create_routes.schedule.instruction.follow_route.summary": "跟隨一條共用路線",
+  "create_routes.train.status.invalid_route": "時刻表中有無效的路線"
 }

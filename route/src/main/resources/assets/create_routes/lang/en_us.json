@@ -26,7 +26,9 @@
   "create_routes.schedule.instruction.follow_route.configure": "Configure route",
   "create_routes.schedule.instruction.follow_route.mark.reversed": "Rev",
   "create_routes.schedule.instruction.follow_route.mark.skipped": "Skip",
+  "create_routes.schedule.instruction.follow_route.missing": "Unknown route",
   "create_routes.schedule.instruction.follow_route.reversed": "Run the route backwards",
   "create_routes.schedule.instruction.follow_route.skipped": "Skip the terminus",
-  "create_routes.schedule.instruction.follow_route.summary": "Follow a shared route"
+  "create_routes.schedule.instruction.follow_route.summary": "Follow a shared route",
+  "create_routes.train.status.invalid_route": "A Route in this Schedule is invalid"
 }

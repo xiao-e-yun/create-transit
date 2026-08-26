@@ -98,9 +98,8 @@ public class Stations {
 
     /** Which station names a stop means, or nothing at all where it is not going anywhere. */
     public static Predicate<String> meant(ScheduleInstruction instruction) {
-        // Checked before the destination test: a follower is also a
-        // DestinationInstruction, but it stands for every station its whole route
-        // reaches, where its own filter is only the stop it is heading for now.
+        // A follower is a header rather than a stop, so it has no filter of its own —
+        // what it means is every station its whole route reaches.
         RouteReference reference = RouteReference.of(instruction);
         if (reference != null)
             return ClientRoutes.reach(reference.route());

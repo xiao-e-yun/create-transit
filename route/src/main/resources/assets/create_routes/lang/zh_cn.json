@@ -26,7 +26,9 @@
   "create_routes.schedule.instruction.follow_route.configure": "设置路线",
   "create_routes.schedule.instruction.follow_route.mark.reversed": "反",
   "create_routes.schedule.instruction.follow_route.mark.skipped": "略",
+  "create_routes.schedule.instruction.follow_route.missing": "未知路线",
   "create_routes.schedule.instruction.follow_route.reversed": "反向运行这条路线",
   "create_routes.schedule.instruction.follow_route.skipped": "跳过终点站",
-  "create_routes.schedule.instruction.follow_route.summary": "跟随一条共用路线"
+  "create_routes.schedule.instruction.follow_route.summary": "跟随一条共用路线",
+  "create_routes.train.status.invalid_route": "时刻表中有无效的路线"
 }

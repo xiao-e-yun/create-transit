@@ -87,13 +87,19 @@ public class Route {
             }
 
             Route nested = lookup.apply(reference.route());
-            if (nested == null)
-                continue;
-
             int before = out.size();
-            nested.collect(out, lookup, reference.reversed() != reversed, visiting, depth + 1);
+            if (nested != null)
+                nested.collect(out, lookup, reference.reversed() != reversed, visiting, depth + 1);
+
+            if (out.size() == before) {
+                // Gone, empty, or cyclic all come to the same thing: stand in, so a train stops at the gap
+                // rather than running a quietly shortened route.
+                out.add(entry.clone());
+                continue;
+            }
+
             // The omitted terminus sits at the head of the contribution when the enclosing direction is reversed.
-            if (reference.skipTerminus() && out.size() > before)
+            if (reference.skipTerminus())
                 out.remove(reversed ? before : out.size() - 1);
         }
 
@@ -117,6 +123,30 @@ public class Route {
             out.add(copy);
         }
         return out;
+    }
+
+    /** This route's own content; {@link RouteStore} folds in the routes it references. */
+    int contentHash() {
+        int hash = name.hashCode();
+        for (ScheduleEntry entry : entries) {
+            hash = hash * 31 + entry.instruction.getId()
+                .hashCode();
+            hash = hash * 31 + entry.instruction.getData()
+                .hashCode();
+            hash = hash * 31 + mixConditions(entry.conditions);
+        }
+        return hash * 31 + mixConditions(defaults);
+    }
+
+    private static int mixConditions(List<List<ScheduleWaitCondition>> columns) {
+        int hash = 1;
+        for (List<ScheduleWaitCondition> column : columns)
+            for (ScheduleWaitCondition condition : column)
+                hash = hash * 31 + condition.getId()
+                    .hashCode() * 31
+                    + condition.getData()
+                        .hashCode();
+        return hash;
     }
 
     /** True when any reference this route holds leads back to it. */

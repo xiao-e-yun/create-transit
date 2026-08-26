@@ -86,6 +86,11 @@ public class RouteEditSession {
             return;
         }
 
+        // Screen state, and it would otherwise count as content and re-expand every train after a look at the editor.
+        for (ScheduleEntry entry : edited.entries)
+            entry.instruction.getData()
+                .remove(FollowRouteInstruction.NBT_INDEX);
+
         List<ScheduleEntry> before = route.entries;
         route.entries = edited.entries;
         if (route.containsCycle(store::get)) {

@@ -8,24 +8,22 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.trains.entity.TrainStatus;
 import com.simibubi.create.content.trains.graph.DiscoveredPath;
 import com.simibubi.create.content.trains.schedule.ScheduleScreen;
 import com.simibubi.create.foundation.gui.AllIcons;
 import com.simibubi.create.foundation.gui.ModularGuiLineBuilder;
 import com.simibubi.create.foundation.gui.widget.IconButton;
 import com.simibubi.create.foundation.gui.widget.SelectionScrollInput;
-import com.simibubi.create.content.trains.schedule.ScheduleEntry;
 import com.simibubi.create.content.trains.schedule.ScheduleRuntime;
 import com.simibubi.create.content.trains.schedule.ScheduleRuntime.State;
-import com.simibubi.create.content.trains.schedule.destination.DestinationInstruction;
-import com.simibubi.create.content.trains.station.GlobalStation;
+import com.simibubi.create.content.trains.schedule.destination.TextScheduleInstruction;
 
 import me.xiaoeyun.createroutes.CreateRoutes;
 import me.xiaoeyun.createroutes.client.CtSkin;
 import me.xiaoeyun.createroutes.client.RouteListScreen;
 import me.xiaoeyun.createroutes.client.RouteScreen;
 import me.xiaoeyun.createroutes.client.RouteTrail;
-import me.xiaoeyun.createroutes.schedule.Repeats;
 import me.xiaoeyun.createroutes.mixin.client.ModularGuiLineBuilderAccessor;
 import me.xiaoeyun.createroutes.mixin.client.ScheduleScreenAccessor;
 import me.xiaoeyun.createroutes.network.CrPackets;
@@ -45,31 +43,25 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
- * One schedule entry standing for a whole {@link Route}; extends {@link DestinationInstruction} because
- * {@code ScheduleRuntime.predictForEntry} ignores anything else, and resolves one stop at a time so an
- * edited route takes effect on the next stop rather than needing a re-stamped copy.
+ * One schedule entry naming a whole {@link Route}, and the header of the stops {@link RouteExpansion} inserts
+ * after it. Not a destination: a header that counted as a stop would reach every station board as one more,
+ * nameless, place to go.
  */
-public class FollowRouteInstruction extends DestinationInstruction implements Repeats {
+public class FollowRouteInstruction extends TextScheduleInstruction {
 
-    /** Inherited from {@code TextScheduleInstruction}; holds the route's display name, refreshed from the route each time this entry starts. */
+    /** Inherited from {@code TextScheduleInstruction}; holds the route's display name. */
     public static final String NBT_TEXT = "Text";
 
     /** The route this entry follows, as an id; blank tells a reference that never resolved apart from one whose route was deleted. */
     public static final String NBT_ROUTE = "Route";
 
     /** Screen position of the picker, not a route id — rewritten from {@link #NBT_ROUTE} whenever the editor opens. */
-    private static final String NBT_INDEX = "RouteIndex";
+    static final String NBT_INDEX = "RouteIndex";
     public static final String NBT_REVERSED = "Reversed";
     public static final String NBT_SKIP_TERMINUS = "SkipTerminus";
 
-    /** How far through the flattened route this train has gotten; advances only once standing at the sent station — Create gives no arrival hook. */
-    public static final String NBT_PROGRESS = "Progress";
-
-    /** The station last sent to, while the train is still travelling there. Transient. */
-    private static final String NBT_SENT = "Sent";
-
-    /** The station the current stop resolved to, so displays have a name. Transient. */
-    public static final String NBT_RESOLVED = "Resolved";
+    /** The route hash this entry's stops were expanded against; {@link RouteExpansion} owns it. */
+    public static final String NBT_HASH = "Hash";
 
     // Spelled out, not built from a prefix, so scripts/lang_audit.py can see these keys.
     private static final String LANG_SUMMARY =
@@ -80,6 +72,10 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         "create_routes.schedule.instruction.follow_route.mark.reversed";
     private static final String LANG_MARK_SKIPPED =
         "create_routes.schedule.instruction.follow_route.mark.skipped";
+    private static final String LANG_MISSING =
+        "create_routes.schedule.instruction.follow_route.missing";
+    private static final String LANG_STATUS_INVALID =
+        "create_routes.train.status.invalid_route";
     private static final String LANG_REVERSED =
         "create_routes.schedule.instruction.follow_route.reversed";
     private static final String LANG_SKIPPED =
@@ -93,26 +89,39 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         return CreateRoutes.asResource("follow_route");
     }
 
+    /** The stops carry their own waits, borrowed from the route's defaults where they declare none. */
     @Override
     public boolean supportsConditions() {
-        return true;
+        return false;
     }
 
-    /** The station this entry is currently heading for, not the route's name. */
-    @Override
-    public String getFilter() {
-        return getData().getString(NBT_RESOLVED);
-    }
-
-    /** The route's name, marked when this reference is reversed or skips its terminus. */
+    /** The route's name as it was picked, marked when this reference is reversed or skips its terminus. */
     @Override
     public Pair<ItemStack, Component> getSummary() {
-        MutableComponent text = Component.literal(getLabelText());
+        MutableComponent text = label();
         if (flag(NBT_REVERSED))
             text.append(mark(LANG_MARK_REVERSED));
         if (flag(NBT_SKIP_TERMINUS))
             text.append(mark(LANG_MARK_SKIPPED));
         return Pair.of(AllBlocks.TRACK_STATION.asStack(), text);
+    }
+
+    /** The name picked, or a standing-in one — a deleted route's id never comes back, so its old name is a lie. */
+    private MutableComponent label() {
+        return deleted() ? Component.translatable(LANG_MISSING)
+            .withStyle(ChatFormatting.ITALIC) : Component.literal(getLabelText());
+    }
+
+    /**
+     * True when this points at a route the world no longer has.
+     *
+     * <p>The name shown is the one picked, so without this a deleted route reads as a working entry. Only a
+     * client is told which routes exist; one that knows of none cannot tell, and says nothing.
+     */
+    private boolean deleted() {
+        RouteReference reference = reference();
+        return reference != null && !ClientRoutes.all()
+            .isEmpty() && ClientRoutes.nameOf(reference.route()) == null;
     }
 
     private static MutableComponent mark(String key) {
@@ -240,113 +249,49 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         getData().putString(NBT_TEXT, real ? ClientRoutes.nameOf(ids.get(index)) : "");
     }
 
+    /** Steps aside so the stops behind it can run. */
     @Override
     @Nullable
     public DiscoveredPath start(ScheduleRuntime runtime, Level level) {
-        MinecraftServer server = level.getServer();
-        RouteReference reference = reference();
-        if (server == null || reference == null)
-            return skip(runtime);
-
-        RouteStore store = RouteStore.get(server);
-        Route route = store.get(reference.route());
-        if (route == null) {
-            runtime.train.status.failedNavigationNoTarget(getLabelText());
+        // Held rather than skipped: a train quietly running a shortened schedule hides whatever emptied the route.
+        if (stuck(runtime, level)) {
+            report(runtime.train.status);
             runtime.startCooldown();
             return null;
         }
-
-        getData().putString(NBT_TEXT, route.name);
-
-        List<ScheduleEntry> stops = route.flatten(store::get, reference.reversed(), reference.skipTerminus());
-        int progress = getData().getInt(NBT_PROGRESS);
-
-        // Create re-runs the live entry mid-journey and on assembly, not just on departure — answered for the stop already under way.
-        if (runtime.train.navigation.destination != null) {
-            if (progress >= stops.size())
-                return null;
-            int held = runtime.currentEntry;
-            DiscoveredPath again = stops.get(progress).instruction.start(runtime, level);
-            if (again == null)
-                runtime.currentEntry = held;
-            return again;
-        }
-
-        // Standing at the sent station is the only evidence of arrival — Create gives no arrival callback.
-        String sent = getData().getString(NBT_SENT);
-        GlobalStation here = runtime.train.getCurrentStation();
-        if (!sent.isEmpty() && here != null && here.name.equals(sent)) {
-            progress++;
-            getData().putInt(NBT_PROGRESS, progress);
-            getData().remove(NBT_SENT);
-        }
-
-        while (progress < stops.size()) {
-            ScheduleEntry stop = stops.get(progress);
-
-            // Instructions signal "nothing for me here" by advancing currentEntry themselves, so it must be read before the stop runs.
-            int before = runtime.currentEntry;
-            DiscoveredPath path = stop.instruction.start(runtime, level);
-
-            if (path != null) {
-                // Progress isn't counted here — only on arrival; the runtime still decides whether the train actually goes.
-                getData().putInt(NBT_PROGRESS, progress);
-                getData().putString(NBT_SENT, path.destination.name);
-                getData().putString(NBT_RESOLVED, path.destination.name);
-                adopt(runtime, stop);
-                return path;
-            }
-
-            // currentEntry unchanged means the stop wants another try; retried on the runtime's own cooldown.
-            if (runtime.currentEntry == before)
-                return null;
-
-            // currentEntry moved means the stop gave up on itself; restored here so only this route's own progress advances,
-            // not the runtime past this whole entry.
-            runtime.currentEntry = before;
-            progress++;
-            getData().putInt(NBT_PROGRESS, progress);
-        }
-
-        return skip(runtime);
-    }
-
-    /** Copies the stop's conditions onto this entry, since the runtime only waits on the conditions of the entry it is sitting on. */
-    private void adopt(ScheduleRuntime runtime, ScheduleEntry stop) {
-        if (runtime.schedule == null || runtime.currentEntry >= runtime.schedule.entries.size())
-            return;
-        runtime.schedule.entries.get(runtime.currentEntry).conditions = stop.conditions;
-    }
-
-    /** True while a route is part way through, so Create doesn't step the runtime past this entry after every stop. */
-    @Override
-    public boolean again() {
-        return getData().getInt(NBT_PROGRESS) > 0 || getData().contains(NBT_SENT);
-    }
-
-    /** Leaves the route and advances the schedule; a cyclic schedule comes straight back to this entry with progress reset. */
-    @Nullable
-    private DiscoveredPath skip(ScheduleRuntime runtime) {
-        getData().putInt(NBT_PROGRESS, 0);
-        getData().remove(NBT_SENT);
         runtime.state = State.PRE_TRANSIT;
         runtime.currentEntry++;
-        runtime.startCooldown();
         return null;
     }
 
-    /** Drops what only makes sense while a particular train is running this route. */
-    public void clearProgress() {
-        getData().remove(NBT_PROGRESS);
-        getData().remove(NBT_SENT);
-        getData().remove(NBT_RESOLVED);
+    /**
+     * True when this entry can send a train nowhere: the route it names is gone, or expansion left no stops
+     * behind it.
+     *
+     * <p>A block's stops sit immediately behind its header, so the entry after this one answers the second
+     * without flattening the route again.
+     */
+    private boolean stuck(ScheduleRuntime runtime, Level level) {
+        RouteReference reference = reference();
+        MinecraftServer server = level.getServer();
+        if (reference != null && server != null && RouteStore.get(server)
+            .get(reference.route()) == null)
+            return true;
+
+        int next = runtime.currentEntry + 1;
+        return next >= runtime.schedule.entries.size()
+            || !RouteExpansion.isStop(runtime.schedule.entries.get(next));
     }
 
-    @Override
-    public void clearTransient(ScheduleEntry entry) {
-        clearProgress();
-        // Empty is this entry's resting state — it borrows whichever stop's conditions it's heading for.
-        entry.conditions = new ArrayList<>();
+    /** Create's own no_match names a station filter, which a route is not; the latch is the one it uses too. */
+    private static void report(TrainStatus status) {
+        if (status.navigation)
+            return;
+        status.addMessage(new TrainStatus.StatusMessage(Component.literal(" - ")
+            .withStyle(ChatFormatting.GRAY)
+            .append(Component.translatable(LANG_STATUS_INVALID)
+                .withStyle(style -> style.withColor(0xFFD3B4)))));
+        status.navigation = true;
     }
 
     /** Overridden because {@code TextScheduleInstruction} builds its key with {@code CreateLang}, under Create's namespace rather than ours. */
@@ -355,7 +300,7 @@ public class FollowRouteInstruction extends DestinationInstruction implements Re
         // type is ignored deliberately — this instruction is only ever asked for its title as an instruction.
         return ImmutableList.of(Component.translatable(LANG_SUMMARY)
             .withStyle(ChatFormatting.GOLD),
-            Component.translatable("create.generic.in_quotes", Component.literal(getLabelText())));
+            deleted() ? label() : Component.translatable("create.generic.in_quotes", label()));
     }
 
 }
