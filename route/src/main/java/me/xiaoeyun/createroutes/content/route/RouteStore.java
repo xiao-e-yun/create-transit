@@ -1,9 +1,12 @@
 package me.xiaoeyun.createroutes.content.route;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -11,7 +14,6 @@ import javax.annotation.Nullable;
 import com.simibubi.create.content.trains.schedule.ScheduleEntry;
 import com.simibubi.create.content.trains.schedule.destination.DestinationInstruction;
 
-import me.xiaoeyun.createroutes.network.CrPackets;
 import me.xiaoeyun.createroutes.network.RouteListPacket;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -29,6 +31,9 @@ public class RouteStore extends SavedData {
     private static final String NBT_ROUTES = "Routes";
 
     private final Map<UUID, Route> routes = new LinkedHashMap<>();
+
+    /** Each route's content folded together with everything it references; rebuilt whenever any route changes. */
+    private final Map<UUID, Integer> hashes = new HashMap<>();
 
     public static RouteStore get(MinecraftServer server) {
         return server.overworld()
@@ -104,6 +109,56 @@ public class RouteStore extends SavedData {
         return true;
     }
 
+    /** Routes are mutated in place as well as replaced, so the hashes are rebuilt wherever a change is recorded. */
+    @Override
+    public void setDirty(boolean dirty) {
+        if (dirty)
+            rehash();
+        super.setDirty(dirty);
+    }
+
+    /** What a train's expansion of a route was checked against; zero for a route that no longer exists. */
+    public int hashOf(UUID id) {
+        return hashes.getOrDefault(id, 0);
+    }
+
+    /**
+     * Rebuilds every hash, pulling rather than pushing so nothing has to know which routes reference which.
+     *
+     * <p>Routes are written by hand and number in the tens, so recomputing all of them beats keeping an index
+     * of dependents correct.
+     */
+    private void rehash() {
+        hashes.clear();
+        for (UUID id : routes.keySet())
+            effectiveHash(id, new HashSet<>());
+    }
+
+    private int effectiveHash(UUID id, Set<UUID> visiting) {
+        Integer done = hashes.get(id);
+        if (done != null)
+            return done;
+
+        Route route = routes.get(id);
+        // A route that is gone contributes zero, and so does a cycle — only a hand-edited save holds one, and
+        // which member of it absorbs the cut then depends on iteration order.
+        if (route == null || !visiting.add(id))
+            return 0;
+
+        int hash = route.contentHash();
+        for (ScheduleEntry entry : route.entries) {
+            RouteReference reference = RouteReference.of(entry.instruction);
+            if (reference != null)
+                hash = hash * 31 + effectiveHash(reference.route(), visiting);
+        }
+
+        visiting.remove(id);
+        // Never zero, or a route deleted under a running train would read as one that had not changed.
+        hash = hash == 0 ? 1 : hash;
+        hashes.put(id, hash);
+        return hash;
+    }
+
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
@@ -120,6 +175,8 @@ public class RouteStore extends SavedData {
             if (route != null)
                 store.routes.put(route.id, route);
         }
+        // Once, after every route is present — a route read earlier may reference one read later.
+        store.rehash();
         return store;
     }
 

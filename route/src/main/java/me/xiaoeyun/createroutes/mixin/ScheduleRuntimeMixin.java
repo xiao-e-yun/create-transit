@@ -1,27 +1,33 @@
 package me.xiaoeyun.createroutes.mixin;
 
-import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import com.simibubi.create.content.trains.graph.DiscoveredPath;
+import com.simibubi.create.content.trains.entity.Train;
 import com.simibubi.create.content.trains.schedule.Schedule;
-import com.simibubi.create.content.trains.schedule.ScheduleEntry;
 import com.simibubi.create.content.trains.schedule.ScheduleRuntime;
 
-import me.xiaoeyun.createroutes.schedule.Repeats;
+import me.xiaoeyun.createroutes.content.route.RouteExpansion;
+import me.xiaoeyun.createroutes.content.route.RouteStore;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 /**
- * Two things Create's runtime has no room to ask: clears a route follower's transient per-train state when a
- * schedule is taken back out of a train, and lets an entry say it isn't finished — see {@link Repeats}.
+ * Keeps a running train's schedule holding the stops its routes currently name, and takes them back out before
+ * Create hands the schedule to a player. Between the two hooks it is ordinary entries all the way down.
  */
 // remap = false: a Create class, so its names are never obfuscated.
 @Mixin(value = ScheduleRuntime.class, remap = false)
-public class ScheduleRuntimeMixin {
+public abstract class ScheduleRuntimeMixin {
+
+    @Shadow
+    public Train train;
 
     @Shadow
     public Schedule schedule;
@@ -29,26 +35,44 @@ public class ScheduleRuntimeMixin {
     @Shadow
     public int currentEntry;
 
-    @Inject(method = "returnSchedule", at = @At("HEAD"))
-    private void createTransit$forgetProgress(CallbackInfoReturnable<ItemStack> cir) {
-        if (schedule == null)
+    @Shadow
+    public boolean isAutoSchedule;
+
+    @Shadow
+    public abstract void setSchedule(Schedule schedule, boolean auto);
+
+    /**
+     * Rebuilds stale blocks at departure, when Create's position-indexed condition bookkeeping is spent.
+     *
+     * <p>Create also calls this mid-leg to re-plan a route it is already flying, from {@code
+     * Train.updateNavigationTarget} and {@code StationBlockEntity.enterAssemblyMode}; swapping the schedule
+     * under either would retarget the train between stations, so only the standing case is taken.
+     */
+    @Inject(method = "startCurrentInstruction", at = @At("HEAD"))
+    private void createTransit$refreshRoutes(Level level, CallbackInfoReturnable<DiscoveredPath> cir) {
+        MinecraftServer server = level.getServer();
+        if (server == null || schedule == null || train.navigation.destination != null)
             return;
-        for (ScheduleEntry entry : schedule.entries)
-            if (entry.instruction instanceof Repeats repeats)
-                repeats.clearTransient(entry);
+
+        RouteStore store = RouteStore.get(server);
+        if (!RouteExpansion.isStale(schedule.entries, store))
+            return;
+
+        // Through setSchedule rather than by assigning the field: shrinking a schedule silently leaves readers
+        // holding entry indices that no longer exist, and this is the call they all watch for.
+        RouteExpansion.Expansion rebuilt =
+            RouteExpansion.expand(level.registryAccess(), schedule, store, currentEntry);
+        setSchedule(rebuilt.schedule(), isAutoSchedule);
+        currentEntry = rebuilt.currentEntry();
     }
 
-    /** Keeps the entry when its instruction says it has more to do; redirects the field write since {@code tickConditions} advances currentEntry via two separate PUTFIELDs, not a method call. */
-    @Redirect(method = "tickConditions",
-        at = @At(value = "FIELD",
-            target = "Lcom/simibubi/create/content/trains/schedule/ScheduleRuntime;currentEntry:I",
-            opcode = Opcodes.PUTFIELD))
-    private void createTransit$stayWhileUnfinished(ScheduleRuntime runtime, int next) {
-        if (currentEntry < schedule.entries.size()
-            && schedule.entries.get(currentEntry).instruction instanceof Repeats repeats
-            && repeats.again())
-            return;
-        currentEntry = next;
+    /** Hands back what the player wrote, not what the train was running. */
+    @Inject(method = "returnSchedule", at = @At("HEAD"))
+    private void createTransit$collapseRoutes(HolderLookup.Provider registries,
+        CallbackInfoReturnable<ItemStack> cir) {
+        // Set before Create reads it into savedProgress, so a returned schedule points at an entry that exists.
+        if (schedule != null)
+            currentEntry = RouteExpansion.collapse(schedule.entries, currentEntry);
     }
 
 }

@@ -27,7 +27,6 @@ import com.simibubi.create.foundation.gui.widget.Indicator;
 import me.xiaoeyun.createroutes.client.RouteHost;
 import me.xiaoeyun.createroutes.client.RouteScreen;
 import me.xiaoeyun.createroutes.client.RouteView;
-import me.xiaoeyun.createroutes.content.route.FollowRouteInstruction;
 import me.xiaoeyun.createroutes.content.route.RouteEditSession;
 import net.createmod.catnip.gui.element.GuiGameElement;
 import net.minecraft.client.Minecraft;
@@ -38,7 +37,7 @@ import net.createmod.catnip.platform.services.NetworkHelper;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.ItemStack;
 
-/** Hangs the route layout on Create's schedule screen. Every injection but {@code createTransit$hideBorrowedConditions} does nothing unless a {@link RouteView} is up. */
+/** Hangs the route layout on Create's schedule screen; every injection does nothing unless a {@link RouteView} is up. */
 // remap = false: NeoForge runs on official mappings, so nothing here is ever obfuscated -- the
 // members inherited from Minecraft included. The Forge branch had to opt those back in, because
 // production carried SRG names there and these ones alone would have needed translating.
@@ -207,18 +206,6 @@ public abstract class ScheduleScreenTableMixin implements RouteScreen {
     @Override
     public UUID editingRoute() {
         return createTransit$view == null ? null : createTransit$view.route();
-    }
-
-    /**
-     * Hides a route follower's borrowed conditions in any schedule screen, a train's own included: the card
-     * layout is driven by that one flag. The instruction still reports true everywhere else, since it does
-     * wait and its conditions must still reach disk.
-     */
-    @Redirect(method = { "renderSchedule", "renderScheduleEntry", "action" },
-        at = @At(value = "INVOKE",
-            target = "Lcom/simibubi/create/content/trains/schedule/destination/ScheduleInstruction;supportsConditions()Z"))
-    private boolean createTransit$hideBorrowedConditions(ScheduleInstruction instruction) {
-        return instruction.supportsConditions() && !(instruction instanceof FollowRouteInstruction);
     }
 
     /** Drops the buttons that only mean something to a train's own schedule — a route is not cyclic, and progress belongs to each train following it. */
