@@ -2,10 +2,12 @@ package me.xiaoeyun.createtransit.content.transit;
 
 import java.util.List;
 
+import com.simibubi.create.Create;
 import com.simibubi.create.content.logistics.box.PackageItem;
 import com.simibubi.create.content.logistics.box.PackageStyles;
 import com.simibubi.create.content.logistics.box.PackageStyles.PackageStyle;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -19,13 +21,31 @@ public final class TransitPackaging {
 
     private TransitPackaging() {}
 
+    /** Whether this is transit mail: the address decides, since not every package can wear the transit box. */
+    public static boolean isTransit(ItemStack stack) {
+        return PackageItem.isPackage(stack) && AddressLabels.startsWithLabel(PackageItem.getAddress(stack));
+    }
+
+    /**
+     * Whether the box is known to be nothing but its item slots, and so can be swapped or repacked.
+     * Another mod's package may keep cargo elsewhere -- a fluid canister's slots are empty -- so
+     * only Create's boxes and ours qualify.
+     */
+    public static boolean isStandardBox(ItemStack stack) {
+        if (!PackageItem.isPackage(stack))
+            return false;
+        return stack.getItem() instanceof TransitPackageItem || Create.ID.equals(BuiltInRegistries.ITEM
+            .getKey(stack.getItem())
+            .getNamespace());
+    }
+
     /**
      * The same package, in the box its address calls for. Returns the stack
      * unchanged whenever it is already right, which is the common case and
-     * costs nothing.
+     * costs nothing, or is not a box of ours to swap.
      */
     public static ItemStack restyle(ItemStack box) {
-        if (box.isEmpty() || !PackageItem.isPackage(box))
+        if (box.isEmpty() || !isStandardBox(box))
             return box;
 
         boolean foreign = AddressLabels.startsWithLabel(PackageItem.getAddress(box));

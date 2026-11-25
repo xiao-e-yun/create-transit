@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import com.simibubi.create.content.logistics.box.PackageItem;
 import com.simibubi.create.content.trains.schedule.destination.FetchPackagesInstruction;
 
-import me.xiaoeyun.createtransit.content.transit.TransitPackageItem;
+import me.xiaoeyun.createtransit.content.transit.TransitPackaging;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -22,7 +22,7 @@ public abstract class FetchPackagesInstructionMixin {
         at = @At(value = "INVOKE",
             target = "Lcom/simibubi/create/content/logistics/box/PackageItem;isPackage(Lnet/minecraft/world/item/ItemStack;)Z"))
     private boolean createTransit$skipTransitMail(ItemStack stack) {
-        return PackageItem.isPackage(stack) && !(stack.getItem() instanceof TransitPackageItem);
+        return PackageItem.isPackage(stack) && !TransitPackaging.isTransit(stack);
     }
 
 }
