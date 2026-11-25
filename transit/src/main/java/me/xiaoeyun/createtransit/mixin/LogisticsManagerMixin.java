@@ -37,7 +37,7 @@ import net.minecraft.world.item.ItemStack;
  *
  * <p>{@code findPackagersForRequest} spends the order's crafts on the first link to take any of
  * the order and nulls them for the rest. A ticker re-orders across the border, and the crafts are
- * the only thing telling the far-side gate to repack by recipe.
+ * the only thing telling the destination's Re-Packager to repack by recipe.
  */
 // remap = false: the target is a Create class, so its names are never
 // obfuscated and there is no SRG mapping for the annotation processor.
