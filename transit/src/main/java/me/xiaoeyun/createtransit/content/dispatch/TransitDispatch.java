@@ -20,7 +20,7 @@ import com.simibubi.create.content.trains.schedule.ScheduleRuntime;
 import com.simibubi.create.content.trains.station.GlobalPackagePort;
 import com.simibubi.create.content.trains.station.GlobalStation;
 
-import me.xiaoeyun.createtransit.content.transit.TransitPackageItem;
+import me.xiaoeyun.createtransit.content.transit.TransitPackaging;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -147,7 +147,7 @@ public class TransitDispatch {
      * that claimed this station, and a dispatched train carries nothing else.
      */
     public static boolean mayLoad(Train train, GlobalStation station, ItemStack stack) {
-        boolean transit = stack.getItem() instanceof TransitPackageItem;
+        boolean transit = TransitPackaging.isTransit(stack);
         if (TransitTimetableInstruction.depotOf(train.runtime.getSchedule()) == null)
             return !transit;
         if (!transit)
@@ -243,7 +243,7 @@ public class TransitDispatch {
 
             for (int slot = 0; slot < inventory.getSlots(); slot++) {
                 ItemStack stack = inventory.getStackInSlot(slot);
-                if (stack.getItem() instanceof TransitPackageItem
+                if (TransitPackaging.isTransit(stack)
                     && !PackageItem.matchAddress(stack, port.address))
                     return true;
             }
@@ -284,7 +284,7 @@ public class TransitDispatch {
                 continue;
             for (int slot = 0; slot < inventory.getSlots(); slot++) {
                 ItemStack stack = inventory.getStackInSlot(slot);
-                if (stack.getItem() instanceof TransitPackageItem)
+                if (TransitPackaging.isTransit(stack))
                     packages.add(stack);
             }
         }

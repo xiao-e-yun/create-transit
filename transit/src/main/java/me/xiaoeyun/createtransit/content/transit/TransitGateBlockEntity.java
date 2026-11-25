@@ -265,7 +265,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             return;
 
         repackageHelper.clear();
-        Map<Integer, List<ItemStack>> declared = new HashMap<>();
+        Map<Integer, List<Member>> declared = new HashMap<>();
         int completedOrderId = -1;
 
         for (int slot = 0; slot < storage.getSlots(); slot++) {
@@ -287,7 +287,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
                 return;
             }
             declared.computeIfAbsent(PackageItem.getOrderId(stack), $ -> new ArrayList<>())
-                .add(stack);
+                .add(new Member(slot, stack));
             completedOrderId = repackageHelper.addPackageFragment(stack);
             if (completedOrderId != -1)
                 break;
@@ -295,22 +295,28 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
 
         if (completedOrderId == -1)
             return;
-        List<ItemStack> members = declared.get(completedOrderId);
+        List<Member> members = declared.get(completedOrderId);
         // A disagreeing order waits in the buffer like an incomplete one; pulling the offender
         // out heals it.
         if (agree(members))
             mergeOrder(storage, completedOrderId, members);
     }
 
+    /** A box of a declared order, and the storage slot it waits in. */
+    private record Member(int slot, ItemStack box) {}
+
     /**
      * The merged boxes carry one address and one set of declarations onward, so
      * a shipment whose members disagree about either is not a shipment.
      */
-    private static boolean agree(List<ItemStack> members) {
-        String address = PackageItem.getAddress(members.get(0));
-        List<TransitCustoms> declarations = TransitCustoms.on(members.get(0));
-        for (ItemStack box : members)
-            if (!address.equals(PackageItem.getAddress(box)) || !declarations.equals(TransitCustoms.on(box)))
+    private static boolean agree(List<Member> members) {
+        ItemStack sample = members.get(0)
+            .box();
+        String address = PackageItem.getAddress(sample);
+        List<TransitCustoms> declarations = TransitCustoms.on(sample);
+        for (Member member : members)
+            if (!address.equals(PackageItem.getAddress(member.box()))
+                || !declarations.equals(TransitCustoms.on(member.box())))
                 return false;
         return true;
     }
@@ -335,31 +341,43 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     }
 
     /**
-     * The whole child order becomes the parent link slot it was ordered as: upstream repacks it,
-     * recipe-aware when the order carried crafts, one label comes off the shared address, identity
+     * The whole child order becomes the parent link slot it was ordered as: its standard boxes are
+     * repacked and foreign ones pass unopened, one label comes off the shared address, identity
      * comes from the declaration, and the numbering is rebuilt 0..n with IsFinal on the last.
      */
-    private void mergeOrder(IItemHandler storage, int orderId, List<ItemStack> members) {
-        ItemStack sample = members.get(0);
+    private void mergeOrder(IItemHandler storage, int orderId, List<Member> members) {
+        ItemStack sample = members.get(0)
+            .box();
         String address = PackageItem.getAddress(sample);
         TransitCustoms declaration = TransitCustoms.head(sample, address);
         List<TransitCustoms> onward = TransitCustoms.pop(sample, address);
 
-        // Upstream returns recipe boxes as one entry per stack of identical
-        // copies; the parent slot numbers every physical box.
-        List<ItemStack> boxes = new ArrayList<>();
-        for (BigItemStack entry : repackageHelper.repack(orderId, level.getRandom()))
-            for (int copy = 0; copy < entry.count; copy++)
-                boxes.add(entry.stack.copy());
+        // Foreign boxes are never opened, but the order's context may be riding on one.
+        List<ItemStack> standard = new ArrayList<>();
+        List<ItemStack> foreign = new ArrayList<>();
+        PackageOrderWithCrafts orderContext = null;
+        for (Member member : members) {
+            ItemStack box = member.box()
+                .copy();
+            PackageOrderWithCrafts own = PackageItem.getOrderContext(box);
+            if (own != null)
+                orderContext = own;
+            if (!TransitPackaging.isStandardBox(box)) {
+                foreign.add(box);
+                continue;
+            }
+            standard.add(box);
+        }
+
+        List<ItemStack> boxes = new ArrayList<>(repackStandard(orderId, standard, orderContext));
+        boxes.addAll(foreign);
         // Merging to nothing would make the shipment vanish; leave the oddity untouched.
         if (boxes.isEmpty())
             return;
 
-        for (int slot = 0; slot < storage.getSlots(); slot++) {
-            ItemStack stack = storage.extractItem(slot, 1, true);
-            if (!stack.isEmpty() && PackageItem.isPackage(stack) && PackageItem.getOrderId(stack) == orderId)
-                storage.extractItem(slot, 1, false);
-        }
+        // Only what was merged: the scan stops at completion, and a box past it is in none of these.
+        for (Member member : members)
+            storage.extractItem(member.slot(), 1, false);
 
         String remaining = AddressLabels.stripHeadLabel(address);
         List<BigItemStack> merged = new ArrayList<>();
@@ -370,8 +388,8 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             else
                 PackageItem.addAddress(box, remaining);
             boolean last = index == boxes.size() - 1;
-            // setOrder rewrites Fragment wholesale, and repack already put the right
-            // context on each box — a single recipe on every one it split by recipe.
+            // setOrder rewrites Fragment wholesale, so the context each box carries has to be
+            // handed back to it.
             PackageOrderWithCrafts context = PackageItem.getOrderContext(box);
             PackageItem.setOrder(box, declaration.parentOrderId(), declaration.parentLinkIndex(),
                 declaration.parentIsFinalLink(), index, last, context);
@@ -383,6 +401,36 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
 
         queuedExitingPackages.addAll(merged);
         notifyUpdate();
+    }
+
+    /**
+     * Upstream's repack of these boxes, by stack and never by recipe. The crafts are the parent's
+     * and this order may hold only part of their ingredients, in which case upstream spends what it
+     * finds on a recipe it cannot finish. They travel on whole, for the Re-Packager where the
+     * parent order comes together.
+     */
+    private List<ItemStack> repackStandard(int orderId, List<ItemStack> standard,
+        @Nullable PackageOrderWithCrafts orderContext) {
+        List<ItemStack> repacked = new ArrayList<>();
+        if (standard.isEmpty())
+            return repacked;
+
+        // Through setOrder: addOrderContext fills a component the order data hides. On every box,
+        // since upstream takes the last context that is not empty.
+        PackageOrderWithCrafts stacksOnly =
+            orderContext == null ? null : new PackageOrderWithCrafts(orderContext.orderedStacks(), List.of());
+        repackageHelper.clear();
+        for (ItemStack box : standard) {
+            PackageItem.setOrder(box, orderId, 0, true, 0, true, stacksOnly);
+            repackageHelper.addPackageFragment(box);
+        }
+
+        for (BigItemStack entry : repackageHelper.repack(orderId, level.getRandom()))
+            for (int copy = 0; copy < entry.count; copy++)
+                repacked.add(entry.stack.copy());
+        if (orderContext != null && !repacked.isEmpty())
+            PackageItem.setOrder(repacked.get(repacked.size() - 1), orderId, 0, true, 0, true, orderContext);
+        return repacked;
     }
 
     /**
