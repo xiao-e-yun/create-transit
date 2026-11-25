@@ -61,6 +61,7 @@ public class CreateTransit {
         }
 
         modEventBus.addListener(CtPackets::onRegisterPayloads);
+        modEventBus.addListener(CtBlockEntities::onRegisterCapabilities);
         // Create's creative tab is filled from Create's own registrate, which
         // never sees an addon's entries, so our blocks have to add themselves.
         modEventBus.addListener(CtCreativeTab::onBuildContents);

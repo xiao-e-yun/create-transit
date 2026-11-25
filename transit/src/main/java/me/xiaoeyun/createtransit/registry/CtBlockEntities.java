@@ -11,6 +11,9 @@ import me.xiaoeyun.createtransit.content.transit.TransitGateBlockEntity;
 import me.xiaoeyun.createtransit.content.transit.TransitLinkBlockEntity;
 import me.xiaoeyun.createtransit.content.ticker.TransitTickerBlockEntity;
 
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+
 public class CtBlockEntities {
 
     public static final BlockEntityEntry<TransitTickerBlockEntity> TRANSIT_TICKER = registrate()
@@ -41,4 +44,13 @@ public class CtBlockEntities {
         .register();
 
     public static void register() {}
+
+    /**
+     * A capability belongs to a block entity type here rather than to its class, so the gate does
+     * not inherit the Repackager's, and without one no funnel or hopper can reach its tray. The
+     * ticker goes without on purpose: it neither takes a package nor holds one.
+     */
+    public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, TRANSIT_GATE.get(), (gate, side) -> gate.inventory);
+    }
 }
