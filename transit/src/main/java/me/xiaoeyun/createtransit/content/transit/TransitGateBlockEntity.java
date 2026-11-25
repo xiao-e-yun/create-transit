@@ -12,6 +12,7 @@ import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
 import com.simibubi.create.compat.computercraft.events.PackageEvent;
 import com.simibubi.create.content.logistics.BigItemStack;
 import com.simibubi.create.content.logistics.box.PackageItem;
+import com.simibubi.create.content.logistics.packager.InventorySummary;
 import com.simibubi.create.content.logistics.packager.PackagerItemHandler;
 import com.simibubi.create.content.logistics.packager.PackagingRequest;
 import com.simibubi.create.content.logistics.packager.repackager.RepackagerBlockEntity;
@@ -29,6 +30,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemStackHandler;
 
 /**
  * A domain boundary: a package through the gate loses exactly one head label, LIFO, and a
@@ -264,7 +266,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             return;
 
         repackageHelper.clear();
-        Map<Integer, List<ItemStack>> declared = new HashMap<>();
+        Map<Integer, List<Member>> declared = new HashMap<>();
         int completedOrderId = -1;
 
         for (int slot = 0; slot < storage.getSlots(); slot++) {
@@ -286,7 +288,7 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
                 return;
             }
             declared.computeIfAbsent(PackageItem.getOrderId(stack), $ -> new ArrayList<>())
-                .add(stack);
+                .add(new Member(slot, stack));
             completedOrderId = repackageHelper.addPackageFragment(stack);
             if (completedOrderId != -1)
                 break;
@@ -294,22 +296,28 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
 
         if (completedOrderId == -1)
             return;
-        List<ItemStack> members = declared.get(completedOrderId);
+        List<Member> members = declared.get(completedOrderId);
         // A disagreeing order waits in the buffer like an incomplete one; pulling the offender
         // out heals it.
         if (agree(members))
             mergeOrder(storage, completedOrderId, members);
     }
 
+    /** A box of a declared order, and the storage slot it waits in. */
+    private record Member(int slot, ItemStack box) {}
+
     /**
      * The merged boxes carry one address and one set of declarations onward, so
      * a shipment whose members disagree about either is not a shipment.
      */
-    private static boolean agree(List<ItemStack> members) {
-        String address = PackageItem.getAddress(members.get(0));
-        List<TransitCustoms> declarations = TransitCustoms.on(members.get(0));
-        for (ItemStack box : members)
-            if (!address.equals(PackageItem.getAddress(box)) || !declarations.equals(TransitCustoms.on(box)))
+    private static boolean agree(List<Member> members) {
+        ItemStack sample = members.get(0)
+            .box();
+        String address = PackageItem.getAddress(sample);
+        List<TransitCustoms> declarations = TransitCustoms.on(sample);
+        for (Member member : members)
+            if (!address.equals(PackageItem.getAddress(member.box()))
+                || !declarations.equals(TransitCustoms.on(member.box())))
                 return false;
         return true;
     }
@@ -334,31 +342,43 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     }
 
     /**
-     * The whole child order becomes the parent link slot it was ordered as: upstream repacks it,
-     * recipe-aware when the order carried crafts, one label comes off the shared address, identity
+     * The whole child order becomes the parent link slot it was ordered as: upstream repacks its
+     * standard boxes, recipe-aware when the order carried crafts, foreign ones pass unopened, one label comes off the shared address, identity
      * comes from the declaration, and the numbering is rebuilt 0..n with IsFinal on the last.
      */
-    private void mergeOrder(IItemHandler storage, int orderId, List<ItemStack> members) {
-        ItemStack sample = members.get(0);
+    private void mergeOrder(IItemHandler storage, int orderId, List<Member> members) {
+        ItemStack sample = members.get(0)
+            .box();
         String address = PackageItem.getAddress(sample);
         TransitCustoms declaration = TransitCustoms.head(sample, address);
         List<TransitCustoms> onward = TransitCustoms.pop(sample, address);
 
-        // Upstream returns recipe boxes as one entry per stack of identical
-        // copies; the parent slot numbers every physical box.
-        List<ItemStack> boxes = new ArrayList<>();
-        for (BigItemStack entry : repackageHelper.repack(orderId, level.getRandom()))
-            for (int copy = 0; copy < entry.count; copy++)
-                boxes.add(entry.stack.copy());
+        // Foreign boxes are never opened, but the order's context may be riding on one.
+        List<ItemStack> standard = new ArrayList<>();
+        List<ItemStack> foreign = new ArrayList<>();
+        PackageOrderWithCrafts orderContext = null;
+        for (Member member : members) {
+            ItemStack box = member.box()
+                .copy();
+            PackageOrderWithCrafts own = PackageItem.getOrderContext(box);
+            if (own != null)
+                orderContext = own;
+            if (!TransitPackaging.isStandardBox(box)) {
+                foreign.add(box);
+                continue;
+            }
+            standard.add(box);
+        }
+
+        List<ItemStack> boxes = new ArrayList<>(repackStandard(orderId, standard, orderContext));
+        boxes.addAll(foreign);
         // Merging to nothing would make the shipment vanish; leave the oddity untouched.
         if (boxes.isEmpty())
             return;
 
-        for (int slot = 0; slot < storage.getSlots(); slot++) {
-            ItemStack stack = storage.extractItem(slot, 1, true);
-            if (!stack.isEmpty() && PackageItem.isPackage(stack) && PackageItem.getOrderId(stack) == orderId)
-                storage.extractItem(slot, 1, false);
-        }
+        // Only what was merged: the scan stops at completion, and a box past it is in none of these.
+        for (Member member : members)
+            storage.extractItem(member.slot(), 1, false);
 
         String remaining = AddressLabels.stripHeadLabel(address);
         List<BigItemStack> merged = new ArrayList<>();
@@ -382,6 +402,54 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
 
         queuedExitingPackages.addAll(merged);
         notifyUpdate();
+    }
+
+    /**
+     * Upstream's repack of these boxes, or the boxes themselves when it would not conserve them:
+     * an attempt at a recipe this order holds only part of spends the ingredients it did find.
+     */
+    private List<ItemStack> repackStandard(int orderId, List<ItemStack> standard,
+        @Nullable PackageOrderWithCrafts orderContext) {
+        if (standard.isEmpty())
+            return standard;
+
+        // Copies, so that falling back releases every box with the context it came with.
+        repackageHelper.clear();
+        ItemStack fragment = ItemStack.EMPTY;
+        for (ItemStack box : standard) {
+            fragment = box.copy();
+            repackageHelper.addPackageFragment(fragment);
+        }
+        // Upstream takes the last context it reads.
+        PackageItem.addOrderContext(fragment, orderContext);
+
+        // Upstream returns recipe boxes as one entry per stack of identical
+        // copies; the parent slot numbers every physical box.
+        List<ItemStack> repacked = new ArrayList<>();
+        for (BigItemStack entry : repackageHelper.repack(orderId, level.getRandom()))
+            for (int copy = 0; copy < entry.count; copy++)
+                repacked.add(entry.stack.copy());
+        return sameContents(standard, repacked) ? repacked : standard;
+    }
+
+    private static boolean sameContents(List<ItemStack> before, List<ItemStack> after) {
+        InventorySummary difference = new InventorySummary();
+        tally(difference, before, 1);
+        tally(difference, after, -1);
+        for (BigItemStack entry : difference.getStacks())
+            if (entry.count != 0)
+                return false;
+        return true;
+    }
+
+    private static void tally(InventorySummary summary, List<ItemStack> boxes, int sign) {
+        for (ItemStack box : boxes) {
+            ItemStackHandler contents = PackageItem.getContents(box);
+            for (int slot = 0; slot < contents.getSlots(); slot++) {
+                ItemStack stack = contents.getStackInSlot(slot);
+                summary.add(stack, sign * stack.getCount());
+            }
+        }
     }
 
     /**
