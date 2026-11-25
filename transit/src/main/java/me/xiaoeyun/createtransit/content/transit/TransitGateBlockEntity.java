@@ -12,7 +12,6 @@ import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
 import com.simibubi.create.compat.computercraft.events.PackageEvent;
 import com.simibubi.create.content.logistics.BigItemStack;
 import com.simibubi.create.content.logistics.box.PackageItem;
-import com.simibubi.create.content.logistics.packager.InventorySummary;
 import com.simibubi.create.content.logistics.packager.PackagerItemHandler;
 import com.simibubi.create.content.logistics.packager.PackagingRequest;
 import com.simibubi.create.content.logistics.packager.repackager.RepackagerBlockEntity;
@@ -30,7 +29,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemStackHandler;
 
 /**
  * A domain boundary: a package through the gate loses exactly one head label, LIFO, and a
@@ -342,8 +340,8 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     }
 
     /**
-     * The whole child order becomes the parent link slot it was ordered as: upstream repacks its
-     * standard boxes, recipe-aware when the order carried crafts, foreign ones pass unopened, one label comes off the shared address, identity
+     * The whole child order becomes the parent link slot it was ordered as: its standard boxes are
+     * repacked and foreign ones pass unopened, one label comes off the shared address, identity
      * comes from the declaration, and the numbering is rebuilt 0..n with IsFinal on the last.
      */
     private void mergeOrder(IItemHandler storage, int orderId, List<Member> members) {
@@ -389,8 +387,8 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
             else
                 PackageItem.addAddress(box, remaining);
             boolean last = index == boxes.size() - 1;
-            // setOrder rewrites Fragment wholesale, and repack already put the right
-            // context on each box — a single recipe on every one it split by recipe.
+            // setOrder rewrites Fragment wholesale, so the context each box carries has to be
+            // handed back to it.
             PackageOrderWithCrafts context = PackageItem.getOrderContext(box);
             PackageItem.setOrder(box, declaration.parentOrderId(), declaration.parentLinkIndex(),
                 declaration.parentIsFinalLink(), index, last, context);
@@ -405,51 +403,31 @@ public class TransitGateBlockEntity extends RepackagerBlockEntity implements IHa
     }
 
     /**
-     * Upstream's repack of these boxes, or the boxes themselves when it would not conserve them:
-     * an attempt at a recipe this order holds only part of spends the ingredients it did find.
+     * Upstream's repack of these boxes, by stack and never by recipe. The crafts are the parent's
+     * and this order may hold only part of their ingredients, in which case upstream spends what it
+     * finds on a recipe it cannot finish. They travel on whole, for the Re-Packager where the
+     * parent order comes together.
      */
     private List<ItemStack> repackStandard(int orderId, List<ItemStack> standard,
         @Nullable PackageOrderWithCrafts orderContext) {
-        if (standard.isEmpty())
-            return standard;
-
-        // Copies, so that falling back releases every box with the context it came with.
-        repackageHelper.clear();
-        ItemStack fragment = ItemStack.EMPTY;
-        for (ItemStack box : standard) {
-            fragment = box.copy();
-            repackageHelper.addPackageFragment(fragment);
-        }
-        // Upstream takes the last context it reads.
-        PackageItem.addOrderContext(fragment, orderContext);
-
-        // Upstream returns recipe boxes as one entry per stack of identical
-        // copies; the parent slot numbers every physical box.
         List<ItemStack> repacked = new ArrayList<>();
+        if (standard.isEmpty())
+            return repacked;
+
+        repackageHelper.clear();
+        for (ItemStack box : standard)
+            repackageHelper.addPackageFragment(box);
+        // Upstream takes the last context it reads.
+        if (orderContext != null)
+            PackageItem.addOrderContext(standard.get(standard.size() - 1),
+                new PackageOrderWithCrafts(orderContext.orderedStacks(), List.of()));
+
         for (BigItemStack entry : repackageHelper.repack(orderId, level.getRandom()))
             for (int copy = 0; copy < entry.count; copy++)
                 repacked.add(entry.stack.copy());
-        return sameContents(standard, repacked) ? repacked : standard;
-    }
-
-    private static boolean sameContents(List<ItemStack> before, List<ItemStack> after) {
-        InventorySummary difference = new InventorySummary();
-        tally(difference, before, 1);
-        tally(difference, after, -1);
-        for (BigItemStack entry : difference.getStacks())
-            if (entry.count != 0)
-                return false;
-        return true;
-    }
-
-    private static void tally(InventorySummary summary, List<ItemStack> boxes, int sign) {
-        for (ItemStack box : boxes) {
-            ItemStackHandler contents = PackageItem.getContents(box);
-            for (int slot = 0; slot < contents.getSlots(); slot++) {
-                ItemStack stack = contents.getStackInSlot(slot);
-                summary.add(stack, sign * stack.getCount());
-            }
-        }
+        if (orderContext != null && !repacked.isEmpty())
+            PackageItem.addOrderContext(repacked.get(repacked.size() - 1), orderContext);
+        return repacked;
     }
 
     /**
